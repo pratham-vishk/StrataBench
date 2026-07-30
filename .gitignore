@@ -1,0 +1,50 @@
+# Build artifacts
+/target/
+/dist/
+/build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+/bin/
+/vendor/
+
+# Rust
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Benchmark run data (local only)
+/runs/
+*.db
+*.sqlite
+
+# Secrets
+.env
+.env.*
+*.pem
+credentials.json
+
+# Reports (generated)
+/reports/
+*.xlsx
+
+# Python (if used for charts later)
+__pycache__/
+.venv/
+venv/
+*.pyc
+
+# Logs
+*.log

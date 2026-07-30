@@ -1,0 +1,31 @@
+name: ssd-random-4k
+version: "1.0"
+layer: block
+engine: stratabench
+description: "4K random read/write on SSD — standard random I/O test"
+load: medium
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 60
+  require_percentiles: [50, 95, 99, 99.9]
+  dataset_vs_cache: gt
+
+params:
+  pattern: randrw
+  read_write_mix: 70
+  block_size: 4k
+  queue_depth: 32
+  threads: 4
+  dataset_size: 50g
+  ramp_time_sec: 60
+  duration_sec: 300
+  direct_io: true
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p50
+  - latency_p99
+  - latency_p99_9

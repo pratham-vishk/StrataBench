@@ -1,0 +1,35 @@
+name: nvme-random-oltp
+version: "1.0"
+layer: block
+engine: fio
+description: "OLTP-like 70/30 random 16K on NVMe — honest, not hero numbers"
+load: heavy
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 600
+  min_ramp_sec: 60
+  require_percentiles: [50, 75, 90, 95, 99, 99.9]
+  dataset_vs_cache: gt
+
+params:
+  ioengine: libaio
+  direct: 1
+  rw: randrw
+  rwmixread: 70
+  bs: 16k
+  iodepth: 32
+  numjobs: 4
+  size: 200g
+  ramp_time: 60
+  runtime: 600
+  percentile_list: "50:75:90:95:99:99.9"
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p50
+  - latency_p95
+  - latency_p99
+  - latency_p99_9
+  - cpu_percent

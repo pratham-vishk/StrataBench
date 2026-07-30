@@ -1,0 +1,27 @@
+name: s3-get-throughput
+version: "1.0"
+layer: object
+engine: stratabench
+description: "S3 GET throughput test — requires pre-populated objects"
+load: medium
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 30
+  require_percentiles: [50, 95, 99]
+
+params:
+  operation: get
+  object_size: 4MiB
+  concurrent: 64
+  duration_sec: 300
+  bucket: stratabench-test
+  prefix: put-bench/
+  pre_populate: true
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p50
+  - latency_p99

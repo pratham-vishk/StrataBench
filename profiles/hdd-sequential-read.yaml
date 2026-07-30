@@ -1,0 +1,29 @@
+name: hdd-sequential-read
+version: "1.0"
+layer: block
+engine: fio
+description: "Sequential read on HDD — baseline throughput test"
+load: light
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 30
+  require_percentiles: [50, 95, 99]
+  dataset_vs_cache: gt
+
+params:
+  ioengine: libaio
+  direct: 1
+  rw: read
+  bs: 1m
+  iodepth: 1
+  numjobs: 1
+  size: 10g
+  ramp_time: 30
+  runtime: 300
+
+metrics:
+  - throughput_mbps
+  - latency_p50
+  - latency_p99
