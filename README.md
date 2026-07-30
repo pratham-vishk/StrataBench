@@ -70,15 +70,29 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full design.
 
 ## Quick start
 
-> **Status:** Early design phase. Implementation starting in Phase 1.
-
 ```bash
-# Coming soon
-stratabench plan "benchmark my NVMe for OLTP workload"
-stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
-stratabench validate --profile s3-cluster-put-get
-stratabench report --run-id <uuid>
+# Build
+go build -o bin/stratabench ./cmd/stratabench
+
+# List profiles
+./bin/stratabench profiles
+
+# Suggest profile from intent
+./bin/stratabench plan "nvme oltp database workload"
+
+# Validate before run (honest test rules)
+./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 10737418240
+
+# Run mock benchmark (no hardware — works on Windows)
+./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
+
+# Real fio on Linux/WSL
+./bin/stratabench run --profile hdd-sequential-read --target /tmp/stratabench.dat
 ```
+
+See [docs/DEV.md](docs/DEV.md) for full development guide.
+
+> **Status:** Phase 1 MVP — CLI, validator, mock + fio engines, SQLite, HTML reports.
 
 ---
 

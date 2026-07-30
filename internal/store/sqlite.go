@@ -1,0 +1,105 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	_ "modernc.org/sqlite"
+
+	"github.com/pratham-vishk/stratabench/internal/schema"
+)
+
+type Store struct {
+	db *sql.DB
+}
+
+func Open(path string) (*Store, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+	s := &Store{db: db}
+	if err := s.migrate(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return s, nil
+}
+
+func (s *Store) Close() error { return s.db.Close() }
+
+func (s *Store) migrate() error {
+	_, err := s.db.ExecContext(context.Background(), `
+CREATE TABLE IF NOT EXISTS runs (
+  run_id TEXT PRIMARY KEY,
+  profile TEXT NOT NULL,
+  status TEXT NOT NULL,
+  mock INTEGER NOT NULL DEFAULT 0,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_runs_created ON runs(created_at DESC);
+`)
+	return err
+}
+
+func (s *Store) Save(run *schema.RunResult) error {
+	data, err := json.Marshal(run)
+	if err != nil {
+		return err
+	}
+	mock := 0
+	if run.Mock {
+		mock = 1
+	}
+	_, err = s.db.ExecContext(context.Background(),
+		`INSERT OR REPLACE INTO runs (run_id, profile, status, mock, result_json, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		run.RunID, run.Profile, run.Status, mock, string(data), run.Timestamps.StartedAt.UTC().Format(time.RFC3339),
+	)
+	return err
+}
+
+func (s *Store) Get(runID string) (*schema.RunResult, error) {
+	var raw string
+	err := s.db.QueryRowContext(context.Background(), `SELECT result_json FROM runs WHERE run_id = ?`, runID).Scan(&raw)
+	if err != nil {
+		return nil, fmt.Errorf("run %s: %w", runID, err)
+	}
+	var run schema.RunResult
+	if err := json.Unmarshal([]byte(raw), &run); err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
+func (s *Store) List(limit int) ([]schema.RunResult, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	rows, err := s.db.QueryContext(context.Background(), `SELECT result_json FROM runs ORDER BY created_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []schema.RunResult
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var run schema.RunResult
+		if err := json.Unmarshal([]byte(raw), &run); err != nil {
+			return nil, err
+		}
+		out = append(out, run)
+	}
+	return out, rows.Err()
+}

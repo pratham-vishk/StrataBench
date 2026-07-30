@@ -2,6 +2,7 @@
 /target/
 /dist/
 /build/
+/bin/
 *.exe
 *.dll
 *.so
@@ -26,6 +27,7 @@ Cargo.lock
 Thumbs.db
 
 # Benchmark run data (local only)
+.stratabench/
 /runs/
 *.db
 *.sqlite
