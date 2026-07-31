@@ -101,4 +101,10 @@ type RunResult struct {
 	Hardware      HardwareSnapshot  `json:"hardware_snapshot"`
 	Timestamps    Timestamps        `json:"timestamps"`
 	RawOutput     *RawEngineOutput  `json:"raw_engine_output,omitempty"`
+	Clients       []ClientResult    `json:"clients,omitempty"`
+}
+
+type ClientResult struct {
+	Host    string  `json:"host"`
+	Results Results `json:"results"`
 }

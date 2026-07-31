@@ -5,35 +5,52 @@
 - Go 1.22+
 - Linux or WSL2 for real `fio` benchmarks
 - `fio` (optional): `sudo apt install fio`
+- `warp` (optional): MinIO Warp for S3 profiles
 
 ## Build
 
 ```bash
 make build
-# or
-go build -o bin/stratabench ./cmd/stratabench
+# builds bin/stratabench and bin/stratabench-agent
 ```
 
 ## Commands
 
 ```bash
-# List profiles
 ./bin/stratabench profiles
-
-# Plan from natural language
-./bin/stratabench plan "benchmark nvme for oltp database"
-
-# Validate (honest test rules)
+./bin/stratabench plan "s3 cluster warp"
 ./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 10737418240
-
-# Run mock benchmark (no hardware needed)
 ./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
-
-# Run real fio (Linux/WSL, needs target path)
-./bin/stratabench run --profile hdd-sequential-read --target /tmp/stratabench.dat
-
-# Report
+./bin/stratabench runs
+./bin/stratabench compare --run-id <a> --run-id-b <b>
+./bin/stratabench export --run-id <uuid>
 ./bin/stratabench report --run-id <uuid>
+```
+
+## Distributed mode (Phase 2)
+
+On each client VM:
+
+```bash
+./bin/stratabench-agent
+# listens on :7777 (STRATABENCH_AGENT_LISTEN to override)
+```
+
+From coordinator:
+
+```bash
+./bin/stratabench run --profile ssd-random-4k --target /dev/nvme0n1 --mock \
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777
+```
+
+Aggregates sum IOPS/throughput; tail latency uses max across clients.
+
+## Warp (S3)
+
+```bash
+export WARP_ACCESS_KEY=minioadmin
+export WARP_SECRET_KEY=minioadmin
+./bin/stratabench run --profile s3-cluster-put-get --target 10.0.1.10:9000
 ```
 
 ## Data layout
@@ -41,13 +58,13 @@ go build -o bin/stratabench ./cmd/stratabench
 ```
 .stratabench/
   stratabench.db    # SQLite run history
-  reports/          # HTML reports
+  reports/          # HTML + JSON reports
   work/             # fio job files, temp data
 ```
 
 ## Mock mode
 
-Use `--mock` on Windows or when hardware is unavailable. Validator and reports work the same; results are synthetic.
+Use `--mock` on Windows or when hardware is unavailable.
 
 ## Environment variables
 
@@ -55,6 +72,8 @@ Use `--mock` on Windows or when hardware is unavailable. Validator and reports w
 |----------|---------|
 | `STRATABENCH_ROOT` | Repo root (auto-detected) |
 | `STRATABENCH_MOCK_CACHE_BYTES` | Override cache size for validation |
+| `STRATABENCH_AGENT_LISTEN` | Agent bind address (default `:7777`) |
+| `WARP_ACCESS_KEY` / `WARP_SECRET_KEY` | S3 credentials for Warp |
 
 ## Tests
 
@@ -62,6 +81,8 @@ Use `--mock` on Windows or when hardware is unavailable. Validator and reports w
 go test ./...
 ```
 
-## Dell lab (later)
+## Dell lab
 
-Deploy `stratabench-agent` on client VMs (Phase 2). Phase 1 is single-node CLI only.
+1. Deploy `stratabench-agent` on 3+ client VMs (static IPs).
+2. Run coordinator from jump host with `--clients`.
+3. Use real profiles: `nvme-random-oltp`, `s3-cluster-put-get`, `vm-disk-random`.

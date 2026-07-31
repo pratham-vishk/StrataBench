@@ -26,6 +26,8 @@ func ForProfile(p *profile.Profile, mock bool) Runner {
 	switch p.Engine {
 	case "fio":
 		return &FioRunner{}
+	case "warp":
+		return &WarpRunner{}
 	case "stratabench":
 		return &MockRunner{} // native Rust engine lands in a later phase
 	default:

@@ -1,0 +1,31 @@
+name: vm-disk-random
+version: "1.0"
+layer: vm-block
+engine: fio
+description: "Random 4K inside a VM — run fio in the guest, not on hypervisor"
+load: medium
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 30
+  require_percentiles: [50, 95, 99]
+  dataset_vs_cache: gt
+
+params:
+  ioengine: libaio
+  direct: 1
+  rw: randrw
+  rwmixread: 70
+  bs: 4k
+  iodepth: 32
+  numjobs: 4
+  size: 50g
+  ramp_time: 30
+  runtime: 300
+  percentile_list: "50:95:99"
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99

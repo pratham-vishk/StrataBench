@@ -1,0 +1,29 @@
+name: nvme-max-stress
+version: "1.0"
+layer: block
+engine: stratabench
+description: "Maximum stress — 64 threads, QD 128, 4K random write"
+load: extreme
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 600
+  min_ramp_sec: 60
+  require_percentiles: [50, 95, 99, 99.9]
+  dataset_vs_cache: gt
+
+params:
+  pattern: randwrite
+  block_size: 4k
+  queue_depth: 128
+  threads: 64
+  dataset_size: 500g
+  ramp_time_sec: 60
+  duration_sec: 600
+  direct_io: true
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99
+  - cpu_percent

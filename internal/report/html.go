@@ -55,6 +55,11 @@ const htmlTemplate = `<!DOCTYPE html>
     <tr><th>Target</th><td>{{.Target.Device}}</td></tr>
     <tr><th>Duration</th><td>{{.Workload.DurationSec}}s (ramp {{.Workload.RampTimeSec}}s)</td></tr>
   </table>
+  {{if .Clients}}<h2>Clients ({{len .Clients}})</h2>
+  <table>
+    <tr><th>Host</th><th>IOPS</th><th>Throughput MB/s</th><th>p99 µs</th></tr>
+    {{range .Clients}}<tr><td>{{.Host}}</td><td>{{printf "%.0f" .Results.IOPS}}</td><td>{{printf "%.2f" .Results.ThroughputMBps}}</td><td>{{printf "%.1f" .Results.LatencyUS.P99}}</td></tr>{{end}}
+  </table>{{end}}
 </body>
 </html>`
 

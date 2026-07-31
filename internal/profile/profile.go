@@ -113,6 +113,27 @@ func (p *Profile) ParamBool(key string, def bool) bool {
 	return b
 }
 
+func (p *Profile) ParamStringSlice(key string) []string {
+	v, ok := p.Params[key]
+	if !ok {
+		return nil
+	}
+	switch t := v.(type) {
+	case []any:
+		var out []string
+		for _, item := range t {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	case []string:
+		return t
+	default:
+		return nil
+	}
+}
+
 func (p *Profile) ToWorkload() (pattern, blockSize, datasetSize string, durationSec, rampSec, qd, threads, rwMix int, directIO bool) {
 	pattern = p.ParamString("rw", p.ParamString("pattern", "read"))
 	if pattern == "" {

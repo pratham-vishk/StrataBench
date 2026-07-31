@@ -15,6 +15,9 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 		"hdd-sequential-read":  {"hdd", "disk", "sequential", "read"},
 		"s3-put-throughput":    {"s3", "put", "upload", "object", "write"},
 		"s3-get-throughput":    {"s3", "get", "download", "read", "object"},
+		"s3-cluster-put-get":   {"s3", "cluster", "warp", "distributed", "object"},
+		"nvme-max-stress":      {"stress", "max", "heavy", "extreme", "nvme"},
+		"vm-disk-random":       {"vm", "virtual", "guest", "disk", "random"},
 	}
 
 	best := ""
