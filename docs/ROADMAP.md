@@ -76,15 +76,16 @@
 
 ### Deliverables
 
-- [ ] SPDK perf wrapper (peak NVMe IOPS)
-- [ ] vdbench wrapper (multi-LUN AFA)
+- [x] SPDK perf wrapper (peak NVMe IOPS)
+- [x] vdbench wrapper (multi-LUN AFA)
 - [ ] VM test suite (auto-deploy fio inside KVM/VMware guests)
-- [ ] Warp RDMA mode (`--rdma=cpu`)
-- [ ] Prometheus metrics exporter
-- [ ] Grafana dashboards (bundled)
+- [x] Warp RDMA mode (`--rdma=cpu`)
+- [x] Prometheus metrics exporter
+- [x] Grafana dashboards (bundled)
 - [ ] PostgreSQL backend option
+- [x] Regression baselines (per profile + target)
 - [ ] Analyst agent (anomaly detection, regression alerts)
-- [ ] Cross-layer comparison reports
+- [x] Cross-layer comparison reports
 
 ### Success criteria
 
@@ -101,7 +102,7 @@
 ### Deliverables
 
 - [ ] Full agentic loop: plan → validate → run → analyze → report (NL end-to-end)
-- [ ] Regression tracking (baseline per profile + target)
+- [x] Regression tracking (baseline per profile + target)
 - [ ] Hardware inventory database (NVMe model, firmware, SMART history)
 - [ ] Kubernetes operator for in-cluster benchmarking
 - [ ] Public documentation site

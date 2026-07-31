@@ -47,7 +47,69 @@ CREATE TABLE IF NOT EXISTS runs (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_runs_created ON runs(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS baselines (
+  profile TEXT NOT NULL,
+  target_key TEXT NOT NULL,
+  run_id TEXT NOT NULL,
+  set_at TEXT NOT NULL,
+  PRIMARY KEY (profile, target_key)
+);
 `)
+	return err
+}
+
+type BaselineRecord struct {
+	Profile   string
+	TargetKey string
+	RunID     string
+	SetAt     string
+}
+
+func (s *Store) SetBaseline(profile, targetKey, runID string) error {
+	_, err := s.db.ExecContext(context.Background(),
+		`INSERT OR REPLACE INTO baselines (profile, target_key, run_id, set_at) VALUES (?, ?, ?, ?)`,
+		profile, targetKey, runID, time.Now().UTC().Format(time.RFC3339),
+	)
+	return err
+}
+
+func (s *Store) GetBaseline(profile, targetKey string) (*BaselineRecord, error) {
+	var rec BaselineRecord
+	err := s.db.QueryRowContext(context.Background(),
+		`SELECT profile, target_key, run_id, set_at FROM baselines WHERE profile = ? AND target_key = ?`,
+		profile, targetKey,
+	).Scan(&rec.Profile, &rec.TargetKey, &rec.RunID, &rec.SetAt)
+	if err != nil {
+		return nil, fmt.Errorf("baseline %s/%s: %w", profile, targetKey, err)
+	}
+	return &rec, nil
+}
+
+func (s *Store) ListBaselines() ([]BaselineRecord, error) {
+	rows, err := s.db.QueryContext(context.Background(),
+		`SELECT profile, target_key, run_id, set_at FROM baselines ORDER BY profile, target_key`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []BaselineRecord
+	for rows.Next() {
+		var rec BaselineRecord
+		if err := rows.Scan(&rec.Profile, &rec.TargetKey, &rec.RunID, &rec.SetAt); err != nil {
+			return nil, err
+		}
+		out = append(out, rec)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) DeleteBaseline(profile, targetKey string) error {
+	_, err := s.db.ExecContext(context.Background(),
+		`DELETE FROM baselines WHERE profile = ? AND target_key = ?`,
+		profile, targetKey,
+	)
 	return err
 }
 

@@ -18,6 +18,8 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 		"s3-cluster-put-get":   {"s3", "cluster", "warp", "distributed", "object"},
 		"nvme-max-stress":      {"stress", "max", "heavy", "extreme", "nvme"},
 		"spdk-nvme-peak":       {"spdk", "peak", "nvme", "userspace"},
+		"afa-multi-lun":        {"afa", "array", "multi", "lun", "vdbench", "flash"},
+		"s3-cluster-rdma":      {"s3", "rdma", "warp", "cluster", "object"},
 		"file-parallel-read":   {"file", "nfs", "lustre", "parallel", "elbencho"},
 		"vm-disk-random":       {"vm", "virtual", "guest", "disk", "random"},
 	}

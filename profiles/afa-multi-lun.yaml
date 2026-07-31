@@ -1,0 +1,26 @@
+name: afa-multi-lun
+version: "1.0"
+layer: block
+engine: vdbench
+description: "Multi-LUN random read on AFA — vdbench across multiple devices"
+load: heavy
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 60
+  require_percentiles: [50, 99]
+  dataset_vs_cache: "2x"
+
+params:
+  pattern: randread
+  block_size: 4k
+  threads: 16
+  duration_sec: 300
+  warmup_sec: 60
+  luns: []
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99

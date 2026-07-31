@@ -32,6 +32,8 @@ func ForProfile(p *profile.Profile, mock bool) Runner {
 		return &ElbenchoRunner{}
 	case "spdk":
 		return &SPDKRunner{}
+	case "vdbench":
+		return &VdbenchRunner{}
 	case "stratabench":
 		return &MockRunner{} // native Rust engine lands in a later phase
 	default:

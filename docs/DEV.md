@@ -25,6 +25,9 @@ make build
 ./bin/stratabench compare --run-id <a> --run-id-b <b>
 ./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
 ./bin/stratabench import sbk results.csv
+./bin/stratabench baseline set --run-id <uuid>
+./bin/stratabench baseline show
+./bin/stratabench baseline check --run-id <uuid>
 ./bin/stratabench export --run-id <uuid>
 ./bin/stratabench report --run-id <uuid>
 ```

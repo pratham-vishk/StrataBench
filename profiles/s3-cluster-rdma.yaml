@@ -1,0 +1,27 @@
+name: s3-cluster-rdma
+version: "1.0"
+layer: object
+engine: warp
+description: "Distributed S3 PUT via Warp with RDMA transport (CPU mode)"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  operation: put
+  duration_sec: 300
+  concurrent: 64
+  object_size: 4MiB
+  bucket: stratabench-rdma
+  host: "127.0.0.1:9000"
+  rdma: cpu
+  warp_clients: []
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p99

@@ -49,6 +49,9 @@ func (w *WarpRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 	for _, client := range in.Profile.ParamStringSlice("warp_clients") {
 		args = append(args, "--warp-client", client)
 	}
+	if rdma := in.Profile.ParamString("rdma", ""); rdma != "" {
+		args = append(args, "--rdma="+rdma)
+	}
 
 	cmd := exec.CommandContext(ctx, "warp", args...)
 	cmd.Dir = in.WorkDir

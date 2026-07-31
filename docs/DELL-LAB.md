@@ -92,6 +92,8 @@ Import Grafana dashboard from `deploy/grafana/stratabench-dashboard.json`.
 | `spdk-nvme-peak` | block | SPDK | Userspace peak IOPS |
 | `vm-disk-random` | vm-block | fio | Guest disk on HCI |
 | `s3-cluster-put-get` | object | warp | Multi-node S3 |
+| `s3-cluster-rdma` | object | warp | S3 with RDMA (`--rdma=cpu`) |
+| `afa-multi-lun` | block | vdbench | Multi-LUN AFA random read |
 | `file-parallel-read` | file | elbencho | NFS/Lustre parallel read |
 
 ## Cross-layer analysis

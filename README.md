@@ -95,13 +95,18 @@ go build -o bin/stratabench ./cmd/stratabench
 # Import SBK CSV results
 ./bin/stratabench import sbk results.csv
 
+# Regression baselines
+./bin/stratabench baseline set --run-id <uuid>
+./bin/stratabench baseline show
+./bin/stratabench run --profile nvme-random-oltp --target /tmp/test --mock --check-baseline
+
 # REST API + Prometheus metrics
 ./bin/stratabench-api   # :8080 — /api/v1/runs, /metrics
 ```
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** Phase 3 — REST API, Prometheus metrics, elbencho/SPDK engines, SBK import, cross-layer analysis, Grafana dashboard, CI.
+> **Status:** Phase 3 — vdbench, Warp RDMA, regression baselines, REST API, Prometheus, cross-layer analysis, CI.
 
 ---
 

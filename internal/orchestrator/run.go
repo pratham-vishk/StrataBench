@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pratham-vishk/stratabench/internal/aggregate"
+	"github.com/pratham-vishk/stratabench/internal/baseline"
 	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/engine"
 	"github.com/pratham-vishk/stratabench/internal/metrics"
@@ -27,8 +28,9 @@ type RunOptions struct {
 	Target       string
 	Clients      []string
 	Mock         bool
-	SkipValidate bool
-	CacheBytes   int64
+	SkipValidate   bool
+	CheckBaseline  bool
+	CacheBytes     int64
 	WorkDir      string
 	DataDir      string
 }
@@ -244,4 +246,28 @@ func (s *Service) saveRun(
 	}
 	metrics.RecordRun(run)
 	return run, nil
+}
+
+func (s *Service) CheckRegression(run *schema.RunResult) []baseline.Alert {
+	rec, err := s.Store.GetBaseline(run.Profile, baseline.TargetKey(run))
+	if err != nil {
+		return nil
+	}
+	baseRun, err := s.Store.Get(rec.RunID)
+	if err != nil {
+		return nil
+	}
+	return baseline.Check(run, baseRun, baseline.DefaultIOPSDegradePct, baseline.DefaultLatencyDegradePct)
+}
+
+func (s *Service) SetBaselineFromRun(runID string) (*store.BaselineRecord, error) {
+	run, err := s.Store.Get(runID)
+	if err != nil {
+		return nil, err
+	}
+	key := baseline.TargetKey(run)
+	if err := s.Store.SetBaseline(run.Profile, key, run.RunID); err != nil {
+		return nil, err
+	}
+	return s.Store.GetBaseline(run.Profile, key)
 }

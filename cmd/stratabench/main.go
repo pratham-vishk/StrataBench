@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/pratham-vishk/stratabench/internal/baseline"
 	"github.com/pratham-vishk/stratabench/internal/compare"
 	"github.com/pratham-vishk/stratabench/internal/crosslayer"
 	"github.com/pratham-vishk/stratabench/internal/export"
@@ -29,8 +30,9 @@ var (
 	runID        string
 	runIDB       string
 	cacheBytes   int64
-	skipValidate bool
-	profilesCSV  string
+	skipValidate  bool
+	checkBaseline bool
+	profilesCSV   string
 )
 
 func main() {
@@ -48,6 +50,7 @@ func main() {
 		compareCmd(),
 		crossLayerCmd(),
 		importCmd(),
+		baselineCmd(),
 		planCmd(),
 		profilesCmd(),
 	)
@@ -114,13 +117,14 @@ func runCmd() *cobra.Command {
 
 			clients := remote.ParseHosts(clientsCSV)
 			run, err := svc.Run(cmd.Context(), orchestrator.RunOptions{
-				Profile:      p,
-				Target:       target,
-				Clients:      clients,
-				Mock:         mock,
-				SkipValidate: skipValidate,
-				CacheBytes:   cacheBytes,
-				DataDir:      paths.DataDir(),
+				Profile:       p,
+				Target:        target,
+				Clients:       clients,
+				Mock:          mock,
+				SkipValidate:  skipValidate,
+				CheckBaseline: checkBaseline,
+				CacheBytes:    cacheBytes,
+				DataDir:       paths.DataDir(),
 			})
 			if err != nil {
 				return err
@@ -133,6 +137,9 @@ func runCmd() *cobra.Command {
 			_ = export.WriteJSON(run, filepath.Join(paths.ReportsDir(), run.RunID+".json"))
 
 			printRunSummary(run, len(clients))
+			if checkBaseline {
+				baseline.PrintAlerts(svc.CheckRegression(run))
+			}
 			return nil
 		},
 	}
@@ -141,6 +148,7 @@ func runCmd() *cobra.Command {
 	cmd.Flags().StringVar(&clientsCSV, "clients", "", "Comma-separated agent URLs (host:7777)")
 	cmd.Flags().BoolVar(&mock, "mock", false, "Use mock engine (no real I/O)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
+	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", false, "Compare results against stored baseline after run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	_ = cmd.MarkFlagRequired("profile")
 	return cmd
@@ -328,6 +336,81 @@ func importCmd() *cobra.Command {
 			return nil
 		},
 	})
+	return cmd
+}
+
+func baselineCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "baseline",
+		Short: "Manage regression baselines per profile+target",
+	}
+	cmd.AddCommand(
+		&cobra.Command{
+			Use:   "set",
+			Short: "Set baseline from an existing run",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if runID == "" {
+					return fmt.Errorf("--run-id is required")
+				}
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				rec, err := svc.SetBaselineFromRun(runID)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("baseline set: profile=%s target=%s run_id=%s\n", rec.Profile, rec.TargetKey, rec.RunID)
+				return nil
+			},
+		},
+		&cobra.Command{
+			Use:   "show",
+			Short: "List stored baselines",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				recs, err := svc.Store.ListBaselines()
+				if err != nil {
+					return err
+				}
+				if len(recs) == 0 {
+					fmt.Println("No baselines stored.")
+					return nil
+				}
+				fmt.Printf("%-22s %-24s %-38s %s\n", "PROFILE", "TARGET", "RUN_ID", "SET_AT")
+				for _, r := range recs {
+					fmt.Printf("%-22s %-24s %-38s %s\n", r.Profile, r.TargetKey, r.RunID, r.SetAt)
+				}
+				return nil
+			},
+		},
+		&cobra.Command{
+			Use:   "check",
+			Short: "Check a run against its baseline",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if runID == "" {
+					return fmt.Errorf("--run-id is required")
+				}
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				run, err := svc.Store.Get(runID)
+				if err != nil {
+					return err
+				}
+				baseline.PrintAlerts(svc.CheckRegression(run))
+				return nil
+			},
+		},
+	)
+	cmd.PersistentFlags().StringVar(&runID, "run-id", "", "Run ID for set/check")
 	return cmd
 }
 
