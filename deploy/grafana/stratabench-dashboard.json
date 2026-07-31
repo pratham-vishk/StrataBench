@@ -1,0 +1,50 @@
+{
+  "annotations": { "list": [] },
+  "title": "StrataBench",
+  "uid": "stratabench-main",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "IOPS",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "stratabench_iops",
+          "legendFormat": "{{profile}} {{run_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Throughput MB/s",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "stratabench_throughput_mbps",
+          "legendFormat": "{{profile}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p99 Latency (µs)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "stratabench_latency_p99_us",
+          "legendFormat": "{{profile}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total Runs",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum(stratabench_runs_total)" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

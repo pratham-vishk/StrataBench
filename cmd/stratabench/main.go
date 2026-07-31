@@ -9,7 +9,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/pratham-vishk/stratabench/internal/compare"
+	"github.com/pratham-vishk/stratabench/internal/crosslayer"
 	"github.com/pratham-vishk/stratabench/internal/export"
+	"github.com/pratham-vishk/stratabench/internal/importsbk"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/planner"
@@ -28,6 +30,7 @@ var (
 	runIDB       string
 	cacheBytes   int64
 	skipValidate bool
+	profilesCSV  string
 )
 
 func main() {
@@ -43,6 +46,8 @@ func main() {
 		exportCmd(),
 		runsCmd(),
 		compareCmd(),
+		crossLayerCmd(),
+		importCmd(),
 		planCmd(),
 		profilesCmd(),
 	)
@@ -243,6 +248,86 @@ func compareCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&runID, "run-id", "", "First run UUID")
 	cmd.Flags().StringVar(&runIDB, "run-id-b", "", "Second run UUID")
+	return cmd
+}
+
+func crossLayerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cross-layer",
+		Short: "Run multiple profiles and analyze cross-layer bottlenecks",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			names := crosslayer.ParseProfilesCSV(profilesCSV)
+			if len(names) < 2 {
+				return fmt.Errorf("--profiles requires at least 2 comma-separated profile names")
+			}
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+
+			var runs []*schema.RunResult
+			for _, name := range names {
+				profileName = name
+				p, err := loadProfile()
+				if err != nil {
+					return err
+				}
+				run, err := svc.Run(cmd.Context(), orchestrator.RunOptions{
+					Profile:      p,
+					Target:       target,
+					Mock:         mock,
+					SkipValidate: skipValidate,
+					CacheBytes:   cacheBytes,
+					DataDir:      paths.DataDir(),
+				})
+				if err != nil {
+					return fmt.Errorf("%s: %w", name, err)
+				}
+				_ = report.WriteHTML(run, filepath.Join(paths.ReportsDir(), run.RunID+".html"))
+				runs = append(runs, run)
+				fmt.Printf("  %s (%s): IOPS=%.0f p99=%.0fµs\n", name, p.Layer, run.Results.IOPS, run.Results.LatencyUS.P99)
+			}
+			crosslayer.PrintInsights(crosslayer.Analyze(runs))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&profilesCSV, "profiles", "", "Comma-separated profiles (e.g. nvme-random-oltp,s3-put-throughput)")
+	cmd.Flags().StringVar(&target, "target", "", "Target path or endpoint")
+	cmd.Flags().BoolVar(&mock, "mock", true, "Use mock engines")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", true, "Skip validation (default true for multi-profile runs)")
+	_ = cmd.MarkFlagRequired("profiles")
+	return cmd
+}
+
+func importCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "import",
+		Short: "Import external benchmark results",
+	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "sbk [csv-file]",
+		Short: "Import SBK CSV results into StrataBench store",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			runs, err := importsbk.ParseCSV(args[0])
+			if err != nil {
+				return err
+			}
+			for _, run := range runs {
+				if err := svc.Store.Save(run); err != nil {
+					return err
+				}
+				fmt.Printf("imported run %s profile=%s IOPS=%.0f\n", run.RunID, run.Profile, run.Results.IOPS)
+			}
+			return nil
+		},
+	})
 	return cmd
 }
 

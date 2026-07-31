@@ -14,6 +14,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/aggregate"
 	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/engine"
+	"github.com/pratham-vishk/stratabench/internal/metrics"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/remote"
 	"github.com/pratham-vishk/stratabench/internal/schema"
@@ -241,5 +242,6 @@ func (s *Service) saveRun(
 	if err := s.Store.Save(run); err != nil {
 		return nil, err
 	}
+	metrics.RecordRun(run)
 	return run, nil
 }

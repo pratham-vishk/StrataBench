@@ -17,6 +17,8 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 		"s3-get-throughput":    {"s3", "get", "download", "read", "object"},
 		"s3-cluster-put-get":   {"s3", "cluster", "warp", "distributed", "object"},
 		"nvme-max-stress":      {"stress", "max", "heavy", "extreme", "nvme"},
+		"spdk-nvme-peak":       {"spdk", "peak", "nvme", "userspace"},
+		"file-parallel-read":   {"file", "nfs", "lustre", "parallel", "elbencho"},
 		"vm-disk-random":       {"vm", "virtual", "guest", "disk", "random"},
 	}
 

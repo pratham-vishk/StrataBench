@@ -1,0 +1,24 @@
+name: file-parallel-read
+version: "1.0"
+layer: file
+engine: elbencho
+description: "Parallel file read on shared filesystem (NFS/Lustre/CephFS)"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  pattern: randread
+  block_size: 1m
+  threads: 16
+  duration_sec: 300
+  rand: true
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99

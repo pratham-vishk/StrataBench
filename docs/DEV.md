@@ -11,7 +11,7 @@
 
 ```bash
 make build
-# builds bin/stratabench and bin/stratabench-agent
+# builds bin/stratabench, bin/stratabench-agent, bin/stratabench-api
 ```
 
 ## Commands
@@ -23,9 +23,25 @@ make build
 ./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
 ./bin/stratabench runs
 ./bin/stratabench compare --run-id <a> --run-id-b <b>
+./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
+./bin/stratabench import sbk results.csv
 ./bin/stratabench export --run-id <uuid>
 ./bin/stratabench report --run-id <uuid>
 ```
+
+## REST API (Phase 3)
+
+```bash
+./bin/stratabench-api
+curl http://localhost:8080/api/v1/health
+curl http://localhost:8080/api/v1/profiles
+curl -X POST http://localhost:8080/api/v1/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"profile":"ssd-random-4k","target":"/tmp/test","mock":true}'
+curl http://localhost:8080/metrics
+```
+
+Grafana dashboard: `deploy/grafana/stratabench-dashboard.json`
 
 ## Distributed mode (Phase 2)
 
@@ -83,6 +99,4 @@ go test ./...
 
 ## Dell lab
 
-1. Deploy `stratabench-agent` on 3+ client VMs (static IPs).
-2. Run coordinator from jump host with `--clients`.
-3. Use real profiles: `nvme-random-oltp`, `s3-cluster-put-get`, `vm-disk-random`.
+See [DELL-LAB.md](DELL-LAB.md) for VM layout, ports, and distributed runs.

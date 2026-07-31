@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Test
+        run: go test ./...
+      - name: Build binaries
+        run: |
+          go build -o bin/stratabench ./cmd/stratabench
+          go build -o bin/stratabench-agent ./cmd/stratabench-agent
+          go build -o bin/stratabench-api ./cmd/stratabench-api

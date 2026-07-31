@@ -88,11 +88,20 @@ go build -o bin/stratabench ./cmd/stratabench
 
 # Real fio on Linux/WSL
 ./bin/stratabench run --profile hdd-sequential-read --target /tmp/stratabench.dat
+
+# Cross-layer comparison (mock)
+./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
+
+# Import SBK CSV results
+./bin/stratabench import sbk results.csv
+
+# REST API + Prometheus metrics
+./bin/stratabench-api   # :8080 — /api/v1/runs, /metrics
 ```
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** Phase 1 MVP — CLI, validator, mock + fio engines, SQLite, HTML reports.
+> **Status:** Phase 3 — REST API, Prometheus metrics, elbencho/SPDK engines, SBK import, cross-layer analysis, Grafana dashboard, CI.
 
 ---
 
@@ -105,6 +114,8 @@ See [docs/DEV.md](docs/DEV.md) for full development guide.
 | [ROADMAP.md](docs/ROADMAP.md) | Phased implementation plan |
 | [LANDSCAPE.md](docs/LANDSCAPE.md) | Existing tools and where StrataBench fits |
 | [RESULT_SCHEMA.md](docs/RESULT_SCHEMA.md) | Normalized benchmark result format |
+| [DEV.md](docs/DEV.md) | Full development guide |
+| [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM deployment |
 | [profiles/](profiles/) | Example workload profile definitions |
 
 ---

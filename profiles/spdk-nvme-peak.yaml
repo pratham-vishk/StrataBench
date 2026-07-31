@@ -1,0 +1,24 @@
+name: spdk-nvme-peak
+version: "1.0"
+layer: block
+engine: spdk
+description: "Peak NVMe IOPS via SPDK perf (userspace)"
+load: extreme
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  pattern: randread
+  queue_depth: 128
+  block_size_bytes: 4096
+  duration_sec: 300
+  transport: "trtype:PCIe traddr:0000:01:00.0"
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99
