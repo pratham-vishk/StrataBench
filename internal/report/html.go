@@ -6,8 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
+
+type reportData struct {
+	*schema.RunResult
+	Insights []analyst.Insight
+	Summary  string
+}
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -23,7 +30,10 @@ const htmlTemplate = `<!DOCTYPE html>
     th { background: #1e293b; }
     .ok { color: #4ade80; }
     .warn { color: #fbbf24; }
+    .critical { color: #f87171; }
     .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; background: #1e3a5f; font-size: 0.85rem; }
+    .summary { background: #1e293b; padding: 1rem; border-radius: 8px; margin: 1rem 0; max-width: 720px; }
+    .insight { margin: 0.4rem 0; }
   </style>
 </head>
 <body>
@@ -33,6 +43,9 @@ const htmlTemplate = `<!DOCTYPE html>
     Engine <span class="badge">{{.Engine}}</span>
     {{if .Mock}}<span class="badge">MOCK</span>{{end}}
   </p>
+  {{if .Summary}}<div class="summary">{{.Summary}}</div>{{end}}
+  {{if .Insights}}<h2>Analyst</h2>
+  {{range .Insights}}<p class="insight {{.Severity}}">[{{.Severity}}/{{.Type}}] {{.Message}}</p>{{end}}{{end}}
   <h2>Validation</h2>
   <p class="{{if .Validation.Passed}}ok{{else}}warn{{end}}">
     {{if .Validation.Passed}}Passed{{else}}Failed{{end}} — checked: {{range $i, $r := .Validation.RulesChecked}}{{if $i}}, {{end}}{{$r}}{{end}}
@@ -64,6 +77,14 @@ const htmlTemplate = `<!DOCTYPE html>
 </html>`
 
 func WriteHTML(run *schema.RunResult, outPath string) error {
+	return writeHTML(reportData{RunResult: run}, outPath)
+}
+
+func WriteHTMLWithInsights(run *schema.RunResult, insights []analyst.Insight, summary, outPath string) error {
+	return writeHTML(reportData{RunResult: run, Insights: insights, Summary: summary}, outPath)
+}
+
+func writeHTML(data reportData, outPath string) error {
 	tmpl, err := template.New("report").Parse(htmlTemplate)
 	if err != nil {
 		return err
@@ -76,7 +97,7 @@ func WriteHTML(run *schema.RunResult, outPath string) error {
 		return err
 	}
 	defer f.Close()
-	if err := tmpl.Execute(f, run); err != nil {
+	if err := tmpl.Execute(f, data); err != nil {
 		return err
 	}
 	fmt.Printf("report written: %s\n", outPath)

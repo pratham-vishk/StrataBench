@@ -8,9 +8,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/pratham-vishk/stratabench/internal/agentloop"
 	"github.com/pratham-vishk/stratabench/internal/baseline"
 	"github.com/pratham-vishk/stratabench/internal/compare"
 	"github.com/pratham-vishk/stratabench/internal/crosslayer"
+	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/export"
 	"github.com/pratham-vishk/stratabench/internal/importsbk"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
@@ -33,6 +35,9 @@ var (
 	skipValidate  bool
 	checkBaseline bool
 	profilesCSV   string
+	useOllama     bool
+	ollamaURL     string
+	ollamaModel   string
 )
 
 func main() {
@@ -51,6 +56,7 @@ func main() {
 		crossLayerCmd(),
 		importCmd(),
 		baselineCmd(),
+		agentCmd(),
 		planCmd(),
 		profilesCmd(),
 	)
@@ -415,9 +421,9 @@ func baselineCmd() *cobra.Command {
 }
 
 func planCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "plan [intent]",
-		Short: "Suggest a profile from natural language (keyword planner v0.1)",
+		Short: "Suggest a profile from natural language (keyword or Ollama)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			text := strings.Join(args, " ")
@@ -425,19 +431,68 @@ func planCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			name := planner.SuggestProfile(text, profiles)
-			p, err := profile.LoadByName(paths.ProfilesDir(), name)
+			result := planner.Plan(cmd.Context(), planner.PlanOptions{
+				Intent:      text,
+				Profiles:    profiles,
+				Hardware:    discovery.Snapshot(),
+				UseOllama:   useOllama,
+				OllamaURL:   ollamaURL,
+				OllamaModel: ollamaModel,
+			})
+			p, err := profile.LoadByName(paths.ProfilesDir(), result.Profile)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Suggested profile: %s\n", p.Name)
-			fmt.Printf("  %s\n", p.Description)
+			fmt.Printf("Suggested profile: %s (source: %s)\n", p.Name, result.Source)
+			fmt.Printf("  %s\n", result.Rationale)
 			fmt.Printf("  engine=%s layer=%s load=%s\n", p.Engine, p.Layer, p.Load)
 			fmt.Printf("\nNext:\n  stratabench validate --profile %s\n", p.Name)
 			fmt.Printf("  stratabench run --profile %s --target <target> --mock\n", p.Name)
+			fmt.Printf("  stratabench agent %q --target <target> --mock\n", text)
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner (falls back to keywords)")
+	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL (default http://localhost:11434)")
+	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name (default llama3.2)")
+	return cmd
+}
+
+func agentCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "agent [intent]",
+		Short: "Agentic loop: plan → validate → run → analyze → report",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if target == "" {
+				return fmt.Errorf("--target is required")
+			}
+			_, err := agentloop.Run(cmd.Context(), agentloop.Options{
+				Intent:        strings.Join(args, " "),
+				Target:        target,
+				Clients:       remote.ParseHosts(clientsCSV),
+				Mock:          mock,
+				SkipValidate:  skipValidate,
+				CheckBaseline: checkBaseline,
+				CacheBytes:    cacheBytes,
+				UseOllama:     useOllama,
+				OllamaURL:     ollamaURL,
+				OllamaModel:   ollamaModel,
+			})
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&target, "target", "", "Block device, file path, or S3 endpoint")
+	cmd.Flags().StringVar(&clientsCSV, "clients", "", "Comma-separated agent URLs (host:7777)")
+	cmd.Flags().BoolVar(&mock, "mock", true, "Use mock engine (default true for agent)")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
+	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
+	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
+	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner")
+	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL")
+	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name")
+	_ = cmd.MarkFlagRequired("target")
+	return cmd
 }
 
 func profilesCmd() *cobra.Command {

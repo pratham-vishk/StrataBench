@@ -84,7 +84,7 @@
 - [x] Grafana dashboards (bundled)
 - [ ] PostgreSQL backend option
 - [x] Regression baselines (per profile + target)
-- [ ] Analyst agent (anomaly detection, regression alerts)
+- [x] Analyst agent (anomaly detection, regression alerts)
 - [x] Cross-layer comparison reports
 
 ### Success criteria
@@ -101,7 +101,9 @@
 
 ### Deliverables
 
-- [ ] Full agentic loop: plan → validate → run → analyze → report (NL end-to-end)
+- [x] Full agentic loop: plan → validate → run → analyze → report (NL end-to-end)
+- [x] Ollama planner (v0.2) with keyword fallback
+- [x] Analyst agent (regression, tail latency, client variance)
 - [x] Regression tracking (baseline per profile + target)
 - [ ] Hardware inventory database (NVMe model, firmware, SMART history)
 - [ ] Kubernetes operator for in-cluster benchmarking

@@ -23,6 +23,8 @@ make build
 ./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
 ./bin/stratabench runs
 ./bin/stratabench compare --run-id <a> --run-id-b <b>
+./bin/stratabench plan "nvme oltp" --ollama
+./bin/stratabench agent "s3 cluster read heavy" --target 10.0.1.10:9000 --mock
 ./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
 ./bin/stratabench import sbk results.csv
 ./bin/stratabench baseline set --run-id <uuid>
@@ -93,6 +95,21 @@ Use `--mock` on Windows or when hardware is unavailable.
 | `STRATABENCH_MOCK_CACHE_BYTES` | Override cache size for validation |
 | `STRATABENCH_AGENT_LISTEN` | Agent bind address (default `:7777`) |
 | `WARP_ACCESS_KEY` / `WARP_SECRET_KEY` | S3 credentials for Warp |
+| `OLLAMA_URL` | Ollama API base URL (default `http://localhost:11434`) |
+| `OLLAMA_MODEL` | Model for planner (default `llama3.2`) |
+
+## Agentic loop
+
+```bash
+# Full lifecycle from natural language
+./bin/stratabench agent "nvme oltp database" --target /dev/nvme0n1 --mock
+
+# With Ollama planner (requires running `ollama serve`)
+./bin/stratabench agent "s3 cluster read heavy AI workload" --target 10.0.1.10:9000 --ollama --model llama3.2
+
+# Plan only
+./bin/stratabench plan "afa multi lun flash" --ollama
+```
 
 ## Tests
 

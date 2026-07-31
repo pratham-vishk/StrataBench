@@ -95,6 +95,10 @@ go build -o bin/stratabench ./cmd/stratabench
 # Import SBK CSV results
 ./bin/stratabench import sbk results.csv
 
+# Agentic loop (Phase 4)
+./bin/stratabench agent "nvme oltp database workload" --target /tmp/test --mock
+./bin/stratabench plan "s3 cluster read heavy" --ollama
+
 # Regression baselines
 ./bin/stratabench baseline set --run-id <uuid>
 ./bin/stratabench baseline show
@@ -106,7 +110,7 @@ go build -o bin/stratabench ./cmd/stratabench
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** Phase 3 — vdbench, Warp RDMA, regression baselines, REST API, Prometheus, cross-layer analysis, CI.
+> **Status:** Phase 4 — Ollama planner, agentic loop, analyst agent, regression baselines, REST API, cross-layer analysis.
 
 ---
 
