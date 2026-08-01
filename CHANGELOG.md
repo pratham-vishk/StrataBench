@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc16] - 2026-08-01
+
+### Added
+- **Batched io_uring** — native block engine keeps up to `queue_depth` ops in-flight per thread
+- **`stratabench lab validate`** — Dell lab sign-off matrix with resolved targets and optional `--smoke`
+
+### Changed
+- `docs/DELL-LAB-VALIDATION.md` — native engine, gosbench, live monitoring, `lab validate` workflow
+
 ## [0.8.0-rc15] - 2026-08-01
 
 ### Added

@@ -31,10 +31,38 @@ open firewall ports, sync after code changes, and run benchmarks.
   make build
   stratabench lab bootstrap -f lab.yaml
   stratabench lab check -f lab.yaml
+  stratabench lab validate -f lab.yaml
   stratabench lab run -f lab.yaml`,
 	}
 
 	cmd.PersistentFlags().StringVarP(&configPath, "file", "f", "lab.yaml", "lab config (yaml or .env)")
+
+	validateCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Print Dell lab sign-off matrix and verify readiness",
+		Long: `Runs lab check, prints the hardware validation matrix with resolved targets,
+and optional profile smoke validation (mock). Execute the printed commands on lab hardware.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := lab.LoadConfig(configPath)
+			if err != nil {
+				return err
+			}
+			smoke, _ := cmd.Flags().GetBool("smoke")
+			rep, err := lab.Validate(cmd.Context(), cfg, paths.ProfilesDir(), smoke)
+			if err != nil {
+				return err
+			}
+			lab.PrintValidationReport(rep)
+			if rep.Check != nil && !rep.Check.Ready {
+				return fmt.Errorf("lab not ready")
+			}
+			if smoke && rep.SmokeFailed > 0 {
+				return fmt.Errorf("smoke validation failed")
+			}
+			return nil
+		},
+	}
+	validateCmd.Flags().Bool("smoke", false, "run mock profile validation smoke tests")
 
 	cmd.AddCommand(
 		&cobra.Command{
@@ -121,6 +149,7 @@ open firewall ports, sync after code changes, and run benchmarks.
 				return nil
 			},
 		},
+		validateCmd,
 		&cobra.Command{
 			Use:   "check",
 			Short: "Verify agents, warp/fio, and S3 endpoints",

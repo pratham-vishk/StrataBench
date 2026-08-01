@@ -2,7 +2,18 @@
 
 Complete validation on Linux VMs before promoting to **v1.0.0**. Covers every engine on **physical** and **virtual** targets.
 
-See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix.
+See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix (32 profiles).
+
+## Quick start
+
+```bash
+stratabench lab bootstrap -f lab.yaml
+stratabench lab check -f lab.yaml
+stratabench lab validate -f lab.yaml          # print sign-off matrix + readiness
+stratabench lab validate -f lab.yaml --smoke  # + mock profile smoke tests
+```
+
+Set `LAB_BLOCK_TARGET=/dev/nvme0n1` to override the block device in the validation matrix.
 
 ## Prerequisites
 
@@ -49,6 +60,15 @@ stratabench smart collect
 | `nvme-random-oltp` | `stratabench validate --profile nvme-random-oltp --target /dev/nvme0n1 --check-hardware && stratabench run ...` | |
 | `nvme-max-stress` | `stratabench validate --profile nvme-max-stress --target /dev/nvme0n1 --check-hardware && stratabench run ...` | |
 
+## 2b. Block — native engine (physical, Linux)
+
+| Profile | Command | Pass |
+|---------|---------|------|
+| `block-native-oltp` | `stratabench run --profile block-native-oltp --target /dev/nvme0n1` | |
+| `block-native-io_uring` | `stratabench run --profile block-native-io_uring --target /dev/nvme0n1` | |
+
+Verify live monitoring: `stratabench run --profile block-native-oltp --target /dev/nvme0n1 --async --watch`
+
 ## 3. Block — vdbench / SPDK (physical only)
 
 | Profile | Command | Pass |
@@ -76,6 +96,13 @@ export WARP_ACCESS_KEY=... WARP_SECRET_KEY=...
 | `s3-mixed-workload` | `stratabench run --profile s3-mixed-workload --target 10.0.1.10:9000` | |
 | `s3-cluster-put-get` | `stratabench run --profile s3-cluster-put-get --target 10.0.1.10:9000 --clients ...` | |
 | `s3-cluster-rdma` | `stratabench run --profile s3-cluster-rdma --target 10.0.1.10:9000` | |
+
+## 5b. Object — gosbench (physical)
+
+| Profile | Command | Pass |
+|---------|---------|------|
+| `s3-gosbench-write` | `stratabench run --profile s3-gosbench-write --target 10.0.1.10:9000` | |
+| `s3-gosbench-read` | `stratabench run --profile s3-gosbench-read --target 10.0.1.10:9000` | |
 
 ## 6. Application — sbk (physical)
 
@@ -128,9 +155,10 @@ stratabench-agent
 | `vm-app-postgres` | `stratabench run --profile vm-app-postgres --target "postgres://bench@localhost/db" --clients 10.0.1.20:7777` | |
 | `vm-app-kafka` | `stratabench run --profile vm-app-kafka --target localhost:9092 --clients 10.0.1.20:7777` | |
 
-## 12. Agentic loop + regression
+## 12. Live monitoring + regression
 
 ```bash
+stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch
 stratabench agent "nvme oltp database" --target /dev/nvme0n1 --check-baseline
 stratabench baseline set --run-id <uuid>
 stratabench run --profile nvme-random-oltp --target /dev/nvme0n1 --check-baseline
@@ -148,7 +176,9 @@ kubectl get benchmarks -n stratabench
 
 | Check | Pass |
 |-------|------|
-| All 7 engines exercised (fio, vdbench, spdk, elbencho, warp, sbk, mock) | |
+| All engines exercised (fio, vdbench, spdk, elbencho, warp, gosbench, stratabench, sbk, mock) | |
+| Native block engine (pread + io_uring) on NVMe | |
+| Live monitoring (async + watch + SSE) during at least one run | |
 | HDD physical + virtual | |
 | NVMe physical + virtual (incl. passthrough) | |
 | AFA physical + virtual | |

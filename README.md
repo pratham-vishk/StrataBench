@@ -76,7 +76,7 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 ### Platform features
 
 - **Validator** — cache size, steady state, tail latency rules before every run
-- **31 workload profiles** — declarative YAML, extensible
+- **32 workload profiles** — declarative YAML, extensible
 - **Agentic loop** — `stratabench agent "nvme oltp database"` → plan → validate → run → analyze → report
 - **MCP server** — `stratabench-mcp` exposes 14 tools for Cursor, Claude, and other CLI models
 - **LLM planner** — Ollama or OpenAI-compatible APIs; keyword fallback

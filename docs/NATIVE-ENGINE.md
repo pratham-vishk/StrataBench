@@ -55,7 +55,7 @@ make build-rust
 export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
 ```
 
-On **Linux**, the Rust binary performs real block I/O with `O_DIRECT` when `direct_io` is true. Set `io_engine` to `io_uring` for the io_uring submission path (falls back to `pread` on failure). On other platforms it falls back to synthetic results matching the Go stub.
+On **Linux**, the Rust binary performs real block I/O with `O_DIRECT` when `direct_io` is true. Set `io_engine` to `io_uring` for the io_uring submission path with up to `queue_depth` operations in-flight per thread (falls back to `pread` on failure). On other platforms it falls back to synthetic results matching the Go stub.
 
 The Rust crate in `crates/stratabench-engine/` implements the same CLI contract as the Go reference stub in `cmd/stratabench-engine/`.
 

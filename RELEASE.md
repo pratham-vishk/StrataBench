@@ -1,6 +1,39 @@
 # Release Guide
 
-## v0.8.0-rc14 (current)
+## v0.8.0-rc16 (current)
+
+Batched io_uring (QD>1 in-flight per thread) and `stratabench lab validate` for Dell hardware sign-off.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc16
+git push origin v0.8.0-rc16
+gh release create v0.8.0-rc16 --title "v0.8.0-rc16" --notes "Batched io_uring QD>1; lab validate command; Dell lab checklist updates."
+```
+
+### Smoke test
+
+```bash
+make build-rust
+export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
+stratabench run --profile block-native-io_uring --target /dev/nvme0n1   # Linux + root
+stratabench lab validate -f lab.yaml --smoke
+```
+
+## v0.8.0-rc15
+
+Rust io_uring block path (`io_engine: io_uring`) with profile `block-native-io_uring`.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc15
+git push origin v0.8.0-rc15
+gh release create v0.8.0-rc15 --title "v0.8.0-rc15" --notes "Rust io_uring block engine path; block-native-io_uring profile."
+```
+
+## v0.8.0-rc14
 
 Native engine live progress: `progress_path` JSONL polled by orchestrator for Prometheus/SSE during async runs.
 
@@ -9,6 +42,7 @@ Native engine live progress: `progress_path` JSONL polled by orchestrator for Pr
 ```bash
 git tag v0.8.0-rc14
 git push origin v0.8.0-rc14
+gh release create v0.8.0-rc14 --title "v0.8.0-rc14" --notes "Native engine live progress via progress_path JSONL."
 ```
 
 ### Smoke test
