@@ -1,6 +1,17 @@
 # AGENTS.md — StrataBench for AI Agents
 
-This repository is **agent-ready**. External CLI models (Cursor, Claude Code, Windsurf, etc.) can drive StrataBench via **MCP tools**, **REST API**, or the **CLI**.
+This repository is **agent-ready**. External CLI models (**Cursor**, **Claude Code**, **Claude Desktop**, **Devin**, Windsurf, etc.) can drive StrataBench via **MCP tools**, **REST API**, or the **CLI**.
+
+## Agent platform quick reference
+
+| Platform | Config file | Docs |
+|----------|-------------|------|
+| **Claude Code** | `.mcp.json` (project root, committed) | [docs/AGENTIC.md](docs/AGENTIC.md#claude-code) |
+| **Claude Desktop** | `~/Library/Application Support/Claude/claude_desktop_config.json` | `examples/mcp-claude-desktop.json` |
+| **Devin** | `.devin/mcp_config.json` + `AGENTS.md` / `CLAUDE.md` | [docs/AGENTIC.md](docs/AGENTIC.md#devin) |
+| **Cursor** | Cursor MCP settings | `examples/mcp-cursor.json` |
+
+Clone the repo → Claude Code and Devin pick up MCP automatically. Approve the `stratabench` server on first use.
 
 ## Quick start for agents
 
@@ -30,7 +41,7 @@ Build and register in your MCP client config:
 }
 ```
 
-See `examples/mcp-cursor.json` and `examples/mcp-claude-desktop.json`.
+See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mcp-claude-code.json`, and `examples/mcp-devin.json`. Project-scoped configs are committed at `.mcp.json` and `.devin/mcp_config.json`.
 
 ### MCP tools
 
@@ -101,6 +112,7 @@ Works with Ollama, OpenAI, LiteLLM, vLLM, LocalAI, and any `/v1/chat/completions
 | `agents/*.prompt` | LLM system prompts (planner, reporter) |
 | `profiles/*.yaml` | Workload definitions |
 | `docs/AGENTIC.md` | User guide for agentic usage |
+| `CLAUDE.md` | Claude Code + Devin project instructions |
 
 ## Safety rules for agents
 
@@ -112,7 +124,7 @@ Works with Ollama, OpenAI, LiteLLM, vLLM, LocalAI, and any `/v1/chat/completions
 
 ## Docs
 
-- [AGENTIC.md](docs/AGENTIC.md) — setup for Cursor, Claude, MCP
+- [AGENTIC.md](docs/AGENTIC.md) — setup for Cursor, Claude, Devin, MCP
 - [HARDWARE-VALIDATION.md](docs/HARDWARE-VALIDATION.md) — per-use-case hardware checks
 - [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) — profile matrix
 - [DEV.md](docs/DEV.md) — build and development

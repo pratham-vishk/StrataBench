@@ -1,59 +1,107 @@
 # Agentic StrataBench — CLI Models & MCP
 
-Use StrataBench with **Cursor**, **Claude Desktop**, **Claude Code**, or any agent that supports **MCP** or shell tools.
+Use StrataBench with **Cursor**, **Claude Code**, **Claude Desktop**, **Devin**, or any agent that supports **MCP** or shell tools.
 
 ## Architecture
 
 ```
-┌─────────────────┐     MCP (stdio)      ┌──────────────────┐
-│  Cursor / Claude │ ◄──────────────────► │ stratabench-mcp  │
-│  CLI model       │                      │  (7 tools)       │
-└────────┬────────┘                      └────────┬─────────┘
-         │ shell                                  │
-         ▼                                        ▼
-┌─────────────────┐                      ┌──────────────────┐
-│ stratabench CLI │                      │ agentloop        │
-│ plan/agent/run  │                      │ planner/validator│
-└─────────────────┘                      │ orchestrator     │
-                                         └──────────────────┘
+┌──────────────────────────┐     MCP (stdio)      ┌──────────────────┐
+│ Cursor / Claude / Devin  │ ◄──────────────────► │ stratabench-mcp  │
+│ CLI model                │                      │  (7 tools)       │
+└────────┬─────────────────┘                      └────────┬─────────┘
+         │ shell                                           │
+         ▼                                                   ▼
+┌─────────────────┐                               ┌──────────────────┐
+│ stratabench CLI │                               │ agentloop        │
+│ plan/agent/run  │                               │ planner/validator│
+└─────────────────┘                               │ orchestrator     │
+                                                  └──────────────────┘
 ```
 
-## 1. MCP (recommended for IDE agents)
+## Platform setup
 
-### Build
+| Platform | Committed config | First-time steps |
+|----------|------------------|------------------|
+| **Claude Code** | `.mcp.json` | Open repo → approve MCP server (`/mcp`) |
+| **Devin** | `.devin/mcp_config.json`, `AGENTS.md`, `CLAUDE.md` | Clone repo → MCP loads automatically |
+| **Claude Desktop** | `examples/mcp-claude-desktop.json` | Merge into Desktop config |
+| **Cursor** | `examples/mcp-cursor.json` | Add to Cursor MCP settings |
+
+---
+
+## Claude Code
+
+Claude Code reads **`.mcp.json`** at the project root (already committed in this repo).
 
 ```bash
+cd StrataBench
+claude    # or: claude mcp list
+```
+
+On first session, approve the `stratabench` server when prompted. Check status with `/mcp`.
+
+**Alternative (user scope):**
+
+```bash
+claude mcp add --scope project --transport stdio stratabench -- \
+  go run ./cmd/stratabench-mcp
+```
+
+**Windows:** use `powershell -File scripts/run-mcp.ps1` instead of `go run` if Go is not on PATH.
+
+**Files Claude reads:** `CLAUDE.md`, `AGENTS.md`, `.mcp.json`
+
+---
+
+## Devin
+
+Devin reads **AGENTS.md** and **CLAUDE.md** automatically, plus project MCP from **`.devin/mcp_config.json`**.
+
+```bash
+# On Devin's Ubuntu VM after repo clone
 make build-mcp
-# binary: bin/stratabench-mcp
+bash scripts/run-mcp.sh   # test MCP server starts
 ```
 
-### Cursor
+**Committed Devin files:**
 
-Copy `examples/mcp-cursor.json` into Cursor MCP settings, or add:
+| File | Purpose |
+|------|---------|
+| `.devin/mcp_config.json` | Project MCP servers |
+| `.devin/config.json` | Import rules from Claude/Cursor/AGENTS.md |
+| `AGENTS.md` | Agent contract (agents.md standard) |
+| `CLAUDE.md` | Short project guide |
 
-```json
-{
-  "mcpServers": {
-    "stratabench": {
-      "command": "C:/path/to/StrataBench/bin/stratabench-mcp.exe",
-      "env": { "STRATABENCH_DATA": "C:/Users/you/.stratabench" }
-    }
-  }
-}
-```
+**Local overrides (gitignored):** `.devin/mcp_config.local.json`, `.devin/config.local.json`
 
-### Claude Desktop
+**Example Devin session prompts:**
 
-See `examples/mcp-claude-desktop.json` — same pattern under `mcpServers`.
-
-### Example agent prompts
-
-- *"Use stratabench to plan a benchmark for nvme database oltp"*
-- *"List StrataBench profiles for S3 RDMA"*
+- *"Use the stratabench MCP to list NVMe profiles and plan an oltp benchmark"*
 - *"Run a mock stratabench agent loop for ssd random 4k on /tmp/test"*
-- *"Validate nvme-random-oltp against /dev/nvme0n1 with hardware checks"*
+- *"Validate afa-multi-lun against /dev/sdb,/dev/sdc with hardware checks"*
 
-## 2. REST API
+---
+
+## Claude Desktop
+
+Merge `examples/mcp-claude-desktop.json` into your Desktop config:
+
+| OS | Config path |
+|----|-------------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+
+After `make build-mcp`, set `command` to the absolute path of `bin/stratabench-mcp`.
+
+---
+
+## Cursor
+
+See `examples/mcp-cursor.json`. Add under Cursor → Settings → MCP.
+
+---
+
+## REST API
 
 ```bash
 stratabench-api   # :8080
@@ -67,7 +115,7 @@ curl -X POST http://localhost:8080/api/v1/agent \
   -d '{"intent":"ssd random 4k","target":"/tmp/test","mock":true}'
 ```
 
-## 3. CLI for shell agents
+## CLI for shell agents
 
 ```bash
 stratabench plan "s3 cluster rdma" --llm
@@ -99,8 +147,11 @@ See `examples/benchmark-intent.yaml`.
 
 ## Repo conventions for coding agents
 
-- `AGENTS.md` — machine-oriented onboarding (this repo's agent contract)
+- `AGENTS.md` — machine-oriented onboarding (agents.md standard; Devin + Cursor)
+- `CLAUDE.md` — Claude Code + Devin project guide
 - `llms.txt` — concise index for LLM crawlers
+- `.mcp.json` — Claude Code project MCP (committed)
+- `.devin/mcp_config.json` — Devin project MCP (committed)
 - `.cursor/skills/stratabench/SKILL.md` — Cursor project skill
 - `agents/planner.prompt` / `agents/reporter.prompt` — edit to tune LLM behavior
 

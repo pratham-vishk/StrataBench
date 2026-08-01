@@ -119,16 +119,22 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 ./bin/stratabench agent "ssd random 4k workload" --target /tmp/test --mock
 ```
 
-### Use with CLI models (Cursor, Claude, MCP)
+### Use with CLI models (Cursor, Claude Code, Devin)
+
+**Claude Code** and **Devin** work out of the box — clone the repo; MCP configs are committed (`.mcp.json`, `.devin/mcp_config.json`).
 
 ```bash
-make build-mcp   # builds bin/stratabench-mcp
-
-# Register in Cursor MCP settings — see examples/mcp-cursor.json
-# Then ask your agent: "plan an nvme oltp benchmark with StrataBench"
+make build-mcp   # optional; go run works via .mcp.json
 ```
 
-See [AGENTS.md](AGENTS.md) and [docs/AGENTIC.md](docs/AGENTIC.md) for MCP tools, REST API, and LLM configuration.
+| Platform | Setup |
+|----------|-------|
+| **Claude Code** | Open repo → approve `stratabench` MCP (`/mcp`) |
+| **Devin** | Clone repo → reads `AGENTS.md` + `CLAUDE.md` + `.devin/mcp_config.json` |
+| **Claude Desktop** | Merge `examples/mcp-claude-desktop.json` |
+| **Cursor** | Add `examples/mcp-cursor.json` to MCP settings |
+
+See [AGENTS.md](AGENTS.md) and [docs/AGENTIC.md](docs/AGENTIC.md) for full setup.
 
 ```bash
 # LLM planner (Ollama local or OpenAI-compatible)

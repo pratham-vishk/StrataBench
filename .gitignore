@@ -32,6 +32,11 @@ Thumbs.db
 *.db
 *.sqlite
 
+# Agentic repo configs (local overrides)
+.devin/config.local.json
+.devin/mcp_config.local.json
+AGENTS.local.md
+
 # Secrets
 .env
 .env.*

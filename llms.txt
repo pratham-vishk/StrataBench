@@ -5,6 +5,8 @@
 ## For AI agents
 
 - Read AGENTS.md for MCP tools, CLI commands, and REST API
+- Claude Code: `.mcp.json` at repo root (auto-loaded)
+- Devin: `.devin/mcp_config.json` + AGENTS.md + CLAUDE.md
 - MCP server: `cmd/stratabench-mcp` — tools for plan, validate, run, analyze
 - Default to mock mode unless user confirms real hardware targets
 - 30+ profiles in `profiles/`; engines: fio, vdbench, SPDK, warp, elbencho, sbk

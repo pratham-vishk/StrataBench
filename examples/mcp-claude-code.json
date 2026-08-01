@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "stratabench": {
+      "type": "stdio",
+      "command": "go",
+      "args": ["run", "./cmd/stratabench-mcp"],
+      "env": {
+        "STRATABENCH_DATA": "${STRATABENCH_DATA:-${HOME}/.stratabench}"
+      }
+    }
+  }
+}

@@ -4,8 +4,8 @@ description: >-
   Run honest storage benchmarks with StrataBench — plan profiles from natural
   language, validate workload and hardware, execute via fio/warp/vdbench, and
   analyze results. Use when the user mentions StrataBench, storage benchmarking,
-  IOPS/latency tests, NVMe/AFA/S3 profiles, stratabench MCP tools, or agentic
-  benchmark workflows.
+  IOPS/latency tests, NVMe/AFA/S3 profiles, stratabench MCP tools, Claude Code,
+  Devin, or agentic benchmark workflows.
 ---
 
 # StrataBench Agent Skill
@@ -26,7 +26,13 @@ description: >-
 
 ## MCP setup
 
-Register `stratabench-mcp` (see `examples/mcp-cursor.json`). Tools are prefixed `stratabench_*`.
+| Platform | Config |
+|----------|--------|
+| Claude Code | `.mcp.json` (committed) |
+| Devin | `.devin/mcp_config.json` |
+| Cursor | `examples/mcp-cursor.json` |
+
+Register `stratabench-mcp` or use committed project configs. Tools are prefixed `stratabench_*`.
 
 ## Safety
 

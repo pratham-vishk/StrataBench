@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "stratabench": {
+      "command": "bash",
+      "args": ["scripts/run-mcp.sh"],
+      "env": {
+        "STRATABENCH_DATA": "${HOME}/.stratabench"
+      }
+    }
+  }
+}

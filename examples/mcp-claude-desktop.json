@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "stratabench": {
+      "type": "stdio",
       "command": "stratabench-mcp",
       "args": [],
       "env": {

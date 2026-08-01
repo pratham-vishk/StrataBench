@@ -1,0 +1,7 @@
+{
+  "read_config_from": {
+    "claude": true,
+    "cursor": true,
+    "agents_standard": true
+  }
+}
