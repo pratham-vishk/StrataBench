@@ -9,7 +9,8 @@
 - [ ] Repository scaffolding (`cmd/`, `crates/`, `internal/`, `profiles/`)
 - [ ] Normalized result schema (JSON) + SQLite storage
 - [ ] Rule-based validator (5 core rules)
-- [ ] Hardware discovery module (NVMe, block devices, NUMA, memory)
+- [x] Hardware discovery module (NVMe, block devices, CPU, memory)
+- [x] Hardware inventory database (SQLite)
 - [ ] fio wrapper (profile → job file → JSON parser)
 - [ ] StrataBench engine v0.1 (Rust): block I/O via `O_DIRECT` + libaio
 - [ ] CLI: `stratabench run`, `stratabench validate`, `stratabench report`
@@ -78,7 +79,7 @@
 
 - [x] SPDK perf wrapper (peak NVMe IOPS)
 - [x] vdbench wrapper (multi-LUN AFA)
-- [ ] VM test suite (auto-deploy fio inside KVM/VMware guests)
+- [x] VM guest benchmarks via SSH (fio inside KVM/VMware guests)
 - [x] Warp RDMA mode (`--rdma=cpu`)
 - [x] Prometheus metrics exporter
 - [x] Grafana dashboards (bundled)
@@ -105,7 +106,7 @@
 - [x] Ollama planner (v0.2) with keyword fallback
 - [x] Analyst agent (regression, tail latency, client variance)
 - [x] Regression tracking (baseline per profile + target)
-- [ ] Hardware inventory database (NVMe model, firmware, SMART history)
+- [x] Hardware inventory database (NVMe model, firmware, SMART history)
 - [ ] Kubernetes operator for in-cluster benchmarking
 - [ ] Public documentation site
 - [ ] Contributor guide + CI/CD (GitHub Actions)
@@ -134,7 +135,7 @@ Semantic versioning from first public release:
 ## Open-source release checklist
 
 - [ ] Apache 2.0 LICENSE committed
-- [ ] CONTRIBUTING.md with code style and PR process
+- [x] CONTRIBUTING.md with code style and PR process
 - [ ] CI: build, test, lint on Linux
 - [ ] Security policy (SECURITY.md)
 - [ ] Code of conduct

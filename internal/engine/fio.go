@@ -17,6 +17,9 @@ type FioRunner struct{}
 func (f *FioRunner) Name() string { return "fio" }
 
 func (f *FioRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+	if isVMSSH(in) {
+		return runVMFio(ctx, in)
+	}
 	if _, err := exec.LookPath("fio"); err != nil {
 		return nil, nil, fmt.Errorf("fio not found in PATH (install fio or use --mock)")
 	}

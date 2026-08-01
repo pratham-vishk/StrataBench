@@ -95,6 +95,12 @@ go build -o bin/stratabench ./cmd/stratabench
 # Import SBK CSV results
 ./bin/stratabench import sbk results.csv
 
+./bin/stratabench inventory collect
+./bin/stratabench inventory list
+
+# VM guest benchmark (SSH into VM, run fio inside guest)
+./bin/stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
+
 # Agentic loop (Phase 4)
 ./bin/stratabench agent "nvme oltp database workload" --target /tmp/test --mock
 ./bin/stratabench plan "s3 cluster read heavy" --ollama

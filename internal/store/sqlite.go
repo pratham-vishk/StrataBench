@@ -55,8 +55,58 @@ CREATE TABLE IF NOT EXISTS baselines (
   set_at TEXT NOT NULL,
   PRIMARY KEY (profile, target_key)
 );
+
+CREATE TABLE IF NOT EXISTS hardware_inventory (
+  host_id TEXT PRIMARY KEY,
+  snapshot_json TEXT NOT NULL,
+  collected_at TEXT NOT NULL
+);
 `)
 	return err
+}
+
+type HardwareRecord struct {
+	HostID       string
+	SnapshotJSON string
+	CollectedAt  string
+}
+
+func (s *Store) SaveHardware(hostID, snapshotJSON string) error {
+	_, err := s.db.ExecContext(context.Background(),
+		`INSERT OR REPLACE INTO hardware_inventory (host_id, snapshot_json, collected_at) VALUES (?, ?, ?)`,
+		hostID, snapshotJSON, time.Now().UTC().Format(time.RFC3339),
+	)
+	return err
+}
+
+func (s *Store) ListHardware() ([]HardwareRecord, error) {
+	rows, err := s.db.QueryContext(context.Background(),
+		`SELECT host_id, snapshot_json, collected_at FROM hardware_inventory ORDER BY collected_at DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []HardwareRecord
+	for rows.Next() {
+		var rec HardwareRecord
+		if err := rows.Scan(&rec.HostID, &rec.SnapshotJSON, &rec.CollectedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, rec)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) GetHardware(hostID string) (*HardwareRecord, error) {
+	var rec HardwareRecord
+	err := s.db.QueryRowContext(context.Background(),
+		`SELECT host_id, snapshot_json, collected_at FROM hardware_inventory WHERE host_id = ?`, hostID,
+	).Scan(&rec.HostID, &rec.SnapshotJSON, &rec.CollectedAt)
+	if err != nil {
+		return nil, fmt.Errorf("hardware %s: %w", hostID, err)
+	}
+	return &rec, nil
 }
 
 type BaselineRecord struct {

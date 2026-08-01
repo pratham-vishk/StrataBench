@@ -24,6 +24,7 @@ params:
   ramp_time: 30
   runtime: 300
   percentile_list: "50:95:99"
+  guest_device: /dev/vdb
 
 metrics:
   - iops

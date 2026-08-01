@@ -1,0 +1,4 @@
+Write a concise executive summary (2-3 sentences) for a storage benchmark report.
+Be factual, mention profile, key metrics (IOPS, throughput, p99 latency), and any warnings.
+Do not invent numbers — use only what is provided.
+Respond with plain text only, no markdown.

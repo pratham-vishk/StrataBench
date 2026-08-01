@@ -15,6 +15,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/export"
 	"github.com/pratham-vishk/stratabench/internal/importsbk"
+	"github.com/pratham-vishk/stratabench/internal/inventory"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/planner"
@@ -56,6 +57,7 @@ func main() {
 		crossLayerCmd(),
 		importCmd(),
 		baselineCmd(),
+		inventoryCmd(),
 		agentCmd(),
 		planCmd(),
 		profilesCmd(),
@@ -455,6 +457,51 @@ func planCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner (falls back to keywords)")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL (default http://localhost:11434)")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name (default llama3.2)")
+	return cmd
+}
+
+func inventoryCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "inventory",
+		Short: "Hardware inventory database",
+	}
+	cmd.AddCommand(
+		&cobra.Command{
+			Use:   "collect",
+			Short: "Collect and store current host hardware snapshot",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				snap := inventory.Collect()
+				if err := inventory.Save(svc.Store, snap); err != nil {
+					return err
+				}
+				fmt.Printf("inventory saved for host %s (%d NVMe, %d block devices)\n",
+					inventory.HostID(snap), len(snap.NVMe), len(snap.BlockDevices))
+				return nil
+			},
+		},
+		&cobra.Command{
+			Use:   "list",
+			Short: "List stored hardware inventory",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				recs, err := inventory.List(svc.Store)
+				if err != nil {
+					return err
+				}
+				inventory.Print(recs)
+				return nil
+			},
+		},
+	)
 	return cmd
 }
 

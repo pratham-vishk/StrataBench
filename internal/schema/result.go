@@ -65,14 +65,31 @@ type Results struct {
 }
 
 type HardwareSnapshot struct {
-	CPUModel      string `json:"cpu_model,omitempty"`
-	CPUCores      int    `json:"cpu_cores,omitempty"`
-	MemoryBytes   int64  `json:"memory_bytes,omitempty"`
-	CacheBytes    int64  `json:"cache_bytes,omitempty"`
-	NICSpeedGbps  int    `json:"nic_speed_gbps,omitempty"`
-	RDMACapable   bool   `json:"rdma_capable,omitempty"`
-	OS            string `json:"os,omitempty"`
-	Arch          string `json:"arch,omitempty"`
+	Hostname     string         `json:"hostname,omitempty"`
+	CPUModel     string         `json:"cpu_model,omitempty"`
+	CPUCores     int            `json:"cpu_cores,omitempty"`
+	MemoryBytes  int64          `json:"memory_bytes,omitempty"`
+	CacheBytes   int64          `json:"cache_bytes,omitempty"`
+	NICSpeedGbps int            `json:"nic_speed_gbps,omitempty"`
+	RDMACapable  bool           `json:"rdma_capable,omitempty"`
+	OS           string         `json:"os,omitempty"`
+	Arch         string         `json:"arch,omitempty"`
+	BlockDevices []BlockDevice  `json:"block_devices,omitempty"`
+	NVMe         []NVMEDevice   `json:"nvme_devices,omitempty"`
+}
+
+type BlockDevice struct {
+	Name        string `json:"name"`
+	Model       string `json:"model,omitempty"`
+	SizeBytes   int64  `json:"size_bytes,omitempty"`
+	Rotational  bool   `json:"rotational,omitempty"`
+}
+
+type NVMEDevice struct {
+	Device   string `json:"device"`
+	Model    string `json:"model,omitempty"`
+	Firmware string `json:"firmware,omitempty"`
+	Serial   string `json:"serial,omitempty"`
 }
 
 type Timestamps struct {

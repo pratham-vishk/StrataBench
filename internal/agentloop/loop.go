@@ -13,6 +13,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/planner"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/report"
+	"github.com/pratham-vishk/stratabench/internal/reporter"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
@@ -113,7 +114,11 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	jsonPath := filepath.Join(paths.ReportsDir(), run.RunID+".json")
 
 	fmt.Println("→ Reporting...")
-	summary := analyst.SummaryText(run, insights)
+	summary := reporter.Summarize(ctx, run, insights, reporter.SummaryOptions{
+		UseOllama:   opts.UseOllama,
+		OllamaURL:   opts.OllamaURL,
+		OllamaModel: opts.OllamaModel,
+	})
 	if err := report.WriteHTMLWithInsights(run, insights, summary, reportPath); err != nil {
 		return nil, err
 	}

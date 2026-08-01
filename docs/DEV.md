@@ -98,7 +98,24 @@ Use `--mock` on Windows or when hardware is unavailable.
 | `OLLAMA_URL` | Ollama API base URL (default `http://localhost:11434`) |
 | `OLLAMA_MODEL` | Model for planner (default `llama3.2`) |
 
-## Agentic loop
+## Hardware inventory
+
+```bash
+./bin/stratabench inventory collect
+./bin/stratabench inventory list
+```
+
+Hardware snapshots are auto-saved on each benchmark run.
+
+## VM guest benchmarks
+
+For `vm-block` profiles, use SSH target format:
+
+```bash
+./bin/stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
+```
+
+Requires `ssh`/`scp` access to the guest with `fio` installed inside the VM.
 
 ```bash
 # Full lifecycle from natural language
