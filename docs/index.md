@@ -1,46 +1,59 @@
 # StrataBench
 
-Agentic, honest storage benchmarking for every layer.
+**Agentic, honest storage benchmarking — HDD, NVMe, AFA, S3 RDMA, VM, and application workloads.**
 
-## Quick links
+[GitHub](https://github.com/pratham-vishk/StrataBench) · [README](../README.md)
+
+## Highlights
+
+- **30+ profiles** — block, file, object, VM, application (physical + virtual)
+- **7 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, mock
+- **All topologies** — 1:1, N:1 pool, 1:N sweep, N:M shard, N×M matrix
+- **Validator** — honest workload rules before every run
+- **Agentic loop** — natural language → plan → validate → run → report
+- **Kubernetes** — CRD, operator, agents, Docker on GHCR
+
+## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Development Guide](DEV.md) | Build, test, and CLI reference |
+| [Engine Coverage](ENGINE-COVERAGE.md) | HDD / NVMe / AFA / S3 RDMA physical + virtual |
+| [Topology Guide](TOPOLOGY.md) | Multi-client / multi-server patterns |
+| [Development Guide](DEV.md) | Build, test, CLI reference |
 | [Architecture](ARCHITECTURE.md) | System design |
-| [Roadmap](ROADMAP.md) | Implementation phases |
 | [Dell Lab Guide](DELL-LAB.md) | VM cluster deployment |
-| [Engine Coverage](ENGINE-COVERAGE.md) | Physical + virtual engine matrix |
-| [Dell Lab Validation](DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware checklist |
+| [Dell Lab Validation](DELL-LAB-VALIDATION.md) | Hardware sign-off checklist |
+| [Roadmap](ROADMAP.md) | Shipped vs planned |
 | [Vision](VISION.md) | Project goals |
-| [Contributing on GitHub](https://github.com/pratham-vishk/StrataBench/blob/master/CONTRIBUTING.md) | How to contribute |
 
 ## Quick start
 
 ```bash
 git clone https://github.com/pratham-vishk/StrataBench.git
-cd StrataBench
-make build
-./bin/stratabench agent "nvme oltp" --target /dev/nvme0n1 --mock
+cd StrataBench && make build
+
+# Mock (no hardware)
+./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock
+
+# Agentic loop
+./bin/stratabench agent "nvme oltp database" --target /dev/nvme0n1 --mock
+
+# Distributed
+stratabench run --profile ssd-random-4k --target /dev/nvme0n1 \
+  --clients 10.0.1.1:7777,10.0.1.2:7777 --topology pool
 ```
 
 ## Docker
 
 ```bash
-docker pull ghcr.io/pratham-vishk/stratabench:0.5.0-rc1
-docker run --rm ghcr.io/pratham-vishk/stratabench:0.5.0-rc1 version
+docker pull ghcr.io/pratham-vishk/stratabench:latest
+docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 ```
 
 ## Kubernetes
 
 ```bash
 kubectl apply -k deploy/k8s/
-kubectl apply -f examples/benchmark-mock.yaml
+kubectl apply -f examples/benchmark-topology-pool.yaml
 kubectl get benchmarks -n stratabench -w
 ```
-
-## Deployment
-
-- **Docker:** `ghcr.io/pratham-vishk/stratabench`
-- **Kubernetes:** manifests in `deploy/k8s/` (includes operator)
-- **Grafana:** dashboard in `deploy/grafana/`

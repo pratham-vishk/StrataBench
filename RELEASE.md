@@ -1,52 +1,35 @@
 # Release Guide
 
-## v0.5.0-rc1 (current)
+## v0.7.0-rc1 (current)
 
-Release candidate with in-cluster Kubernetes operator.
+Full platform release: 30+ profiles, all topologies, physical + virtual engines, public OSS.
 
 ### Tag and publish
 
 ```bash
-git tag v0.5.0-rc1
-git push origin v0.5.0-rc1
+git tag v0.7.0-rc1
+git push origin v0.7.0-rc1
 ```
 
-This triggers:
-- **Docker** workflow → `ghcr.io/pratham-vishk/stratabench:0.5.0-rc1`
-- **Pages** workflow → docs site
+Triggers: Docker → `ghcr.io/pratham-vishk/stratabench:0.7.0-rc1` · Pages → docs site
 
-### Smoke test after release
+### Smoke test
 
 ```bash
-docker pull ghcr.io/pratham-vishk/stratabench:0.5.0-rc1
-docker run --rm ghcr.io/pratham-vishk/stratabench:0.5.0-rc1 version
+docker pull ghcr.io/pratham-vishk/stratabench:0.7.0-rc1
+docker run --rm ghcr.io/pratham-vishk/stratabench:0.7.0-rc1 version
+stratabench run --profile nvme-random-oltp --target /dev/null --mock
+stratabench run --profile s3-put-throughput --targets 10.0.1.10:9000,10.0.1.11:9000 --mock --topology sweep
 kubectl apply -k deploy/k8s/
-kubectl apply -f examples/benchmark-mock.yaml
-kubectl get benchmarks -n stratabench -w
 ```
 
-## v0.4.0-rc1
-
-Initial OSS release candidate — K8s manifests, Docker/GHCR CI, GitHub Pages docs.
-
-### Enable GitHub Pages
-
-Settings → Pages → Build and deployment → **GitHub Actions**
-
-> **Note:** GitHub Pages requires a **public** repository (or GitHub Enterprise). While the repo is private, the Pages workflow will fail — this is expected. Make the repo public before enabling Pages.
-
-### Make repository public
-
-When ready for external contributors:
-1. Settings → General → Change visibility → Public
-2. Verify no secrets in git history
-3. Announce with README and docs link
-
-### v1.0.0 criteria
+## v1.0.0 criteria
 
 - [x] Public repository
-- [x] Published container image
-- [ ] Docs site live
+- [x] Published container image (GHCR)
+- [x] Docs site live — https://pratham-vishk.github.io/StrataBench/
+- [x] Full Kubernetes operator
+- [x] 30+ profiles, all engines, all topologies
+- [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
 - [ ] Dell lab validation on real hardware
-- [ ] Native SBK drivers validated on Linux (pgbench, db_bench)
-- [x] Full Kubernetes operator (`stratabench-operator` reconciles Benchmark CRs)
+- [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)
