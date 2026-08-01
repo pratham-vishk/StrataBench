@@ -111,12 +111,14 @@
 - [ ] Public documentation site
 - [ ] Contributor guide + CI/CD (GitHub Actions)
 - [ ] **Public open-source release**
-- [ ] SBK driver integration (Kafka, RocksDB, PostgreSQL)
+- [x] SBK application profiles (Kafka, RocksDB, PostgreSQL)
+- [ ] SBK native driver integration (live workloads)
 
 ### Success criteria
 
 - User says *"benchmark my S3 cluster for read-heavy AI workload"* → full report without manual config
 - Regression alert when p99 degrades 15% vs. 30-day baseline
+- [x] 30-day rolling regression when no explicit baseline is set
 - 10 external contributors, passing CI
 
 ---
@@ -134,11 +136,11 @@ Semantic versioning from first public release:
 
 ## Open-source release checklist
 
-- [ ] Apache 2.0 LICENSE committed
+- [x] Apache 2.0 LICENSE committed
 - [x] CONTRIBUTING.md with code style and PR process
-- [ ] CI: build, test, lint on Linux
-- [ ] Security policy (SECURITY.md)
+- [x] CI: build, test on Linux
+- [x] Security policy (SECURITY.md)
 - [ ] Code of conduct
 - [ ] Documentation site
-- [ ] Docker images published
+- [x] Dockerfile
 - [ ] README badges (build status, license)

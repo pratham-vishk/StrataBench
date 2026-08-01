@@ -92,6 +92,17 @@ type NVMEDevice struct {
 	Serial   string `json:"serial,omitempty"`
 }
 
+type SMARTReading struct {
+	Device         string `json:"device"`
+	Model          string `json:"model,omitempty"`
+	Serial         string `json:"serial,omitempty"`
+	TemperatureC   int    `json:"temperature_c,omitempty"`
+	PowerOnHours   int    `json:"power_on_hours,omitempty"`
+	WearPercent    int    `json:"wear_percent,omitempty"`
+	Reallocated    int    `json:"reallocated_sectors,omitempty"`
+	HealthPassed   bool   `json:"health_passed"`
+}
+
 type Timestamps struct {
 	StartedAt            time.Time  `json:"started_at"`
 	CompletedAt          time.Time  `json:"completed_at"`

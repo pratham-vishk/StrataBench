@@ -61,6 +61,15 @@ CREATE TABLE IF NOT EXISTS hardware_inventory (
   snapshot_json TEXT NOT NULL,
   collected_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS smart_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  host_id TEXT NOT NULL,
+  device TEXT NOT NULL,
+  reading_json TEXT NOT NULL,
+  collected_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_smart_collected ON smart_history(collected_at DESC);
 `)
 	return err
 }
@@ -94,6 +103,70 @@ func (s *Store) ListHardware() ([]HardwareRecord, error) {
 			return nil, err
 		}
 		out = append(out, rec)
+	}
+	return out, rows.Err()
+}
+
+type SMARTRecord struct {
+	HostID      string
+	Device      string
+	ReadingJSON string
+	CollectedAt string
+}
+
+func (s *Store) SaveSMART(hostID, device, readingJSON string) error {
+	_, err := s.db.ExecContext(context.Background(),
+		`INSERT INTO smart_history (host_id, device, reading_json, collected_at) VALUES (?, ?, ?, ?)`,
+		hostID, device, readingJSON, time.Now().UTC().Format(time.RFC3339),
+	)
+	return err
+}
+
+func (s *Store) ListSMART(limit int) ([]SMARTRecord, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(context.Background(),
+		`SELECT host_id, device, reading_json, collected_at FROM smart_history ORDER BY collected_at DESC LIMIT ?`, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SMARTRecord
+	for rows.Next() {
+		var rec SMARTRecord
+		if err := rows.Scan(&rec.HostID, &rec.Device, &rec.ReadingJSON, &rec.CollectedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, rec)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) ListSince(since time.Time, limit int) ([]schema.RunResult, error) {
+	if limit <= 0 {
+		limit = 500
+	}
+	rows, err := s.db.QueryContext(context.Background(),
+		`SELECT result_json FROM runs WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?`,
+		since.UTC().Format(time.RFC3339), limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []schema.RunResult
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var run schema.RunResult
+		if err := json.Unmarshal([]byte(raw), &run); err != nil {
+			return nil, err
+		}
+		out = append(out, run)
 	}
 	return out, rows.Err()
 }

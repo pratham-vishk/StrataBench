@@ -1,0 +1,26 @@
+name: app-postgres-tpc-c
+version: "1.0"
+layer: application
+engine: sbk
+description: "PostgreSQL TPC-C style OLTP — database application storage workload"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 600
+  min_ramp_sec: 60
+  require_percentiles: [50, 95, 99]
+
+params:
+  driver: postgresql
+  operation: tpc-c
+  warehouses: 10
+  connections: 32
+  duration_sec: 600
+  ramp_time_sec: 60
+  dsn: "postgres://localhost:5432/stratabench"
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p99

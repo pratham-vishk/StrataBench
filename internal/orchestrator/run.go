@@ -251,15 +251,25 @@ func (s *Service) saveRun(
 }
 
 func (s *Service) CheckRegression(run *schema.RunResult) []baseline.Alert {
-	rec, err := s.Store.GetBaseline(run.Profile, baseline.TargetKey(run))
-	if err != nil {
+	key := baseline.TargetKey(run)
+	rec, err := s.Store.GetBaseline(run.Profile, key)
+	if err == nil {
+		baseRun, err := s.Store.Get(rec.RunID)
+		if err == nil {
+			return baseline.Check(run, baseRun, baseline.DefaultIOPSDegradePct, baseline.DefaultLatencyDegradePct)
+		}
+	}
+
+	historyRuns, err := s.Store.ListSince(baseline.RollingSince(baseline.DefaultRollingDays), 500)
+	if err != nil || len(historyRuns) == 0 {
 		return nil
 	}
-	baseRun, err := s.Store.Get(rec.RunID)
-	if err != nil {
-		return nil
+	history := make([]*schema.RunResult, len(historyRuns))
+	for i := range historyRuns {
+		history[i] = &historyRuns[i]
 	}
-	return baseline.Check(run, baseRun, baseline.DefaultIOPSDegradePct, baseline.DefaultLatencyDegradePct)
+	ref := baseline.ReferenceFromHistory(history, run.Profile, key, run.RunID)
+	return baseline.CheckAgainstReference(run, ref, baseline.DefaultIOPSDegradePct, baseline.DefaultLatencyDegradePct)
 }
 
 func (s *Service) SetBaselineFromRun(runID string) (*store.BaselineRecord, error) {

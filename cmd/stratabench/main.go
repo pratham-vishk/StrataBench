@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/pratham-vishk/stratabench/internal/agentloop"
+	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/baseline"
 	"github.com/pratham-vishk/stratabench/internal/compare"
 	"github.com/pratham-vishk/stratabench/internal/crosslayer"
@@ -22,6 +23,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/remote"
 	"github.com/pratham-vishk/stratabench/internal/report"
+	"github.com/pratham-vishk/stratabench/internal/smarthistory"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
@@ -58,6 +60,8 @@ func main() {
 		importCmd(),
 		baselineCmd(),
 		inventoryCmd(),
+		smartCmd(),
+		analyzeCmd(),
 		agentCmd(),
 		planCmd(),
 		profilesCmd(),
@@ -502,6 +506,78 @@ func inventoryCmd() *cobra.Command {
 			},
 		},
 	)
+	return cmd
+}
+
+func smartCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "smart",
+		Short: "SMART disk health history",
+	}
+	cmd.AddCommand(
+		&cobra.Command{
+			Use:   "collect",
+			Short: "Collect SMART readings via smartctl (Linux)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				n, err := smarthistory.CollectAndSave(svc.Store)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("SMART: saved %d device readings\n", n)
+				return nil
+			},
+		},
+		&cobra.Command{
+			Use:   "list",
+			Short: "List SMART history",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				svc, err := newService()
+				if err != nil {
+					return err
+				}
+				defer svc.Close()
+				recs, err := smarthistory.List(svc.Store, 50)
+				if err != nil {
+					return err
+				}
+				smarthistory.Print(recs)
+				return nil
+			},
+		},
+	)
+	return cmd
+}
+
+func analyzeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "analyze",
+		Short: "Run analyst on a completed benchmark",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if runID == "" {
+				return fmt.Errorf("--run-id is required")
+			}
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			run, err := svc.Store.Get(runID)
+			if err != nil {
+				return err
+			}
+			regression := svc.CheckRegression(run)
+			insights := analyst.Analyze(run, regression)
+			analyst.PrintInsights(insights)
+			fmt.Println(analyst.SummaryText(run, insights))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&runID, "run-id", "", "Run ID to analyze")
 	return cmd
 }
 

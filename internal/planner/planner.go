@@ -22,6 +22,9 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 		"s3-cluster-rdma":      {"s3", "rdma", "warp", "cluster", "object"},
 		"file-parallel-read":   {"file", "nfs", "lustre", "parallel", "elbencho"},
 		"vm-disk-random":       {"vm", "virtual", "guest", "disk", "random"},
+		"app-kafka-producer":   {"kafka", "message", "queue", "stream", "application"},
+		"app-rocksdb-read":     {"rocksdb", "kv", "embedded", "database", "application"},
+		"app-postgres-tpc-c":   {"postgres", "postgresql", "database", "oltp", "tpc", "application"},
 	}
 
 	best := ""

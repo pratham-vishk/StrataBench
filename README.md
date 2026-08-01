@@ -1,5 +1,8 @@
 # StrataBench
 
+[![CI](https://github.com/pratham-vishk/StrataBench/actions/workflows/ci.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/ci.yml)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+
 **Agentic, honest storage benchmarking for every layer — from a single HDD to a distributed S3 cluster.**
 
 StrataBench is an open-source storage performance platform that orchestrates benchmarks across block, file, object, VM, and application storage — with built-in validation so your numbers are trustworthy before you act on them.

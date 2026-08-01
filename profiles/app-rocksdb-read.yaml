@@ -1,0 +1,27 @@
+name: app-rocksdb-read
+version: "1.0"
+layer: application
+engine: sbk
+description: "RocksDB random read — embedded KV store application workload"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 30
+  require_percentiles: [50, 99]
+
+params:
+  driver: rocksdb
+  operation: randread
+  key_size: 16
+  value_size: 1024
+  threads: 16
+  duration_sec: 300
+  ramp_time_sec: 30
+  db_path: /tmp/rocksdb-bench
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p99
