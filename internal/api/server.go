@@ -25,9 +25,10 @@ type runRequest struct {
 	Targets      []string `json:"targets"`
 	Clients      []string `json:"clients"`
 	Topology     string   `json:"topology"`
-	Mock         bool     `json:"mock"`
-	SkipValidate bool     `json:"skip_validate"`
-	CacheBytes   int64    `json:"cache_bytes"`
+	Mock          bool     `json:"mock"`
+	SkipValidate  bool     `json:"skip_validate"`
+	CheckHardware bool     `json:"check_hardware"`
+	CacheBytes    int64    `json:"cache_bytes"`
 }
 
 type agentRequest struct {
@@ -36,6 +37,7 @@ type agentRequest struct {
 	Mock          bool   `json:"mock"`
 	UseOllama     bool   `json:"use_ollama"`
 	CheckBaseline bool   `json:"check_baseline"`
+	CheckHardware bool   `json:"check_hardware"`
 }
 
 func (s *Server) Handler() http.Handler {
@@ -109,6 +111,7 @@ func (s *Server) handleAgent(w http.ResponseWriter, r *http.Request) {
 		Mock:          req.Mock,
 		UseOllama:     req.UseOllama,
 		CheckBaseline: req.CheckBaseline,
+		CheckHardware: req.CheckHardware,
 		DataDir:       paths.DataDir(),
 	})
 	if err != nil {
@@ -155,15 +158,16 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		run, err := s.Svc.Run(r.Context(), orchestrator.RunOptions{
-			Profile:      p,
-			Target:       req.Target,
-			Targets:      req.Targets,
-			Clients:      req.Clients,
-			Topology:     req.Topology,
-			Mock:         req.Mock,
-			SkipValidate: req.SkipValidate,
-			CacheBytes:   req.CacheBytes,
-			DataDir:      paths.DataDir(),
+			Profile:       p,
+			Target:        req.Target,
+			Targets:       req.Targets,
+			Clients:       req.Clients,
+			Topology:      req.Topology,
+			Mock:          req.Mock,
+			SkipValidate:  req.SkipValidate,
+			CheckHardware: req.CheckHardware,
+			CacheBytes:    req.CacheBytes,
+			DataDir:       paths.DataDir(),
 		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

@@ -5,12 +5,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
 type Options struct {
-	CacheBytes int64
+	CacheBytes    int64
+	CheckHardware bool
+	Target        string
+	Mock          bool
+	Hardware      schema.HardwareSnapshot
 }
 
 func Validate(p *profile.Profile, opts Options) schema.ValidationResult {
@@ -118,6 +123,15 @@ func Validate(p *profile.Profile, opts Options) schema.ValidationResult {
 		}
 		return nil
 	})
+
+	if opts.CheckHardware {
+		hw := opts.Hardware
+		if hw.Hostname == "" {
+			hw = discovery.Snapshot()
+		}
+		hwResult := ValidateHardware(p, hw, opts.Target, opts.Mock)
+		result = MergeValidation(result, hwResult)
+	}
 
 	return result
 }

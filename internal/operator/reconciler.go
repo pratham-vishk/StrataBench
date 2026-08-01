@@ -150,6 +150,7 @@ func fromUnstructured(obj *unstructured.Unstructured) (*manifest.Benchmark, erro
 			Mock:          nestedBool(spec, "mock"),
 			SkipValidate:  nestedBool(spec, "skipValidate"),
 			CheckBaseline: nestedBool(spec, "checkBaseline"),
+			CheckHardware: nestedBoolPtr(spec, "checkHardware"),
 			Intent:        nestedString(spec, "intent"),
 			UseOllama:     nestedBool(spec, "useOllama"),
 		},
@@ -193,4 +194,16 @@ func nestedBool(m map[string]any, key string) bool {
 	}
 	b, _ := v.(bool)
 	return b
+}
+
+func nestedBoolPtr(m map[string]any, key string) *bool {
+	v, ok := m[key]
+	if !ok {
+		return nil
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return nil
+	}
+	return &b
 }

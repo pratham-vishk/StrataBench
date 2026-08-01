@@ -56,13 +56,14 @@ func main() {
 			workDir = filepath.Join(dataDir, "work")
 		}
 		run, err := svc.Run(r.Context(), orchestrator.RunOptions{
-			Profile:      &p,
-			Target:       req.Target,
-			Mock:         req.Mock,
-			SkipValidate: req.SkipValidate,
-			CacheBytes:   req.CacheBytes,
-			WorkDir:      workDir,
-			DataDir:      dataDir,
+			Profile:       &p,
+			Target:        req.Target,
+			Mock:          req.Mock,
+			SkipValidate:  req.SkipValidate,
+			CheckHardware: req.CheckHardware,
+			CacheBytes:    req.CacheBytes,
+			WorkDir:       workDir,
+			DataDir:       dataDir,
 		})
 		if err != nil {
 			writeJSON(w, agentapi.RunResponse{OK: false, Error: err.Error()})

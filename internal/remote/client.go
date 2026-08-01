@@ -55,17 +55,18 @@ func (c *Client) Health(ctx context.Context) (*agentapi.HealthResponse, error) {
 	return &out, nil
 }
 
-func (c *Client) Run(ctx context.Context, p *profile.Profile, target string, mock, skipValidate bool, cacheBytes int64) (*schema.RunResult, error) {
+func (c *Client) Run(ctx context.Context, p *profile.Profile, target string, mock, skipValidate, checkHardware bool, cacheBytes int64) (*schema.RunResult, error) {
 	yamlBytes, err := yaml.Marshal(p)
 	if err != nil {
 		return nil, err
 	}
 	body, err := json.Marshal(agentapi.RunRequest{
-		ProfileYAML:  string(yamlBytes),
-		Target:       target,
-		Mock:         mock,
-		SkipValidate: skipValidate,
-		CacheBytes:   cacheBytes,
+		ProfileYAML:   string(yamlBytes),
+		Target:        target,
+		Mock:          mock,
+		SkipValidate:  skipValidate,
+		CheckHardware: checkHardware,
+		CacheBytes:    cacheBytes,
 	})
 	if err != nil {
 		return nil, err

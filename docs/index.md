@@ -9,7 +9,7 @@
 - **30+ profiles** — block, file, object, VM, application (physical + virtual)
 - **7 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, mock
 - **All topologies** — 1:1, N:1 pool, 1:N sweep, N:M shard, N×M matrix
-- **Validator** — honest workload rules before every run
+- **Validator** — honest workload rules + per-use-case hardware checks before every run
 - **Agentic loop** — natural language → plan → validate → run → report
 - **Kubernetes** — CRD, operator, agents, Docker on GHCR
 
@@ -18,6 +18,7 @@
 | Document | Description |
 |----------|-------------|
 | [Engine Coverage](ENGINE-COVERAGE.md) | HDD / NVMe / AFA / S3 RDMA physical + virtual |
+| [Hardware Validation](HARDWARE-VALIDATION.md) | Per-use-case tools, devices, and NIC checks |
 | [Topology Guide](TOPOLOGY.md) | Multi-client / multi-server patterns |
 | [Development Guide](DEV.md) | Build, test, CLI reference |
 | [Architecture](ARCHITECTURE.md) | System design |

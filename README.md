@@ -121,8 +121,8 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 ### Run on real storage (Linux)
 
 ```bash
-# NVMe OLTP
-./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 34359738368
+# NVMe OLTP — workload + hardware validation (on by default)
+./bin/stratabench validate --profile nvme-random-oltp --target /dev/nvme0n1 --cache-bytes 34359738368
 ./bin/stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
 # AFA multi-LUN
@@ -226,7 +226,7 @@ kubectl get benchmarks -n stratabench -w
 |---------|-------------|
 | `profiles` | List workload profiles |
 | `plan` | Suggest profile from natural language |
-| `validate` | Check workload design rules |
+| `validate` | Check workload design + hardware for profile (`--check-hardware`) |
 | `run` | Execute benchmark (local or distributed) |
 | `agent` | Full agentic loop end-to-end |
 | `apply` | Apply Kubernetes-style benchmark manifest |

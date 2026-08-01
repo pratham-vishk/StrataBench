@@ -40,8 +40,9 @@ var (
 	runID        string
 	runIDB       string
 	cacheBytes   int64
-	skipValidate  bool
-	checkBaseline bool
+	skipValidate   bool
+	checkBaseline  bool
+	checkHardware  bool
 	profilesCSV   string
 	useOllama     bool
 	ollamaURL     string
@@ -105,7 +106,13 @@ func validateCmd() *cobra.Command {
 			}
 			defer svc.Close()
 
-			res := svc.Validate(orchestrator.RunOptions{Profile: p, CacheBytes: cacheBytes})
+			res := svc.Validate(orchestrator.RunOptions{
+				Profile:       p,
+				CacheBytes:    cacheBytes,
+				CheckHardware: checkHardware,
+				Target:        target,
+				Mock:          mock,
+			})
 			printValidation(p, res)
 			if !res.Passed {
 				return fmt.Errorf("validation failed")
@@ -114,7 +121,10 @@ func validateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&profileName, "profile", "", "Workload profile name")
+	cmd.Flags().StringVar(&target, "target", "", "Block device, path, or endpoint for hardware checks")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed array cache size in bytes")
+	cmd.Flags().BoolVar(&mock, "mock", false, "Skip hardware checks (mock mode)")
+	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices for profile")
 	_ = cmd.MarkFlagRequired("profile")
 	return cmd
 }
@@ -176,6 +186,7 @@ func runCmd() *cobra.Command {
 				Mock:          mock,
 				SkipValidate:  skipValidate,
 				CheckBaseline: checkBaseline,
+				CheckHardware: checkHardware,
 				CacheBytes:    cacheBytes,
 				DataDir:       paths.DataDir(),
 			})
@@ -204,6 +215,7 @@ func runCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&mock, "mock", false, "Use mock engine (no real I/O)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", false, "Compare results against stored baseline after run")
+	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	_ = cmd.MarkFlagRequired("profile")
 	return cmd
@@ -643,6 +655,7 @@ func agentCmd() *cobra.Command {
 				Mock:          mock,
 				SkipValidate:  skipValidate,
 				CheckBaseline: checkBaseline,
+				CheckHardware: checkHardware,
 				CacheBytes:    cacheBytes,
 				UseOllama:     useOllama,
 				OllamaURL:     ollamaURL,
@@ -658,6 +671,7 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&mock, "mock", true, "Use mock engine (default true for agent)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
+	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL")

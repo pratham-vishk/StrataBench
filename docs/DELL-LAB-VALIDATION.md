@@ -10,7 +10,28 @@ See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix.
 # Jump host + client VMs
 sudo apt install fio smartmontools nvme-cli postgresql-client openssh-client
 # Optional: vdbench, SPDK perf, elbencho, warp, kafka, rocksdb tools
+
+stratabench inventory collect
 ```
+
+## 0. Hardware validation (per use case)
+
+Before each profile run, validate workload **and** host hardware:
+
+```bash
+stratabench validate --profile <name> --target <target> --check-hardware
+```
+
+See [HARDWARE-VALIDATION.md](HARDWARE-VALIDATION.md) for the per-use-case matrix (HDD, NVMe, AFA, S3 RDMA, VM, app). Hardware checks are **on by default** for `validate` and `run` (skipped with `--mock`).
+
+| Use case | Hardware checks |
+|----------|-----------------|
+| HDD | rotational device in inventory |
+| NVMe / SSD | NVMe or non-rotational block device |
+| AFA | 2+ block LUNs, vdbench in PATH |
+| S3 RDMA | RDMA NIC (`rdma link show`) |
+| VM | `ssh` in PATH; guest device optional |
+| App (pgbench/kafka/rocksdb) | driver binary in PATH, 8GB+ RAM |
 
 ## 1. Inventory and SMART (physical)
 
@@ -23,10 +44,10 @@ stratabench smart collect
 
 | Profile | Command | Pass |
 |---------|---------|------|
-| `hdd-sequential-read` | `stratabench run --profile hdd-sequential-read --target /dev/sda` | |
-| `ssd-random-4k` | `stratabench run --profile ssd-random-4k --target /dev/nvme0n1` | |
-| `nvme-random-oltp` | `stratabench run --profile nvme-random-oltp --target /dev/nvme0n1` | |
-| `nvme-max-stress` | `stratabench run --profile nvme-max-stress --target /dev/nvme0n1` | |
+| `hdd-sequential-read` | `stratabench validate --profile hdd-sequential-read --target /dev/sda --check-hardware && stratabench run ...` | |
+| `ssd-random-4k` | `stratabench validate --profile ssd-random-4k --target /dev/nvme0n1 --check-hardware && stratabench run ...` | |
+| `nvme-random-oltp` | `stratabench validate --profile nvme-random-oltp --target /dev/nvme0n1 --check-hardware && stratabench run ...` | |
+| `nvme-max-stress` | `stratabench validate --profile nvme-max-stress --target /dev/nvme0n1 --check-hardware && stratabench run ...` | |
 
 ## 3. Block — vdbench / SPDK (physical only)
 

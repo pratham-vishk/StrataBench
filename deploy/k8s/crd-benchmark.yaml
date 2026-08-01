@@ -50,6 +50,9 @@ spec:
                   type: boolean
                 checkBaseline:
                   type: boolean
+                checkHardware:
+                  type: boolean
+                  description: Validate host tools and devices for profile (default true when omitted in CLI)
                 intent:
                   type: string
                   description: Natural language intent (use agent mode)

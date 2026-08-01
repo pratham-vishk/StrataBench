@@ -36,6 +36,7 @@ type BenchmarkSpec struct {
 	Mock          bool     `yaml:"mock,omitempty"`
 	SkipValidate  bool     `yaml:"skipValidate,omitempty"`
 	CheckBaseline bool     `yaml:"checkBaseline,omitempty"`
+	CheckHardware *bool    `yaml:"checkHardware,omitempty"`
 	Intent        string   `yaml:"intent,omitempty"`
 	UseOllama     bool     `yaml:"useOllama,omitempty"`
 }
@@ -56,6 +57,7 @@ func Load(path string) (*Benchmark, error) {
 }
 
 func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*ApplyResult, error) {
+	checkHW := effectiveCheckHardware(b.Spec)
 	if b.Spec.Intent != "" {
 		result, err := agentloop.Run(ctx, agentloop.Options{
 			Intent:        b.Spec.Intent,
@@ -66,6 +68,7 @@ func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*Apply
 			Mock:          b.Spec.Mock,
 			SkipValidate:  b.Spec.SkipValidate,
 			CheckBaseline: b.Spec.CheckBaseline,
+			CheckHardware: checkHW,
 			UseOllama:     b.Spec.UseOllama,
 			DataDir:       paths.DataDir(),
 		})
@@ -94,12 +97,24 @@ func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*Apply
 		Mock:          b.Spec.Mock,
 		SkipValidate:  b.Spec.SkipValidate,
 		CheckBaseline: b.Spec.CheckBaseline,
+		CheckHardware: checkHW,
 		DataDir:       paths.DataDir(),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &ApplyResult{RunID: run.RunID, Profile: run.Profile, Status: run.Status}, nil
+}
+
+// effectiveCheckHardware defaults to true for real runs; mock skips checks.
+func effectiveCheckHardware(spec BenchmarkSpec) bool {
+	if spec.Mock {
+		return false
+	}
+	if spec.CheckHardware != nil {
+		return *spec.CheckHardware
+	}
+	return true
 }
 
 type ApplyResult struct {

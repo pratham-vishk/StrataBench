@@ -13,9 +13,10 @@ type HealthResponse struct {
 type RunRequest struct {
 	ProfileYAML  string `json:"profile_yaml"`
 	Target       string `json:"target"`
-	Mock         bool   `json:"mock"`
-	SkipValidate bool   `json:"skip_validate"`
-	CacheBytes   int64  `json:"cache_bytes"`
+	Mock          bool   `json:"mock"`
+	SkipValidate  bool   `json:"skip_validate"`
+	CheckHardware bool   `json:"check_hardware"`
+	CacheBytes    int64  `json:"cache_bytes"`
 	WorkDir      string `json:"work_dir,omitempty"`
 }
 

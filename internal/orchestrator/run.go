@@ -34,6 +34,7 @@ type RunOptions struct {
 	Mock          bool
 	SkipValidate  bool
 	CheckBaseline bool
+	CheckHardware bool
 	CacheBytes    int64
 	WorkDir       string
 	DataDir       string
@@ -60,7 +61,18 @@ func (s *Service) Validate(opts RunOptions) schema.ValidationResult {
 	if cache == 0 {
 		cache = hw.CacheBytes
 	}
-	return validator.Validate(opts.Profile, validator.Options{CacheBytes: cache})
+	targets := topology.MergeTargets(opts.Target, opts.Targets)
+	primaryTarget := opts.Target
+	if primaryTarget == "" && len(targets) > 0 {
+		primaryTarget = targets[0]
+	}
+	return validator.Validate(opts.Profile, validator.Options{
+		CacheBytes:    cache,
+		CheckHardware: opts.CheckHardware,
+		Target:        primaryTarget,
+		Mock:          opts.Mock,
+		Hardware:      hw,
+	})
 }
 
 func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
@@ -183,7 +195,7 @@ func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology
 	if _, err := client.Health(ctx); err != nil {
 		return schema.Results{}, fmt.Errorf("health check: %w", err)
 	}
-	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, true, opts.CacheBytes)
+	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, true, opts.CheckHardware, opts.CacheBytes)
 	if err != nil {
 		return schema.Results{}, err
 	}

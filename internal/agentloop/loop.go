@@ -26,6 +26,7 @@ type Options struct {
 	Mock          bool
 	SkipValidate  bool
 	CheckBaseline bool
+	CheckHardware bool
 	CacheBytes    int64
 	UseOllama     bool
 	OllamaURL     string
@@ -86,6 +87,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		Mock:          opts.Mock,
 		SkipValidate:  opts.SkipValidate,
 		CheckBaseline: opts.CheckBaseline,
+		CheckHardware: opts.CheckHardware,
 		CacheBytes:    opts.CacheBytes,
 		DataDir:       opts.DataDir,
 	}
