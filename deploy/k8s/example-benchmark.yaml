@@ -3,6 +3,9 @@ kind: Benchmark
 metadata:
   name: nightly-nvme-oltp
   namespace: stratabench
+  # Bump to re-run without changing spec:
+  # annotations:
+  #   stratabench.io/retry: "2"
 spec:
   profile: nvme-random-oltp
   target: /dev/nvme0n1

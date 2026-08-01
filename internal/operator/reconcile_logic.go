@@ -13,12 +13,18 @@ const (
 	actionObserveJob
 )
 
-func decideReconcile(phase, storedHash, currentHash string, jobExists bool) reconcileAction {
+const (
+	annotationSpecHash      = "stratabench.io/spec-hash"
+	annotationRetry         = "stratabench.io/retry"
+	annotationRetryApplied  = "stratabench.io/retry-applied"
+)
+
+func decideReconcile(phase, storedHash, currentHash string, jobExists, retryRequested bool) reconcileAction {
 	specChanged := storedHash != "" && storedHash != currentHash
-	if phase == manifest.PhaseCompleted && !specChanged {
+	if phase == manifest.PhaseCompleted && !specChanged && !retryRequested {
 		return actionSkip
 	}
-	if specChanged && jobExists {
+	if (specChanged || retryRequested) && jobExists {
 		return actionTeardownAndRerun
 	}
 	if !jobExists {

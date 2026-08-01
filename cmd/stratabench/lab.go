@@ -50,12 +50,14 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 			smoke, _ := cmd.Flags().GetBool("smoke")
 			smokeAll, _ := cmd.Flags().GetBool("smoke-all")
 			smokeSBK, _ := cmd.Flags().GetBool("smoke-sbk")
+			checkSBKTools, _ := cmd.Flags().GetBool("check-sbk-tools")
 			output, _ := cmd.Flags().GetString("output")
 			rep, err := lab.Validate(cmd.Context(), cfg, lab.ValidateOptions{
-				ProfilesDir: paths.ProfilesDir(),
-				Smoke:       smoke,
-				SmokeAll:    smokeAll,
-				SmokeSBK:    smokeSBK,
+				ProfilesDir:   paths.ProfilesDir(),
+				Smoke:         smoke,
+				SmokeAll:      smokeAll,
+				SmokeSBK:      smokeSBK,
+				CheckSBKTools: checkSBKTools,
 			})
 			if err != nil {
 				return err
@@ -66,7 +68,7 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 					return err
 				}
 				fmt.Printf("Wrote validation report: %s\n", output)
-			} else if smoke || smokeAll || smokeSBK {
+			} else if smoke || smokeAll || smokeSBK || checkSBKTools {
 				out := lab.DefaultValidationOutput(configPath)
 				if err := lab.WriteValidationReportJSON(out, rep); err == nil {
 					fmt.Printf("Wrote validation report: %s\n", out)
@@ -81,12 +83,16 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 			if smokeSBK && rep.SmokeFailed > 0 {
 				return fmt.Errorf("sbk smoke validation failed")
 			}
+			if checkSBKTools && rep.SBKTools != nil && !rep.SBKTools.AllAvailable {
+				return fmt.Errorf("sbk native drivers missing on PATH")
+			}
 			return nil
 		},
 	}
 	validateCmd.Flags().Bool("smoke", false, "run mock profile validation smoke tests")
 	validateCmd.Flags().Bool("smoke-all", false, "smoke-validate every profile (mock)")
 	validateCmd.Flags().Bool("smoke-sbk", false, "smoke-validate SBK app profiles (mock)")
+	validateCmd.Flags().Bool("check-sbk-tools", false, "probe native SBK drivers on local PATH (pgbench, db_bench, kafka)")
 	validateCmd.Flags().String("output", "", "write validation report JSON (default: <lab>-validation.json with --smoke)")
 
 	cmd.AddCommand(

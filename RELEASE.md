@@ -1,23 +1,28 @@
 # Release Guide
 
-## v0.8.0-rc23 (current)
+## v0.8.0-rc24 (current)
 
-PDF executive summary reports alongside HTML and Excel.
+SBK driver probe CLI, lab validate `--check-sbk-tools`, and operator manual retry via annotation.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc23
-git push origin v0.8.0-rc23
-gh release create v0.8.0-rc23 --title "v0.8.0-rc23" --notes "PDF executive summary reports."
+git tag v0.8.0-rc24
+git push origin v0.8.0-rc24
+gh release create v0.8.0-rc24 --title "v0.8.0-rc24" --notes "SBK tools probe; operator manual retry."
 ```
 
 ### Smoke test
 
 ```bash
-stratabench run --profile nvme-random-oltp --target /dev/null --mock
-stratabench export pdf --run-id <uuid>
+stratabench sbk tools
+stratabench lab validate -f lab.yaml --check-sbk-tools
+kubectl annotate benchmark nightly-nvme-oltp stratabench.io/retry=2 -n stratabench --overwrite
 ```
+
+## v0.8.0-rc23
+
+PDF executive summary reports alongside HTML and Excel.
 
 ## v0.8.0-rc22
 
@@ -232,4 +237,4 @@ curl -N http://localhost:8080/api/v1/runs/<run_id>/stream   # with API running
 - [x] 33 profiles, all engines, all topologies
 - [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
 - [ ] Dell lab validation on real hardware (deferred — run after feature-complete)
-- [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)
+- [ ] Native SBK drivers validated on Linux — use `stratabench sbk tools` / `lab validate --check-sbk-tools` before hardware runs

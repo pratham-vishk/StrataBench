@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc24] - 2026-08-01
+
+### Added
+- **`stratabench sbk tools`** — probe native SBK drivers on PATH (pgbench, db_bench, kafka-producer-perf-test)
+- **`lab validate --check-sbk-tools`** — include SBK driver probe in validation report (fails if any missing)
+- **Operator manual retry** — annotate `stratabench.io/retry` to re-run a completed/failed benchmark without spec change
+
+### Changed
+- SBK RocksDB driver respects profile `pattern`/`operation` for db_bench benchmark selection
+- Kafka SBK driver honors `num_records` param when set
+
 ## [0.8.0-rc23] - 2026-08-01
 
 ### Added

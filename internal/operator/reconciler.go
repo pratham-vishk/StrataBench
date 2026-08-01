@@ -95,10 +95,7 @@ func (r *Reconciler) reconcileOne(ctx context.Context, obj *unstructured.Unstruc
 	hash := specHash(b)
 
 	phase, _, _ := unstructured.NestedString(obj.Object, "status", "phase")
-	storedHash := ""
-	if ann := obj.GetAnnotations(); ann != nil {
-		storedHash = ann["stratabench.io/spec-hash"]
-	}
+	storedHash, retryToken, retryRequested := retryState(obj)
 
 	job, jobErr := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Get(ctx, jobName(name), metav1.GetOptions{})
 	jobExists := jobErr == nil
@@ -106,27 +103,41 @@ func (r *Reconciler) reconcileOne(ctx context.Context, obj *unstructured.Unstruc
 		return jobErr
 	}
 
-	switch decideReconcile(phase, storedHash, hash, jobExists) {
+	switch decideReconcile(phase, storedHash, hash, jobExists, retryRequested) {
 	case actionSkip:
 		return nil
 	case actionTeardownAndRerun:
 		if err := r.teardownRun(ctx, name); err != nil {
 			return err
 		}
+		msg := "spec changed, starting new run"
+		if retryRequested && !specChanged(storedHash, hash) {
+			msg = "retry requested, starting new run"
+		}
 		if err := r.patchStatus(ctx, name, "", manifest.BenchmarkStatus{
 			Phase:   manifest.PhasePending,
-			Message: "spec changed, starting new run",
+			Message: msg,
 		}); err != nil {
 			return err
 		}
-		return r.ensureJob(ctx, b, hash)
+		return r.ensureJob(ctx, b, hash, retryToken)
 	case actionEnsureJob:
-		return r.ensureJob(ctx, b, hash)
+		return r.ensureJob(ctx, b, hash, retryToken)
 	case actionObserveJob:
 		return r.observeJob(ctx, name, hash, phase, job)
 	default:
 		return nil
 	}
+}
+
+func retryState(obj *unstructured.Unstructured) (storedHash, retryToken string, retryRequested bool) {
+	if ann := obj.GetAnnotations(); ann != nil {
+		storedHash = ann[annotationSpecHash]
+		retryToken = ann[annotationRetry]
+		applied := ann[annotationRetryApplied]
+		retryRequested = retryToken != "" && retryToken != applied
+	}
+	return storedHash, retryToken, retryRequested
 }
 
 func (r *Reconciler) observeJob(ctx context.Context, name, hash, phase string, job *unstructured.Unstructured) error {
@@ -172,7 +183,7 @@ func removeStatusFile(benchmark string) {
 	_ = os.Remove(filepath.Join(statusDir(), benchmark+".json"))
 }
 
-func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash string) error {
+func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash, retryToken string) error {
 	if err := r.upsertConfigMap(ctx, b); err != nil {
 		return err
 	}
@@ -194,10 +205,31 @@ func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash 
 		}
 		return fmt.Errorf("create job: %w", err)
 	}
+	if err := r.markRetryApplied(ctx, b.Metadata.Name, retryToken); err != nil {
+		return err
+	}
 	return r.patchStatus(ctx, b.Metadata.Name, hash, manifest.BenchmarkStatus{
 		Phase:   manifest.PhaseRunning,
 		Message: "job created",
 	})
+}
+
+func (r *Reconciler) markRetryApplied(ctx context.Context, name, retryToken string) error {
+	if retryToken == "" {
+		return nil
+	}
+	obj, err := r.client.Resource(benchmarkGVR).Namespace(r.cfg.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	ann := obj.GetAnnotations()
+	if ann == nil {
+		ann = map[string]string{}
+	}
+	ann[annotationRetryApplied] = retryToken
+	obj.SetAnnotations(ann)
+	_, err = r.client.Resource(benchmarkGVR).Namespace(r.cfg.Namespace).Update(ctx, obj, metav1.UpdateOptions{})
+	return err
 }
 
 func (r *Reconciler) upsertConfigMap(ctx context.Context, b *manifest.Benchmark) error {

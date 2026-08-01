@@ -77,6 +77,7 @@ func main() {
 		sampleCompareCmd(),
 		crossLayerCmd(),
 		importCmd(),
+		sbkCmd(),
 		baselineCmd(),
 		inventoryCmd(),
 		smartCmd(),

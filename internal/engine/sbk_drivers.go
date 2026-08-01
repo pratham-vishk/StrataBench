@@ -207,9 +207,12 @@ func runDBBench(ctx context.Context, in RunInput) (*schema.Results, *schema.RawE
 	duration := in.Profile.ParamInt("duration_sec", 60)
 	threads := in.Profile.ParamInt("threads", 8)
 
+	pattern := in.Profile.ParamString("pattern", in.Profile.ParamString("operation", "randread"))
+	benchmark := rocksDBBenchmark(pattern)
+
 	args := []string{
 		"--db=" + dbPath,
-		"--benchmarks=readrandom",
+		"--benchmarks=" + benchmark,
 		"--threads=" + strconv.Itoa(threads),
 		"--duration=" + strconv.Itoa(duration),
 	}
@@ -257,11 +260,15 @@ func runKafkaPerf(ctx context.Context, in RunInput) (*schema.Results, *schema.Ra
 	}
 	topic := in.Profile.ParamString("topic", "stratabench-test")
 	duration := in.Profile.ParamInt("duration_sec", 60)
-	recordSize := in.Profile.ParamInt("record_size_bytes", 4096)
+	recordSize := in.Profile.ParamInt("record_size_bytes", in.Profile.ParamInt("record_size", 4096))
+	records := duration * 10000
+	if v := in.Profile.ParamInt("num_records", 0); v > 0 {
+		records = v
+	}
 
 	args := []string{
 		"--topic", topic,
-		"--num-records", strconv.Itoa(duration * 10000),
+		"--num-records", strconv.Itoa(records),
 		"--record-size", strconv.Itoa(recordSize),
 		"--throughput", "-1",
 		"--producer-props", "bootstrap.servers=" + brokers,

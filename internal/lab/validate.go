@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pratham-vishk/stratabench/internal/engine"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/validator"
 )
@@ -25,8 +26,9 @@ type ValidationItem struct {
 
 // ValidateReport summarizes lab validation readiness.
 type ValidateReport struct {
-	Check       *CheckReport     `json:"check,omitempty"`
-	Items       []ValidationItem `json:"items"`
+	Check       *CheckReport         `json:"check,omitempty"`
+	SBKTools    *engine.SBKToolReport `json:"sbk_tools,omitempty"`
+	Items       []ValidationItem     `json:"items"`
 	ProfileCount int             `json:"profile_count"`
 	SmokePassed int              `json:"smoke_passed"`
 	SmokeFailed int              `json:"smoke_failed"`
@@ -35,10 +37,11 @@ type ValidateReport struct {
 
 // ValidateOptions configures lab validation.
 type ValidateOptions struct {
-	ProfilesDir string
-	Smoke       bool
-	SmokeAll    bool // validate every profile (mock)
-	SmokeSBK    bool // validate SBK app profiles (mock)
+	ProfilesDir   string
+	Smoke         bool
+	SmokeAll      bool // validate every profile (mock)
+	SmokeSBK      bool // validate SBK app profiles (mock)
+	CheckSBKTools bool // probe native SBK drivers on local PATH
 }
 
 // ValidationMatrix returns the full Dell lab sign-off checklist generated from profiles/.
@@ -249,6 +252,10 @@ func Validate(ctx context.Context, cfg Config, opts ValidateOptions) (*ValidateR
 		Items:        items,
 		ProfileCount: len(items) - 1, // exclude monitoring row
 	}
+	if opts.CheckSBKTools {
+		sbk := engine.ProbeSBKDrivers()
+		rep.SBKTools = &sbk
+	}
 	if !opts.Smoke && !opts.SmokeSBK {
 		return rep, nil
 	}
@@ -318,6 +325,21 @@ func PrintValidationReport(rep *ValidateReport) {
 		fmt.Printf("\nSmoke validation: %d passed, %d failed\n", rep.SmokePassed, rep.SmokeFailed)
 		for _, e := range rep.SmokeErrors {
 			fmt.Printf("  ! %s\n", e)
+		}
+	}
+	if rep.SBKTools != nil {
+		fmt.Println("\nSBK native drivers (local PATH):")
+		for _, d := range rep.SBKTools.Drivers {
+			status := "missing"
+			if d.Available {
+				status = "ok (" + d.Path + ")"
+			}
+			fmt.Printf("  %-12s %-28s %s\n", d.Driver, d.Tool, status)
+		}
+		if rep.SBKTools.AllAvailable {
+			fmt.Println("  sbk-tools: all native drivers available")
+		} else {
+			fmt.Println("  sbk-tools: install missing drivers before application-layer hardware runs")
 		}
 	}
 	if rep.Check != nil && rep.Check.Ready {
