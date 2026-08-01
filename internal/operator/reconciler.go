@@ -95,20 +95,41 @@ func (r *Reconciler) reconcileOne(ctx context.Context, obj *unstructured.Unstruc
 	hash := specHash(b)
 
 	phase, _, _ := unstructured.NestedString(obj.Object, "status", "phase")
-	if phase == manifest.PhaseCompleted {
-		if obj.GetAnnotations()["stratabench.io/spec-hash"] == hash {
-			return nil
+	storedHash := ""
+	if ann := obj.GetAnnotations(); ann != nil {
+		storedHash = ann["stratabench.io/spec-hash"]
+	}
+
+	job, jobErr := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Get(ctx, jobName(name), metav1.GetOptions{})
+	jobExists := jobErr == nil
+	if jobErr != nil && !apierrors.IsNotFound(jobErr) {
+		return jobErr
+	}
+
+	switch decideReconcile(phase, storedHash, hash, jobExists) {
+	case actionSkip:
+		return nil
+	case actionTeardownAndRerun:
+		if err := r.teardownRun(ctx, name); err != nil {
+			return err
 		}
-	}
-
-	job, err := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Get(ctx, jobName(name), metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
+		if err := r.patchStatus(ctx, name, "", manifest.BenchmarkStatus{
+			Phase:   manifest.PhasePending,
+			Message: "spec changed, starting new run",
+		}); err != nil {
+			return err
+		}
 		return r.ensureJob(ctx, b, hash)
+	case actionEnsureJob:
+		return r.ensureJob(ctx, b, hash)
+	case actionObserveJob:
+		return r.observeJob(ctx, name, hash, phase, job)
+	default:
+		return nil
 	}
-	if err != nil {
-		return err
-	}
+}
 
+func (r *Reconciler) observeJob(ctx context.Context, name, hash, phase string, job *unstructured.Unstructured) error {
 	if jobSucceeded(job) {
 		result, readErr := manifest.ReadApplyResult(filepath.Join(statusDir(), name+".json"))
 		st := manifest.BenchmarkStatus{Phase: manifest.PhaseCompleted, Message: "job succeeded"}
@@ -135,18 +156,25 @@ func (r *Reconciler) reconcileOne(ctx context.Context, obj *unstructured.Unstruc
 	return nil
 }
 
+func (r *Reconciler) teardownRun(ctx context.Context, benchmark string) error {
+	removeStatusFile(benchmark)
+	prop := metav1.DeletePropagationBackground
+	err := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Delete(ctx, jobName(benchmark), metav1.DeleteOptions{
+		PropagationPolicy: &prop,
+	})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("delete job: %w", err)
+	}
+	return nil
+}
+
+func removeStatusFile(benchmark string) {
+	_ = os.Remove(filepath.Join(statusDir(), benchmark+".json"))
+}
+
 func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash string) error {
-	cm, err := buildConfigMap(b)
-	if err != nil {
+	if err := r.upsertConfigMap(ctx, b); err != nil {
 		return err
-	}
-	cmU, err := toUnstructured(cm)
-	if err != nil {
-		return err
-	}
-	_, err = r.client.Resource(cmGVR).Namespace(r.cfg.Namespace).Create(ctx, cmU, metav1.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("create configmap: %w", err)
 	}
 
 	job, err := buildJob(b)
@@ -158,12 +186,48 @@ func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash 
 		return err
 	}
 	if _, err := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Create(ctx, jobU, metav1.CreateOptions{}); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			return r.patchStatus(ctx, b.Metadata.Name, "", manifest.BenchmarkStatus{
+				Phase:   manifest.PhasePending,
+				Message: "waiting for previous job cleanup",
+			})
+		}
 		return fmt.Errorf("create job: %w", err)
 	}
 	return r.patchStatus(ctx, b.Metadata.Name, hash, manifest.BenchmarkStatus{
 		Phase:   manifest.PhaseRunning,
 		Message: "job created",
 	})
+}
+
+func (r *Reconciler) upsertConfigMap(ctx context.Context, b *manifest.Benchmark) error {
+	cm, err := buildConfigMap(b)
+	if err != nil {
+		return err
+	}
+	cmU, err := toUnstructured(cm)
+	if err != nil {
+		return err
+	}
+	name := configMapName(b.Metadata.Name)
+	_, err = r.client.Resource(cmGVR).Namespace(r.cfg.Namespace).Create(ctx, cmU, metav1.CreateOptions{})
+	if err == nil {
+		return nil
+	}
+	if !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("create configmap: %w", err)
+	}
+	existing, err := r.client.Resource(cmGVR).Namespace(r.cfg.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get configmap: %w", err)
+	}
+	if err := unstructured.SetNestedStringMap(existing.Object, cm.Data, "data"); err != nil {
+		return fmt.Errorf("set configmap data: %w", err)
+	}
+	if _, err := r.client.Resource(cmGVR).Namespace(r.cfg.Namespace).Update(ctx, existing, metav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("update configmap: %w", err)
+	}
+	return nil
 }
 
 func statusDir() string {

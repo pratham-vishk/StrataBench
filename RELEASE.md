@@ -1,23 +1,28 @@
 # Release Guide
 
-## v0.8.0-rc21 (current)
+## v0.8.0-rc22 (current)
 
-Live interval streaming for elbencho, vdbench, and spdk — completes live monitoring across all engines.
+Operator re-runs benchmarks when the Benchmark CR spec changes after a completed or failed run.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc21
-git push origin v0.8.0-rc21
-gh release create v0.8.0-rc21 --title "v0.8.0-rc21" --notes "Live interval streaming for elbencho, vdbench, and spdk."
+git tag v0.8.0-rc22
+git push origin v0.8.0-rc22
+gh release create v0.8.0-rc22 --title "v0.8.0-rc22" --notes "Operator re-run on spec change."
 ```
 
 ### Smoke test
 
 ```bash
-stratabench run --profile file-parallel-read --target /mnt/nfs --mock --watch
-stratabench run --profile afa-multi-lun --target /dev/sdb,/dev/sdc --mock --watch
+kubectl apply -k deploy/k8s/
+kubectl apply -f deploy/k8s/example-benchmark.yaml
+# Edit spec.profile or spec.target, then kubectl apply again — operator should start a new Job
 ```
+
+## v0.8.0-rc21
+
+Live interval streaming for elbencho, vdbench, and spdk — completes live monitoring across all engines.
 
 ## v0.8.0-rc20
 

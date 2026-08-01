@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc22] - 2026-08-01
+
+### Added
+- **Operator re-run on spec change** — deletes stale Job, upserts ConfigMap, and starts a new run when `stratabench.io/spec-hash` drifts after completion or failure
+
+### Changed
+- Operator ConfigMap upsert on re-run (was create-only, could leave stale manifest)
+- Operator RBAC: ConfigMap `delete` verb for cleanup paths
+
 ## [0.8.0-rc21] - 2026-08-01
 
 ### Added
