@@ -1,6 +1,24 @@
 # Release Guide
 
-## v0.8.0-rc13 (current)
+## v0.8.0-rc14 (current)
+
+Native engine live progress: `progress_path` JSONL polled by orchestrator for Prometheus/SSE during async runs.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc14
+git push origin v0.8.0-rc14
+```
+
+### Smoke test
+
+```bash
+make build-engine
+stratabench run --profile block-native-oltp --target /dev/nvme0n1 --async --watch --mock  # use real engine without --mock on Linux
+```
+
+## v0.8.0-rc13
 
 Rust native engine v0.2: Linux O_DIRECT block I/O with interval buckets; profile `block-native-oltp`.
 

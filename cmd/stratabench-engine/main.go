@@ -7,8 +7,10 @@ import (
 	"flag"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 type engineConfig struct {
@@ -24,6 +26,7 @@ type engineConfig struct {
 	Threads      int            `json:"threads"`
 	ReadWriteMix int            `json:"read_write_mix"`
 	DirectIO     bool           `json:"direct_io"`
+	ProgressPath string         `json:"progress_path,omitempty"`
 	Params       map[string]any `json:"params,omitempty"`
 }
 
@@ -73,6 +76,11 @@ func runBenchmark(args []string) error {
 	var cfg engineConfig
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		return err
+	}
+	if cfg.ProgressPath != "" {
+		if err := emitSyntheticProgress(cfg); err != nil {
+			return err
+		}
 	}
 	res := synthesize(cfg)
 	out, err := json.MarshalIndent(res, "", "  ")
@@ -150,4 +158,43 @@ func parseBlockBytes(s string) float64 {
 		return 4096
 	}
 	return n * mult
+}
+
+func emitSyntheticProgress(cfg engineConfig) error {
+	res := synthesize(cfg)
+	duration := cfg.DurationSec
+	if duration <= 0 {
+		duration = 5
+	}
+	if duration > 3 {
+		duration = 3
+	}
+	buckets := duration
+	if buckets < 3 {
+		buckets = 3
+	}
+	f, err := os.Create(cfg.ProgressPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	tick := time.Duration(duration) * time.Second / time.Duration(buckets)
+	if tick < 100*time.Millisecond {
+		tick = 100 * time.Millisecond
+	}
+	for i := 1; i <= buckets; i++ {
+		j := 0.9 + rand.Float64()*0.2
+		sample := map[string]any{
+			"seq":             i,
+			"elapsed_sec":     1,
+			"iops":            res.IOPS * j,
+			"throughput_mbps": res.ThroughputMBps * j,
+		}
+		if err := enc.Encode(sample); err != nil {
+			return err
+		}
+		time.Sleep(tick)
+	}
+	return nil
 }

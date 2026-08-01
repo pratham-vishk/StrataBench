@@ -2,6 +2,12 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc14] - 2026-08-01
+
+### Added
+- **Native engine live progress** — `progress_path` JSONL contract; Go orchestrator polls during async runs
+- Rust block engine and Go stub write per-second interval samples when `progress_path` is set
+
 ## [0.8.0-rc13] - 2026-08-01
 
 ### Added

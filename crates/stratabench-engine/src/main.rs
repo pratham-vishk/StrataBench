@@ -2,6 +2,7 @@
 
 mod block;
 mod config;
+mod progress;
 mod synthetic;
 
 use clap::{Parser, Subcommand};
@@ -36,7 +37,7 @@ fn run_benchmark(cfg: &EngineConfig) -> config::EngineResults {
             Err(e) => eprintln!("stratabench-engine: block I/O unavailable ({e}), using synthetic"),
         }
     }
-    synthetic::synthesize(cfg)
+    synthetic::synthesize_with_progress(cfg)
 }
 
 fn main() {

@@ -27,6 +27,8 @@ pub struct EngineConfig {
     #[serde(default)]
     pub direct_io: bool,
     #[serde(default)]
+    pub progress_path: String,
+    #[serde(default)]
     pub params: HashMap<String, serde_json::Value>,
 }
 

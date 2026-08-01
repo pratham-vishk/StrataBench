@@ -10,6 +10,7 @@ import (
 
 	"github.com/pratham-vishk/stratabench/internal/engine"
 	"github.com/pratham-vishk/stratabench/internal/profile"
+	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
 func TestNativeRunnerWithEngineStub(t *testing.T) {
@@ -58,5 +59,33 @@ func TestNativeRunnerStubBinary(t *testing.T) {
 	data, err := os.ReadFile(out)
 	if err != nil || len(data) < 10 {
 		t.Fatalf("output=%s err=%v", data, err)
+	}
+}
+
+func TestNativeRunnerLiveProgress(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "stratabench-engine")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
+	if out, err := exec.Command("go", "build", "-o", bin, "../../cmd/stratabench-engine").CombinedOutput(); err != nil {
+		t.Skipf("build engine stub: %v\n%s", err, out)
+	}
+	t.Setenv("STRATABENCH_ENGINE_BIN", bin)
+
+	p := &profile.Profile{
+		Name: "block-native-oltp", Engine: "stratabench", Layer: "block",
+		Params: map[string]any{"duration_sec": 9, "queue_depth": 32, "threads": 2},
+	}
+	var samples int
+	r := engine.ForProfile(p, false)
+	_, _, err := r.Run(context.Background(), engine.RunInput{
+		Profile: p, Target: "/dev/nvme0n1", WorkDir: t.TempDir(),
+		OnInterval: func(_ schema.IntervalSample) { samples++ },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if samples < 2 {
+		t.Fatalf("expected live native progress samples, got %d", samples)
 	}
 }

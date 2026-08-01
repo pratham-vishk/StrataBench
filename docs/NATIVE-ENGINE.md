@@ -22,16 +22,19 @@ Generated from the workload profile:
 ```json
 {
   "target": "/dev/nvme0n1",
-  "profile": "nvme-random-oltp",
+  "profile": "block-native-oltp",
   "layer": "block",
   "pattern": "randread",
   "block_size": "4k",
   "duration_sec": 60,
   "queue_depth": 32,
   "threads": 4,
-  "direct_io": true
+  "direct_io": true,
+  "progress_path": "/path/to/native-engine-progress.jsonl"
 }
 ```
+
+When `progress_path` is set, the engine appends one JSON interval sample per line (JSONL) during the run. The Go orchestrator polls this file for live Prometheus/SSE metrics.
 
 ### Output JSON (`native-engine-results.json`)
 

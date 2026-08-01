@@ -38,6 +38,13 @@ pub fn run_block(cfg: &EngineConfig) -> Result<EngineResults, String> {
     let latencies = Arc::new(Mutex::new(Vec::<f64>::with_capacity(4096)));
 
     let start = Instant::now();
+    let progress_handle = progress::spawn_progress_writer(
+        cfg.progress_path.clone(),
+        Arc::clone(&bucket_ops),
+        bs,
+        start,
+        duration,
+    );
     let mut handles = Vec::with_capacity(threads);
     for tid in 0..threads {
         let file = file.try_clone().map_err(|e| e.to_string())?;
@@ -92,6 +99,9 @@ pub fn run_block(cfg: &EngineConfig) -> Result<EngineResults, String> {
 
     for h in handles {
         h.join().map_err(|_| "worker panicked".to_string())?;
+    }
+    if let Some(h) = progress_handle {
+        let _ = h.join();
     }
 
     let elapsed = start.elapsed().as_secs_f64().max(0.001);

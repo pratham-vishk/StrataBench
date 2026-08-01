@@ -1,4 +1,13 @@
-use crate::config::{EngineConfig, EngineResults, LatencyUS};
+use crate::config::{EngineConfig, EngineResults, IntervalSample, LatencyUS};
+use std::thread;
+use std::time::Duration;
+
+pub fn synthesize_with_progress(cfg: &EngineConfig) -> EngineResults {
+    if !cfg.progress_path.is_empty() {
+        emit_synthetic_progress(cfg);
+    }
+    synthesize(cfg)
+}
 
 pub fn synthesize(cfg: &EngineConfig) -> EngineResults {
     let threads = cfg.threads.max(1) as f64;
@@ -34,5 +43,34 @@ pub fn synthesize(cfg: &EngineConfig) -> EngineResults {
             max: Some(p50 * 12.0),
         },
         intervals: Vec::new(),
+    }
+}
+
+fn emit_synthetic_progress(cfg: &EngineConfig) {
+    let preview = synthesize(cfg);
+    let mut duration = cfg.duration_sec.max(1);
+    if duration > 3 {
+        duration = 3;
+    }
+    let buckets = duration.max(3);
+    let tick = Duration::from_millis((duration as u64 * 1000 / buckets as u64).max(100));
+    let _ = std::fs::write(&cfg.progress_path, "");
+    for i in 1..=buckets {
+        let j = 0.9 + (i as f64 * 0.03) % 0.2;
+        let sample = IntervalSample {
+            seq: i,
+            elapsed_sec: 1.0,
+            iops: preview.iops * j,
+            throughput_mbps: preview.throughput_mbps * j,
+            avg_latency_us: None,
+        };
+        if let Ok(line) = serde_json::to_string(&sample) {
+            let _ = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&cfg.progress_path)
+                .and_then(|mut f| std::io::Write::write_all(&mut f, format!("{line}\n").as_bytes()));
+        }
+        thread::sleep(tick);
     }
 }
