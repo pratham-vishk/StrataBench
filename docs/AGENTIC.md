@@ -7,7 +7,7 @@ Use StrataBench with **Cursor**, **Claude Code**, **Claude Desktop**, **Devin**,
 ```
 ┌──────────────────────────┐     MCP (stdio)      ┌──────────────────┐
 │ Cursor / Claude / Devin  │ ◄──────────────────► │ stratabench-mcp  │
-│ CLI model                │                      │  (7 tools)       │
+│ CLI model                │                      │  (14 tools)      │
 └────────┬─────────────────┘                      └────────┬─────────┘
          │ shell                                           │
          ▼                                                   ▼
@@ -79,6 +79,15 @@ bash scripts/run-mcp.sh   # test MCP server starts
 - *"Use the stratabench MCP to list NVMe profiles and plan an oltp benchmark"*
 - *"Run a mock stratabench agent loop for ssd random 4k on /tmp/test"*
 - *"Validate afa-multi-lun against /dev/sdb,/dev/sdc with hardware checks"*
+- */stratabench-lab-benchmark* — full lab workflow (IPs → lab.yaml → bootstrap → run → PDF)
+
+**Devin workflows & agents (committed):**
+
+| File | Purpose |
+|------|---------|
+| `.devin/workflows/stratabench-lab-benchmark.md` | Slash command `/stratabench-lab-benchmark` — end-to-end lab benchmark |
+| `.devin/agents/stratabench-benchmarker.md` | Custom subagent for MCP + lab runs |
+| `.devin/skills/stratabench/SKILL.md` | On-demand skill (model can auto-invoke) |
 
 ---
 
@@ -98,6 +107,31 @@ After `make build-mcp`, set `command` to the absolute path of `bin/stratabench-m
 ## Cursor
 
 See `examples/mcp-cursor.json`. Add under Cursor → Settings → MCP.
+
+Project skill: `.cursor/skills/stratabench/SKILL.md` — loaded when working in this repo. Covers lab.yaml workflow, MCP tools, and safety defaults.
+
+---
+
+## Lab cluster workflow
+
+For multi-node Dell/lab hardware, prefer **`lab.yaml`** over ad-hoc CLI flags:
+
+```bash
+stratabench lab bootstrap -f lab.yaml
+stratabench lab validate -f lab.yaml --check-sbk-tools
+stratabench lab run -f lab.yaml hdd-sequential-read
+stratabench lab run -f lab.yaml s3-cluster-rdma
+```
+
+`lab run` resolves **target, topology, and engine** from the profile + `targets:` section. Every run produces **HTML, Excel, and PDF** under `~/.stratabench/reports/`.
+
+When a user gives IPs once, an agent should:
+1. Generate `lab.yaml` from `examples/lab.yaml.example`
+2. Run bootstrap + validate
+3. Run the requested profile(s)
+4. Return report paths (especially PDF for executives)
+
+See `docs/LAB-BOOTSTRAP.md` and README.
 
 ---
 

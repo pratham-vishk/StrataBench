@@ -224,6 +224,9 @@ func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 		"validation": res.Validation,
 		"summary":    res.Summary,
 		"report":     res.ReportPath,
+		"excel_path": res.ExcelPath,
+		"pdf_path":   res.PDFPath,
+		"json_path":  res.JSONPath,
 	}, nil
 }
 

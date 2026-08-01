@@ -8,12 +8,25 @@ This repository is **agent-ready**. External CLI models (**Cursor**, **Claude Co
 |----------|-------------|------|
 | **Claude Code** | `.mcp.json` (project root, committed) | [docs/AGENTIC.md](docs/AGENTIC.md#claude-code) |
 | **Claude Desktop** | `~/Library/Application Support/Claude/claude_desktop_config.json` | `examples/mcp-claude-desktop.json` |
-| **Devin** | `.devin/mcp_config.json` + `AGENTS.md` / `CLAUDE.md` | [docs/AGENTIC.md](docs/AGENTIC.md#devin) |
-| **Cursor** | Cursor MCP settings | `examples/mcp-cursor.json` |
+| **Devin** | `.devin/mcp_config.json` + `AGENTS.md` / `CLAUDE.md` + `.devin/workflows/` | [docs/AGENTIC.md](docs/AGENTIC.md#devin) |
+| **Cursor** | Cursor MCP settings + `.cursor/skills/stratabench/SKILL.md` | `examples/mcp-cursor.json` |
 
-Clone the repo → Claude Code and Devin pick up MCP automatically. Approve the `stratabench` server on first use.
+Clone the repo → Claude Code and Devin pick up MCP automatically. Cursor loads the project skill from `.cursor/skills/stratabench/`. Approve the `stratabench` server on first use.
 
 ## Quick start for agents
+
+### Lab cluster (preferred for real hardware)
+
+When the user provides client/server IPs, generate or update `lab.yaml` with a `targets:` section, then:
+
+1. **Bootstrap** — `stratabench lab bootstrap -f lab.yaml` (agents, tools, optional MinIO)
+2. **Validate** — `stratabench lab validate -f lab.yaml --check-sbk-tools` (SBK drivers on PATH)
+3. **Run** — `stratabench lab run -f lab.yaml <profile>` — resolves target, topology, and engine per profile/layer
+4. **Reports** — `~/.stratabench/reports/<run-id>.{html,xlsx,pdf}`
+
+See `examples/lab.yaml.example`, `docs/LAB-BOOTSTRAP.md`, and README “Lab cluster workflow”.
+
+### Single-node / MCP loop
 
 1. **Discover profiles** — `stratabench_list_profiles` (MCP) or `GET /api/v1/profiles`
 2. **Plan from intent** — `stratabench_plan` with `intent: "nvme oltp database"`
@@ -58,7 +71,7 @@ See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mc
 | `stratabench_analyze` | Post-run insights for a `run_id` |
 | `stratabench_list_runs` | Recent runs from SQLite store |
 | `stratabench_compare_runs` | Compare two run IDs (IOPS, latency, deltas) |
-| `stratabench_report` | HTML or JSON report for a run |
+| `stratabench_report` | HTML report for a run (PDF/Excel written by `stratabench_run` / `stratabench_agent` via `WriteRunArtifacts`) |
 | `stratabench_baseline_check` | Regression check against stored baseline |
 | `stratabench_export_json` | Export run result as JSON |
 | `stratabench_run_progress` | Poll in-flight run assignment progress |
@@ -81,6 +94,15 @@ stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 stratabench agent "ssd random 4k" --target /tmp/test --mock
 stratabench agent "nvme database oltp" --target /dev/nvme0n1 --llm --mock=false
 stratabench agent "s3 put 3kb-100kb duration 1h" --yes --mock
+
+# Lab cluster (profile-aware target resolution from lab.yaml)
+stratabench lab bootstrap -f lab.yaml
+stratabench lab run -f lab.yaml hdd-sequential-read
+stratabench lab run -f lab.yaml s3-cluster-rdma
+
+# SBK native drivers
+stratabench sbk tools
+stratabench lab validate -f lab.yaml --check-sbk-tools
 ```
 
 ## REST API (`stratabench-api` on `:8080`)
@@ -130,6 +152,11 @@ Works with Ollama, OpenAI, LiteLLM, vLLM, LocalAI, and any `/v1/chat/completions
 | `agents/*.prompt` | LLM system prompts (planner, reporter) |
 | `profiles/*.yaml` | Workload definitions |
 | `docs/AGENTIC.md` | User guide for agentic usage |
+| `docs/LAB-BOOTSTRAP.md` | Lab bootstrap + profile-aware `lab run` |
+| `.cursor/skills/stratabench/SKILL.md` | Cursor project skill |
+| `.devin/workflows/stratabench-lab-benchmark.md` | Devin workflow `/stratabench-lab-benchmark` |
+| `.devin/agents/stratabench-benchmarker.md` | Devin custom subagent for lab benchmarks |
+| `.devin/skills/stratabench/SKILL.md` | Devin project skill |
 | `CLAUDE.md` | Claude Code + Devin project instructions |
 
 ## Safety rules for agents

@@ -7,7 +7,10 @@
 - Read AGENTS.md for MCP tools, CLI commands, and REST API
 - Claude Code: `.mcp.json` at repo root (auto-loaded)
 - Devin: `.devin/mcp_config.json` + AGENTS.md + CLAUDE.md
-- MCP server: `cmd/stratabench-mcp` — tools for plan, validate, run, analyze
+- Cursor: `.cursor/skills/stratabench/SKILL.md` + `examples/mcp-cursor.json`
+- MCP server: `cmd/stratabench-mcp` — 14 tools for plan, guide, validate, run, analyze, compare, report
+- Lab workflow: `lab bootstrap` → `lab run <profile>` from `lab.yaml` with `targets:` section
+- Reports: HTML + Excel + PDF under `~/.stratabench/reports/`
 - Default to mock mode unless user confirms real hardware targets
 - 30+ profiles in `profiles/`; engines: fio, vdbench, SPDK, warp, elbencho, sbk
 
@@ -17,7 +20,8 @@
 stratabench agent "intent" --target <path> --mock
 stratabench plan "intent" --llm
 stratabench validate --profile <name> --target <path>
-stratabench run --profile <name> --target <path>
+stratabench lab run -f lab.yaml hdd-sequential-read
+stratabench sbk tools
 ```
 
 ## LLM env
