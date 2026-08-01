@@ -26,13 +26,16 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/report"
 	"github.com/pratham-vishk/stratabench/internal/smarthistory"
 	"github.com/pratham-vishk/stratabench/internal/schema"
+	"github.com/pratham-vishk/stratabench/internal/topology"
 	"github.com/pratham-vishk/stratabench/internal/version"
 )
 
 var (
 	profileName  string
 	target       string
+	targetsCSV   string
 	clientsCSV   string
+	topologyMode string
 	mock         bool
 	runID        string
 	runIDB       string
@@ -160,10 +163,16 @@ func runCmd() *cobra.Command {
 			defer svc.Close()
 
 			clients := remote.ParseHosts(clientsCSV)
+			targets := topology.ParseCSV(targetsCSV)
+			if target != "" && len(targets) == 0 {
+				targets = []string{target}
+			}
 			run, err := svc.Run(cmd.Context(), orchestrator.RunOptions{
 				Profile:       p,
 				Target:        target,
+				Targets:       targets,
 				Clients:       clients,
+				Topology:      topologyMode,
 				Mock:          mock,
 				SkipValidate:  skipValidate,
 				CheckBaseline: checkBaseline,
@@ -180,7 +189,7 @@ func runCmd() *cobra.Command {
 			}
 			_ = export.WriteJSON(run, filepath.Join(paths.ReportsDir(), run.RunID+".json"))
 
-			printRunSummary(run, len(clients))
+			printRunSummary(run)
 			if checkBaseline {
 				baseline.PrintAlerts(svc.CheckRegression(run))
 			}
@@ -188,8 +197,10 @@ func runCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&profileName, "profile", "", "Workload profile name")
-	cmd.Flags().StringVar(&target, "target", "", "Block device, file path, or S3 endpoint")
+	cmd.Flags().StringVar(&target, "target", "", "Single block device, path, or S3 endpoint")
+	cmd.Flags().StringVar(&targetsCSV, "targets", "", "Comma-separated server targets (multi-server)")
 	cmd.Flags().StringVar(&clientsCSV, "clients", "", "Comma-separated agent URLs (host:7777)")
+	cmd.Flags().StringVar(&topologyMode, "topology", "auto", "Topology: auto, single, pool, sweep, shard, matrix")
 	cmd.Flags().BoolVar(&mock, "mock", false, "Use mock engine (no real I/O)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", false, "Compare results against stored baseline after run")
@@ -619,13 +630,16 @@ func agentCmd() *cobra.Command {
 		Short: "Agentic loop: plan → validate → run → analyze → report",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if target == "" {
-				return fmt.Errorf("--target is required")
+			targets := topology.MergeTargets(target, topology.ParseCSV(targetsCSV))
+			if len(targets) == 0 {
+				return fmt.Errorf("--target or --targets is required")
 			}
 			_, err := agentloop.Run(cmd.Context(), agentloop.Options{
 				Intent:        strings.Join(args, " "),
-				Target:        target,
+				Target:        targets[0],
+				Targets:       targets,
 				Clients:       remote.ParseHosts(clientsCSV),
+				Topology:      topologyMode,
 				Mock:          mock,
 				SkipValidate:  skipValidate,
 				CheckBaseline: checkBaseline,
@@ -638,7 +652,9 @@ func agentCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&target, "target", "", "Block device, file path, or S3 endpoint")
+	cmd.Flags().StringVar(&targetsCSV, "targets", "", "Comma-separated server targets")
 	cmd.Flags().StringVar(&clientsCSV, "clients", "", "Comma-separated agent URLs (host:7777)")
+	cmd.Flags().StringVar(&topologyMode, "topology", "auto", "Topology: auto, single, pool, sweep, shard, matrix")
 	cmd.Flags().BoolVar(&mock, "mock", true, "Use mock engine (default true for agent)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
@@ -646,7 +662,7 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name")
-	_ = cmd.MarkFlagRequired("target")
+	_ = cmd.MarkFlagRequired("target") // target or targets
 	return cmd
 }
 
@@ -693,10 +709,16 @@ func printValidation(p *profile.Profile, res schema.ValidationResult) {
 	}
 }
 
-func printRunSummary(run *schema.RunResult, clientCount int) {
+func printRunSummary(run *schema.RunResult) {
 	fmt.Printf("Run completed: %s\n", run.RunID)
-	if clientCount > 0 {
-		fmt.Printf("  Clients: %d (aggregated)\n", clientCount)
+	if run.Topology != "" {
+		fmt.Printf("  Topology: %s\n", run.Topology)
+	}
+	if len(run.Clients) > 0 {
+		fmt.Printf("  Client assignments: %d\n", len(run.Clients))
+	}
+	if len(run.Targets) > 1 {
+		fmt.Printf("  Server targets: %d (aggregated)\n", len(run.Targets))
 	}
 	fmt.Printf("  IOPS: %.0f  Throughput: %.2f MB/s  p99: %.1f µs\n",
 		run.Results.IOPS, run.Results.ThroughputMBps, run.Results.LatencyUS.P99)

@@ -5,6 +5,13 @@ All notable changes to StrataBench are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Topology engine** — all client/server patterns: `single`, `pool`, `sweep`, `shard`, `matrix`
+- CLI flags `--targets` and `--topology auto|single|pool|sweep|shard|matrix`
+- Per-target results in `run.targets[]` and per-assignment `run.clients[].target`
+- `docs/TOPOLOGY.md` with examples for every scenario
+- K8s CRD + API support for `targets` and `topology`
+
+### Added (prior)
 - Virtual parity for HDD, NVMe passthrough, AFA, and S3 RDMA:
   - `vm-hdd-sequential`, `vm-nvme-passthrough`, `vm-afa-multi-lun`, `vm-s3-rdma`
 - `vm_vdbench.go` — vdbench via SSH into VM guest for multi-LUN AFA workloads

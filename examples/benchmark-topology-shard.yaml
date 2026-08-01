@@ -1,0 +1,16 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: multi-client-multi-server
+  namespace: stratabench
+spec:
+  profile: s3-put-throughput
+  targets:
+    - 10.0.1.10:9000
+    - 10.0.1.11:9000
+    - 10.0.1.12:9000
+  clients:
+    - 10.0.2.1:7777
+    - 10.0.2.2:7777
+  topology: shard
+  mock: true

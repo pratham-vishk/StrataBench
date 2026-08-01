@@ -151,6 +151,7 @@ Docs: https://pratham-vishk.github.io/StrataBench/
 | [RESULT_SCHEMA.md](docs/RESULT_SCHEMA.md) | Normalized benchmark result format |
 | [DEV.md](docs/DEV.md) | Full development guide |
 | [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM deployment |
+| [TOPOLOGY.md](docs/TOPOLOGY.md) | Multi-client / multi-server topologies |
 | [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) | Engine × physical/virtual matrix |
 | [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware validation checklist |
 | [profiles/](profiles/) | Example workload profile definitions |

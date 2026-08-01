@@ -22,7 +22,9 @@ type Server struct {
 type runRequest struct {
 	Profile      string   `json:"profile"`
 	Target       string   `json:"target"`
+	Targets      []string `json:"targets"`
 	Clients      []string `json:"clients"`
+	Topology     string   `json:"topology"`
 	Mock         bool     `json:"mock"`
 	SkipValidate bool     `json:"skip_validate"`
 	CacheBytes   int64    `json:"cache_bytes"`
@@ -155,7 +157,9 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 		run, err := s.Svc.Run(r.Context(), orchestrator.RunOptions{
 			Profile:      p,
 			Target:       req.Target,
+			Targets:      req.Targets,
 			Clients:      req.Clients,
+			Topology:     req.Topology,
 			Mock:         req.Mock,
 			SkipValidate: req.SkipValidate,
 			CacheBytes:   req.CacheBytes,

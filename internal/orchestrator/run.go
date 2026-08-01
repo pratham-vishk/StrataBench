@@ -21,19 +21,22 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/remote"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 	"github.com/pratham-vishk/stratabench/internal/store"
+	"github.com/pratham-vishk/stratabench/internal/topology"
 	"github.com/pratham-vishk/stratabench/internal/validator"
 )
 
 type RunOptions struct {
-	Profile      *profile.Profile
-	Target       string
-	Clients      []string
-	Mock         bool
-	SkipValidate   bool
-	CheckBaseline  bool
-	CacheBytes     int64
-	WorkDir      string
-	DataDir      string
+	Profile       *profile.Profile
+	Target        string
+	Targets       []string
+	Clients       []string
+	Topology      string
+	Mock          bool
+	SkipValidate  bool
+	CheckBaseline bool
+	CacheBytes    int64
+	WorkDir       string
+	DataDir       string
 }
 
 type Service struct {
@@ -61,13 +64,12 @@ func (s *Service) Validate(opts RunOptions) schema.ValidationResult {
 }
 
 func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
-	if len(opts.Clients) > 0 {
-		return s.runDistributed(ctx, opts)
+	targets := topology.MergeTargets(opts.Target, opts.Targets)
+	plan, err := topology.Build(opts.Topology, opts.Clients, targets)
+	if err != nil {
+		return nil, err
 	}
-	return s.runLocal(ctx, opts)
-}
 
-func (s *Service) runLocal(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
 	if opts.WorkDir == "" {
 		opts.WorkDir = filepath.Join(opts.DataDir, "work")
 	}
@@ -75,37 +77,6 @@ func (s *Service) runLocal(ctx context.Context, opts RunOptions) (*schema.RunRes
 		return nil, err
 	}
 
-	hw := discovery.Snapshot()
-	validation := s.Validate(opts)
-	if !opts.SkipValidate && !validation.Passed {
-		return nil, fmt.Errorf("validation failed: %v", validation.Errors)
-	}
-
-	runID := uuid.New().String()
-	started := time.Now().UTC()
-
-	pattern, blockSize, datasetSize, durationSec, rampSec, qd, threads, rwMix, directIO := opts.Profile.ToWorkload()
-	engineName := opts.Profile.Engine
-	if opts.Mock {
-		engineName = "mock"
-	}
-
-	runner := engine.ForProfile(opts.Profile, opts.Mock)
-	results, raw, err := runner.Run(ctx, engine.RunInput{
-		Profile: opts.Profile,
-		Target:  opts.Target,
-		Mock:    opts.Mock,
-		WorkDir: opts.WorkDir,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return s.saveRun(opts, runID, started, durationSec, rampSec, engineName, validation, hw,
-		pattern, blockSize, datasetSize, qd, threads, rwMix, directIO, *results, raw, nil)
-}
-
-func (s *Service) runDistributed(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
 	validation := s.Validate(opts)
 	if !opts.SkipValidate && !validation.Passed {
 		return nil, fmt.Errorf("validation failed: %v", validation.Errors)
@@ -116,25 +87,21 @@ func (s *Service) runDistributed(ctx context.Context, opts RunOptions) (*schema.
 	hw := discovery.Snapshot()
 
 	type item struct {
-		host string
-		run  *schema.RunResult
-		err  error
+		assignment topology.Assignment
+		results    schema.Results
+		err        error
 	}
-	ch := make(chan item, len(opts.Clients))
+
+	ch := make(chan item, len(plan.Assignments))
 	var wg sync.WaitGroup
 
-	for _, host := range opts.Clients {
+	for _, a := range plan.Assignments {
 		wg.Add(1)
-		go func(h string) {
+		go func(assign topology.Assignment) {
 			defer wg.Done()
-			client := remote.NewClient(h)
-			if _, err := client.Health(ctx); err != nil {
-				ch <- item{host: h, err: fmt.Errorf("health check %s: %w", h, err)}
-				return
-			}
-			run, err := client.Run(ctx, opts.Profile, opts.Target, opts.Mock, true, opts.CacheBytes)
-			ch <- item{host: h, run: run, err: err}
-		}(host)
+			res, err := s.runAssignment(ctx, opts, assign)
+			ch <- item{assignment: assign, results: res, err: err}
+		}(a)
 	}
 	wg.Wait()
 	close(ch)
@@ -142,16 +109,31 @@ func (s *Service) runDistributed(ctx context.Context, opts RunOptions) (*schema.
 	var clientRuns []schema.ClientResult
 	var resultSet []schema.Results
 	var errs []string
+	targetBuckets := map[string][]schema.Results{}
+
 	for it := range ch {
 		if it.err != nil {
-			errs = append(errs, fmt.Sprintf("%s: %v", it.host, it.err))
+			label := assignmentLabel(it.assignment)
+			errs = append(errs, fmt.Sprintf("%s: %v", label, it.err))
 			continue
 		}
-		clientRuns = append(clientRuns, schema.ClientResult{Host: it.host, Results: it.run.Results})
-		resultSet = append(resultSet, it.run.Results)
+		resultSet = append(resultSet, it.results)
+		targetBuckets[it.assignment.Target] = append(targetBuckets[it.assignment.Target], it.results)
+		if it.assignment.Client != "" {
+			clientRuns = append(clientRuns, schema.ClientResult{
+				Host:    it.assignment.Client,
+				Target:  it.assignment.Target,
+				Results: it.results,
+			})
+		}
 	}
 	if len(resultSet) == 0 {
-		return nil, fmt.Errorf("all clients failed: %s", strings.Join(errs, "; "))
+		return nil, fmt.Errorf("all assignments failed: %s", strings.Join(errs, "; "))
+	}
+
+	var targetRuns []schema.TargetResult
+	for t, rs := range targetBuckets {
+		targetRuns = append(targetRuns, schema.TargetResult{Target: t, Results: aggregate.Results(rs)})
 	}
 
 	agg := aggregate.Results(resultSet)
@@ -161,20 +143,66 @@ func (s *Service) runDistributed(ctx context.Context, opts RunOptions) (*schema.
 		engineName = "mock"
 	}
 
+	primaryTarget := targets[0]
+	if len(targets) > 1 {
+		primaryTarget = strings.Join(targets, ",")
+	}
+
 	run, err := s.saveRun(opts, runID, started, durationSec, rampSec, engineName, validation, hw,
-		pattern, blockSize, datasetSize, qd, threads, rwMix, directIO, agg, nil, clientRuns)
+		pattern, blockSize, datasetSize, qd, threads, rwMix, directIO, agg, nil, clientRuns, targetRuns, plan.Mode, primaryTarget)
 	if err != nil {
 		return nil, err
 	}
 	if len(errs) > 0 {
 		run.Validation.Warnings = append(run.Validation.Warnings, schema.Warning{
-			Rule:     "partial_client_failure",
+			Rule:     "partial_assignment_failure",
 			Message:  strings.Join(errs, "; "),
 			Severity: "warning",
 		})
 		_ = s.Store.Save(run)
 	}
 	return run, nil
+}
+
+func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology.Assignment) (schema.Results, error) {
+	if a.Client == "" {
+		runner := engine.ForProfile(opts.Profile, opts.Mock)
+		results, _, err := runner.Run(ctx, engine.RunInput{
+			Profile: opts.Profile,
+			Target:  a.Target,
+			Mock:    opts.Mock,
+			WorkDir: filepath.Join(opts.WorkDir, sanitizePath(a.Target)),
+		})
+		if err != nil {
+			return schema.Results{}, err
+		}
+		return *results, nil
+	}
+
+	client := remote.NewClient(a.Client)
+	if _, err := client.Health(ctx); err != nil {
+		return schema.Results{}, fmt.Errorf("health check: %w", err)
+	}
+	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, true, opts.CacheBytes)
+	if err != nil {
+		return schema.Results{}, err
+	}
+	return run.Results, nil
+}
+
+func assignmentLabel(a topology.Assignment) string {
+	if a.Client == "" {
+		return "local→" + a.Target
+	}
+	return a.Client + "→" + a.Target
+}
+
+func sanitizePath(s string) string {
+	s = strings.NewReplacer("/", "_", ":", "_", "@", "_", ",", "_").Replace(s)
+	if s == "" {
+		return "default"
+	}
+	return s
 }
 
 func (s *Service) saveRun(
@@ -191,18 +219,25 @@ func (s *Service) saveRun(
 	results schema.Results,
 	raw *schema.RawEngineOutput,
 	clients []schema.ClientResult,
+	targets []schema.TargetResult,
+	topologyMode string,
+	primaryTarget string,
 ) (*schema.RunResult, error) {
 	completed := time.Now().UTC()
 	steady := started.Add(time.Duration(rampSec) * time.Second)
 
 	targetType := "block"
-	if opts.Profile.Layer == "object" {
+	if opts.Profile.Layer == "object" || strings.HasPrefix(opts.Profile.Layer, "vm-object") {
 		targetType = "object"
 	}
 
 	meta := map[string]string{}
 	if len(opts.Clients) > 0 {
 		meta["clients"] = strings.Join(opts.Clients, ",")
+	}
+	allTargets := topology.MergeTargets(opts.Target, opts.Targets)
+	if len(allTargets) > 0 {
+		meta["targets"] = strings.Join(allTargets, ",")
 	}
 
 	run := &schema.RunResult{
@@ -214,10 +249,11 @@ func (s *Service) saveRun(
 		Status:        "completed",
 		Mock:          opts.Mock,
 		Validation:    validation,
+		Topology:      topologyMode,
 		Target: schema.Target{
 			Type:     targetType,
-			Device:   opts.Target,
-			Endpoint: opts.Target,
+			Device:   primaryTarget,
+			Endpoint: primaryTarget,
 			Metadata: meta,
 		},
 		Workload: schema.Workload{
@@ -240,6 +276,7 @@ func (s *Service) saveRun(
 		},
 		RawOutput: raw,
 		Clients:   clients,
+		Targets:   targets,
 	}
 
 	if err := s.Store.Save(run); err != nil {

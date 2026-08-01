@@ -1,0 +1,14 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: multi-client-one-server
+  namespace: stratabench
+spec:
+  profile: ssd-random-4k
+  target: /dev/nvme0n1
+  clients:
+    - 10.0.1.1:7777
+    - 10.0.1.2:7777
+    - 10.0.1.3:7777
+  topology: pool
+  mock: true

@@ -20,7 +20,9 @@ import (
 type Options struct {
 	Intent        string
 	Target        string
+	Targets       []string
 	Clients       []string
+	Topology      string
 	Mock          bool
 	SkipValidate  bool
 	CheckBaseline bool
@@ -78,7 +80,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	runOpts := orchestrator.RunOptions{
 		Profile:       p,
 		Target:        opts.Target,
+		Targets:       opts.Targets,
 		Clients:       opts.Clients,
+		Topology:      opts.Topology,
 		Mock:          opts.Mock,
 		SkipValidate:  opts.SkipValidate,
 		CheckBaseline: opts.CheckBaseline,

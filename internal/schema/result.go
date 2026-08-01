@@ -130,9 +130,17 @@ type RunResult struct {
 	Timestamps    Timestamps        `json:"timestamps"`
 	RawOutput     *RawEngineOutput  `json:"raw_engine_output,omitempty"`
 	Clients       []ClientResult    `json:"clients,omitempty"`
+	Targets       []TargetResult    `json:"targets,omitempty"`
+	Topology      string            `json:"topology,omitempty"`
 }
 
 type ClientResult struct {
 	Host    string  `json:"host"`
+	Target  string  `json:"target,omitempty"`
+	Results Results `json:"results"`
+}
+
+type TargetResult struct {
+	Target  string  `json:"target"`
 	Results Results `json:"results"`
 }

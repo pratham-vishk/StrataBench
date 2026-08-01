@@ -30,7 +30,9 @@ type Metadata struct {
 type BenchmarkSpec struct {
 	Profile       string   `yaml:"profile"`
 	Target        string   `yaml:"target"`
+	Targets       []string `yaml:"targets,omitempty"`
 	Clients       []string `yaml:"clients,omitempty"`
+	Topology      string   `yaml:"topology,omitempty"`
 	Mock          bool     `yaml:"mock,omitempty"`
 	SkipValidate  bool     `yaml:"skipValidate,omitempty"`
 	CheckBaseline bool     `yaml:"checkBaseline,omitempty"`
@@ -58,7 +60,9 @@ func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*Apply
 		result, err := agentloop.Run(ctx, agentloop.Options{
 			Intent:        b.Spec.Intent,
 			Target:        b.Spec.Target,
+			Targets:       b.Spec.Targets,
 			Clients:       b.Spec.Clients,
+			Topology:      b.Spec.Topology,
 			Mock:          b.Spec.Mock,
 			SkipValidate:  b.Spec.SkipValidate,
 			CheckBaseline: b.Spec.CheckBaseline,
@@ -84,7 +88,9 @@ func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*Apply
 	run, err := svc.Run(ctx, orchestrator.RunOptions{
 		Profile:       p,
 		Target:        b.Spec.Target,
+		Targets:       b.Spec.Targets,
 		Clients:       b.Spec.Clients,
+		Topology:      b.Spec.Topology,
 		Mock:          b.Spec.Mock,
 		SkipValidate:  b.Spec.SkipValidate,
 		CheckBaseline: b.Spec.CheckBaseline,

@@ -146,6 +146,7 @@ func fromUnstructured(obj *unstructured.Unstructured) (*manifest.Benchmark, erro
 		Spec: manifest.BenchmarkSpec{
 			Profile:       nestedString(spec, "profile"),
 			Target:        nestedString(spec, "target"),
+			Topology:      nestedString(spec, "topology"),
 			Mock:          nestedBool(spec, "mock"),
 			SkipValidate:  nestedBool(spec, "skipValidate"),
 			CheckBaseline: nestedBool(spec, "checkBaseline"),
@@ -160,11 +161,18 @@ func fromUnstructured(obj *unstructured.Unstructured) (*manifest.Benchmark, erro
 			}
 		}
 	}
+	if targets, ok := spec["targets"].([]any); ok {
+		for _, t := range targets {
+			if s, ok := t.(string); ok {
+				b.Spec.Targets = append(b.Spec.Targets, s)
+			}
+		}
+	}
 	if b.Spec.Profile == "" && b.Spec.Intent == "" {
 		return nil, fmt.Errorf("spec.profile or spec.intent required")
 	}
-	if b.Spec.Target == "" && b.Spec.Intent == "" {
-		return nil, fmt.Errorf("spec.target required")
+	if b.Spec.Target == "" && len(b.Spec.Targets) == 0 && b.Spec.Intent == "" {
+		return nil, fmt.Errorf("spec.target or spec.targets required")
 	}
 	return b, nil
 }

@@ -29,7 +29,16 @@ spec:
                   description: StrataBench workload profile name
                 target:
                   type: string
-                  description: Block device, path, DSN, or S3 endpoint
+                  description: Single block device, path, DSN, or S3 endpoint
+                topology:
+                  type: string
+                  enum: [auto, single, pool, sweep, shard, matrix]
+                  description: Client/server assignment topology
+                targets:
+                  type: array
+                  items:
+                    type: string
+                  description: Multiple server targets (multi-server topologies)
                 clients:
                   type: array
                   items:
