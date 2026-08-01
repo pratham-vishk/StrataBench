@@ -1,171 +1,278 @@
 # StrataBench
 
 [![CI](https://github.com/pratham-vishk/StrataBench/actions/workflows/ci.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/ci.yml)
+[![Docker](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+![Go](https://img.shields.io/badge/go-1.25+-00ADD8)
+![Profiles](https://img.shields.io/badge/profiles-30+-brightgreen)
 
-**Agentic, honest storage benchmarking for every layer — from a single HDD to a distributed S3 cluster.**
+**Agentic, honest storage benchmarking for every layer — HDD, NVMe, AFA, S3, VM, and application workloads.**
 
-StrataBench is an open-source storage performance platform that orchestrates benchmarks across block, file, object, VM, and application storage — with built-in validation so your numbers are trustworthy before you act on them.
+StrataBench is an open-source platform that **orchestrates** industry-standard engines (fio, SPDK, vdbench, Warp, elbencho, pgbench), **validates** workload design before you run, and **reports** unified results across physical bare metal, virtual machines, and distributed clusters.
 
-> *"The first storage benchmark platform that tells you if your numbers are honest — before you trust them."*
+> *Stop trusting benchmark numbers you haven't validated. StrataBench tells you if your test is honest — before you act on the results.*
+
+**Docs:** [pratham-vishk.github.io/StrataBench](https://pratham-vishk.github.io/StrataBench/) · **Container:** `ghcr.io/pratham-vishk/stratabench`
+
+---
+
+## Keywords
+
+`storage benchmark` · `NVMe benchmark` · `HDD performance` · `all-flash array` · `AFA` · `S3 benchmark` · `MinIO Warp` · `RDMA` · `fio orchestration` · `SPDK perf` · `vdbench` · `VM storage` · `HCI benchmark` · `PostgreSQL pgbench` · `Kafka throughput` · `distributed benchmark` · `multi-node` · `Kubernetes operator` · `storage validation` · `IOPS` · `latency p99` · `regression testing` · `SMART monitoring` · `agentic AI` · `Dell lab` · `enterprise storage`
 
 ---
 
 ## Why StrataBench?
 
-Storage benchmarking today is fragmented:
+| | fio | SPDK | Warp | vdbench | SBK | HCIBench | **StrataBench** |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Block / NVMe | ✅ | ✅ | — | ✅ | — | ✅ | ✅ |
+| HDD / SSD | ✅ | — | — | ✅ | — | ✅ | ✅ |
+| File / parallel FS | partial | — | — | — | ✅ | — | ✅ |
+| S3 / object + RDMA | — | — | ✅ | — | partial | — | ✅ |
+| VM / guest workloads | manual | — | — | — | partial | ✅ | ✅ |
+| Multi-client topologies | manual | — | partial | — | — | partial | ✅ |
+| Multi-server topologies | — | — | partial | partial | — | — | ✅ |
+| Pre-run validation | — | — | — | — | — | — | ✅ |
+| Unified reporting | — | — | — | — | — | — | ✅ |
+| Agentic NL → report | — | — | — | — | partial | — | ✅ |
+| Regression baselines | — | — | — | — | — | — | ✅ |
 
-| Tool | Block | File | S3 | VM/HCI | Agentic | Honest validation |
-|------|-------|------|-----|--------|---------|-------------------|
-| fio | ✅ | partial | ❌ | manual | ❌ | ❌ |
-| SPDK perf | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Warp / GOSBench | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| SBK | partial | ✅ | HTTP | partial | partial | ❌ |
-| elbencho | ✅ | ✅ | ✅ | partial | ❌ | ❌ |
-| HCIBench | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **StrataBench** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-No single tool covers all layers with unified reporting, cross-layer comparison, and agent-driven test design. StrataBench fills that gap.
-
----
-
-## Core principles
-
-1. **Honest by default** — validate workload design before running (cache size, steady state, tail latency).
-2. **Orchestrate, don't reinvent** — integrate proven engines (fio, SPDK, Warp) where they excel; build our own where we add unique value.
-3. **Agentic intelligence** — natural language → test plan → execution → analysis → report.
-4. **Unified results** — one schema across all engines for comparison and regression tracking.
-5. **Heavy load capable** — lightweight tool overhead, maximum pressure on storage under test.
+**One platform. Every storage layer. Honest numbers.**
 
 ---
 
-## Architecture (high level)
+## What works today
 
-```
-User (CLI / API / natural language)
-        │
-        ▼
-┌─────────────────────────────────────┐
-│  Agent Layer                        │
-│  Planner → Validator → Analyst      │
-└─────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────┐
-│  Orchestrator + Workload Profiles   │
-└─────────────────────────────────────┘
-        │
-        ├── StrataBench Engine (Rust) — block, file, S3 HTTP
-        ├── fio          — complex block / AFA patterns
-        ├── SPDK perf    — peak NVMe IOPS
-        ├── Warp         — S3 cluster + RDMA
-        └── GOSBench     — distributed S3 workloads
-        │
-        ▼
-┌─────────────────────────────────────┐
-│  Result Normalizer → DB → Reports   │
-└─────────────────────────────────────┘
-```
+### Storage layers & engines
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full design.
+| Layer | Engines | Physical | Virtual (VM) |
+|-------|---------|:--------:|:------------:|
+| **Block** | fio, SPDK, vdbench | HDD, SSD, NVMe, AFA multi-LUN | fio via SSH, NVMe passthrough |
+| **File** | elbencho | NFS, Lustre, CephFS | elbencho in guest via SSH |
+| **Object** | MinIO Warp | S3 PUT/GET, mixed, cluster, **RDMA** | MinIO in VM, S3 RDMA |
+| **Application** | pgbench, db_bench, kafka-perf | PostgreSQL, RocksDB, Kafka | agent on guest VM |
+| **Mock** | synthetic | `--mock` on any profile | `--mock` on any profile |
+
+### Priority workloads — physical **and** virtual
+
+| Workload | Physical | Virtual |
+|----------|----------|---------|
+| **HDD** | `hdd-sequential-read` | `vm-hdd-sequential` |
+| **NVMe** | `nvme-random-oltp`, `nvme-max-stress`, `spdk-nvme-peak` | `vm-nvme-oltp`, `vm-nvme-passthrough` |
+| **AFA** | `afa-multi-lun` | `vm-afa-multi-lun` |
+| **S3 RDMA** | `s3-cluster-rdma` | `vm-s3-rdma` |
+
+### Distributed topologies — all scenarios
+
+| Scenario | Flag | Mode |
+|----------|------|------|
+| 1 client → 1 server | `--target` | `single` |
+| N clients → 1 server | `--clients` | `pool` |
+| 1 client → N servers | `--targets` | `sweep` |
+| N clients → M servers | `--clients` + `--targets` | `shard` |
+| N clients × M servers | `--topology matrix` | `matrix` |
+
+### Platform features
+
+- **Validator** — cache size, steady state, tail latency rules before every run
+- **30+ workload profiles** — declarative YAML, extensible
+- **Agentic loop** — `stratabench agent "nvme oltp database"` → plan → validate → run → analyze → report
+- **Ollama planner** — natural language profile selection with keyword fallback
+- **Regression tracking** — explicit baselines + 30-day rolling comparison
+- **Hardware inventory** — NVMe model, firmware, block devices, SMART history
+- **REST API** + **Prometheus metrics** + **Grafana dashboard**
+- **Kubernetes** — CRD, in-cluster operator, DaemonSet agents, CronJobs
+- **Cross-layer analysis** — compare block vs object vs app in one report
+- **SBK import** — ingest Storage Benchmark Kit CSV results
 
 ---
 
 ## Quick start
 
-```bash
-# Build
-go build -o bin/stratabench ./cmd/stratabench
+### Install
 
-# List profiles
+```bash
+git clone https://github.com/pratham-vishk/StrataBench.git
+cd StrataBench
+make build
+```
+
+Or pull the container:
+
+```bash
+docker pull ghcr.io/pratham-vishk/stratabench:latest
+docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
+```
+
+### Run (no hardware required)
+
+```bash
+# List 30+ built-in profiles
 ./bin/stratabench profiles
 
-# Suggest profile from intent
-./bin/stratabench plan "nvme oltp database workload"
+# Mock run — works on Windows, macOS, Linux
+./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock
 
-# Validate before run (honest test rules)
-./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 10737418240
+# Full agentic loop
+./bin/stratabench agent "ssd random 4k workload" --target /tmp/test --mock
+```
 
-# Run mock benchmark (no hardware — works on Windows)
-./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
+### Run on real storage (Linux)
 
-# Real fio on Linux/WSL
-./bin/stratabench run --profile hdd-sequential-read --target /tmp/stratabench.dat
+```bash
+# NVMe OLTP
+./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 34359738368
+./bin/stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
-# Cross-layer comparison (mock)
-./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
+# AFA multi-LUN
+./bin/stratabench run --profile afa-multi-lun --target /dev/sdb,/dev/sdc,/dev/sdd
 
-# Import SBK CSV results
-./bin/stratabench import sbk results.csv
+# S3 cluster with RDMA
+export WARP_ACCESS_KEY=minioadmin WARP_SECRET_KEY=minioadmin
+./bin/stratabench run --profile s3-cluster-rdma --target 10.0.1.10:9000
 
-./bin/stratabench inventory collect
-./bin/stratabench inventory list
+# VM guest (fio inside VM via SSH)
+./bin/stratabench run --profile vm-nvme-passthrough --target root@10.0.1.20:/dev/nvme0n1
+```
 
-# VM guest benchmark (SSH into VM, run fio inside guest)
-./bin/stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
+### Distributed — multi-client, multi-server
+
+```bash
+# Start agents on client nodes
+stratabench-agent   # listens on :7777
+
+# N clients → 1 NVMe server (pool)
+stratabench run --profile ssd-random-4k --target /dev/nvme0n1 \
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777
+
+# 1 client → N S3 servers (sweep)
+stratabench run --profile s3-put-throughput \
+  --targets 10.0.1.10:9000,10.0.1.11:9000,10.0.1.12:9000
+
+# N clients → M servers (shard)
+stratabench run --profile afa-multi-lun \
+  --targets /dev/sdb,/dev/sdc,/dev/sdd \
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777 \
+  --topology shard
+```
+
+### Regression & reporting
+
+```bash
+stratabench baseline set --run-id <uuid>
+stratabench run --profile nvme-random-oltp --target /dev/nvme0n1 --check-baseline
+stratabench report --run-id <uuid>
+stratabench analyze --run-id <uuid>
+```
+
+---
+
+## Architecture
+
+```
+Natural language / CLI / API / Kubernetes CRD
+                    │
+                    ▼
+         ┌──────────────────────┐
+         │  Agent Layer         │
+         │  Planner → Validator │
+         │  → Analyst → Reporter│
+         └──────────┬───────────┘
+                    ▼
+         ┌──────────────────────┐
+         │  Orchestrator        │
+         │  Topology engine     │
+         │  30+ YAML profiles   │
+         └──────────┬───────────┘
+                    ▼
+    ┌───────────────┼───────────────┐
+    ▼               ▼               ▼
+  fio           vdbench           Warp
+  SPDK          elbencho          SBK (pgbench…)
+    │               │               │
+    └───────────────┴───────────────┘
+                    ▼
+         Unified result schema
+         SQLite · HTML · JSON · Prometheus
+```
+
+We **orchestrate** proven tools — we don't replace fio or Warp. We add validation, topology, aggregation, and honest reporting on top.
+
+---
 
 ## Deployment
 
+| Method | Command |
+|--------|---------|
+| **Binary** | `make build` → `./bin/stratabench` |
+| **Docker** | `docker compose up api` → REST on `:8080` |
+| **Kubernetes** | `kubectl apply -k deploy/k8s/` |
+| **K8s CRD** | `stratabench apply -f examples/benchmark-mock.yaml` |
+| **Grafana** | `deploy/grafana/stratabench-dashboard.json` |
+
 ```bash
-# Docker
-docker build -t stratabench .
-docker compose up api          # REST API on :8080
-
-# Kubernetes
+# Full K8s stack: API, agents, operator, PVC, CronJob
 kubectl apply -k deploy/k8s/
-kubectl apply -f examples/benchmark-mock.yaml
-kubectl get benchmarks -n stratabench   # operator sets status.runId
+kubectl apply -f examples/benchmark-topology-pool.yaml
+kubectl get benchmarks -n stratabench -w
 ```
 
-Docs site: enable GitHub Pages from the `docs/` folder (see `.github/workflows/pages.yml`).
+---
 
-# Agentic loop (Phase 4)
-./bin/stratabench agent "nvme oltp database workload" --target /tmp/test --mock
-./bin/stratabench plan "s3 cluster read heavy" --ollama
+## CLI reference
 
-# Regression baselines
-./bin/stratabench baseline set --run-id <uuid>
-./bin/stratabench baseline show
-./bin/stratabench run --profile nvme-random-oltp --target /tmp/test --mock --check-baseline
+| Command | Description |
+|---------|-------------|
+| `profiles` | List workload profiles |
+| `plan` | Suggest profile from natural language |
+| `validate` | Check workload design rules |
+| `run` | Execute benchmark (local or distributed) |
+| `agent` | Full agentic loop end-to-end |
+| `apply` | Apply Kubernetes-style benchmark manifest |
+| `baseline` | Set / show / check regression baselines |
+| `inventory` | Collect hardware inventory |
+| `smart` | SMART health history |
+| `analyze` | Tail latency, variance, regression insights |
+| `cross-layer` | Multi-profile bottleneck analysis |
+| `import sbk` | Import SBK CSV results |
+| `compare` | Compare two runs |
+| `report` | Generate HTML report |
 
-# REST API + Prometheus metrics
-./bin/stratabench-api   # :8080 — /api/v1/runs, /metrics
-```
-
-See [docs/DEV.md](docs/DEV.md) for full development guide.
-
-> **Status:** v0.6.0-rc1 — public OSS, 25 profiles, all engines on physical + virtual targets.
-
-Docs: https://pratham-vishk.github.io/StrataBench/
+Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` · `--mock` · `--check-baseline` · `--ollama`
 
 ---
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [VISION.md](docs/VISION.md) | Project vision and goals |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and components |
-| [ROADMAP.md](docs/ROADMAP.md) | Phased implementation plan |
-| [LANDSCAPE.md](docs/LANDSCAPE.md) | Existing tools and where StrataBench fits |
-| [RESULT_SCHEMA.md](docs/RESULT_SCHEMA.md) | Normalized benchmark result format |
-| [DEV.md](docs/DEV.md) | Full development guide |
-| [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM deployment |
-| [TOPOLOGY.md](docs/TOPOLOGY.md) | Multi-client / multi-server topologies |
-| [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) | Engine × physical/virtual matrix |
-| [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware validation checklist |
-| [profiles/](profiles/) | Example workload profile definitions |
+| Doc | What's inside |
+|-----|---------------|
+| [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) | Every engine × physical/virtual matrix |
+| [TOPOLOGY.md](docs/TOPOLOGY.md) | Multi-client / multi-server patterns |
+| [DEV.md](docs/DEV.md) | Build, test, full CLI reference |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
+| [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM cluster setup |
+| [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Hardware sign-off checklist |
+| [VISION.md](docs/VISION.md) | Project goals |
+| [ROADMAP.md](docs/ROADMAP.md) | What's shipped vs planned |
+| [profiles/](profiles/) | 30+ workload YAML definitions |
 
 ---
 
-## Roadmap summary
+## Built at Dell Technologies
 
-| Phase | Focus |
-|-------|-------|
-| **1** | Rust engine, fio wrapper, validator rules, SQLite, 5 profiles |
-| **2** | Warp + elbencho, multi-node agent, SBK CSV import |
-| **3** | SPDK + vdbench, VM suites, Grafana, S3 RDMA |
-| **4** | Full agentic loop, regression tracking, K8s operator |
+StrataBench is designed for enterprise storage validation — NVMe arrays, AFA LUNs, S3 clusters with RDMA, VM workloads on HCI, and application-layer benchmarks (PostgreSQL, Kafka, RocksDB). Run it on Dell lab VMs, customer sites, or any Linux cluster.
+
+---
+
+## Contributing
+
+Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+```bash
+make test          # run all tests
+make run-mock      # smoke test
+```
 
 ---
 
@@ -175,6 +282,9 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ---
 
-## Contributing
-
-Contributions welcome once Phase 1 scaffolding is in place. See [CONTRIBUTING.md](CONTRIBUTING.md).
+<p align="center">
+  <strong>StrataBench</strong> — honest storage benchmarks, every layer, every topology.<br>
+  <a href="https://pratham-vishk.github.io/StrataBench/">Documentation</a> ·
+  <a href="https://github.com/pratham-vishk/StrataBench/releases">Releases</a> ·
+  <a href="https://github.com/pratham-vishk/StrataBench/issues">Issues</a>
+</p>
