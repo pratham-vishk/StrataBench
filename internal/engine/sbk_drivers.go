@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -9,13 +10,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
 func (s *SBKRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
 	if in.Mock {
-		return s.runSynthetic(in)
+		return s.runSynthetic(ctx, in)
 	}
 
 	driver := in.Profile.ParamString("driver", "generic")
@@ -55,10 +58,21 @@ func (s *SBKRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sch
 	return nil, nil, fmt.Errorf("sbk benchmark failed: %s", strings.Join(errs, "; "))
 }
 
-func (s *SBKRunner) runSynthetic(in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+func (s *SBKRunner) runSynthetic(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
 	driver := in.Profile.ParamString("driver", "generic")
 	threads := in.Profile.ParamInt("threads", in.Profile.ParamInt("connections", 8))
 	duration := in.Profile.ParamInt("duration_sec", 300)
+
+	if in.OnInterval != nil {
+		intervals := sbkMockIntervals(driver, duration, threads)
+		simDuration := time.Duration(duration) * time.Second
+		if simDuration > 3*time.Second {
+			simDuration = 3 * time.Second
+		}
+		if err := streamMockIntervals(ctx, in, intervals, simDuration); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	baseIOPS, p99 := 25000.0, 800.0
 	switch driver {
@@ -108,11 +122,48 @@ func runPgBench(ctx context.Context, in RunInput) (*schema.Results, *schema.RawE
 		dsn,
 	}
 	cmd := exec.CommandContext(ctx, "pgbench", args...)
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "pgbench-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("pgbench failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := cmd.Start(); err != nil {
+			return nil, nil, err
+		}
+		tailCtx, cancel := context.WithCancel(ctx)
+		var outBuf bytes.Buffer
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			scanPgBenchStream(tailCtx, stdout, in.OnInterval, &outBuf)
+		}()
+		go func() {
+			defer wg.Done()
+			scanPgBenchStream(tailCtx, stderr, in.OnInterval, &outBuf)
+		}()
+		waitErr := cmd.Wait()
+		cancel()
+		wg.Wait()
+		out = outBuf.Bytes()
+		_ = os.WriteFile(logPath, out, 0o644)
+		if waitErr != nil {
+			return nil, nil, fmt.Errorf("pgbench failed: %w\n%s", waitErr, string(out))
+		}
+	} else {
+		combined, err := cmd.CombinedOutput()
+		out = combined
+		_ = os.WriteFile(logPath, out, 0o644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("pgbench failed: %w\n%s", err, string(out))
+		}
 	}
 	res, parseErr := parsePgBenchOutput(string(out))
 	if parseErr != nil {

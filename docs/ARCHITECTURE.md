@@ -50,7 +50,7 @@ StrataBench follows a **layered architecture**: agent intelligence on top, orche
 | Native StrataBench engine | Rust block I/O (Linux) | `STRATABENCH_ENGINE_BIN`; Docker ships Rust binary |
 | Result store | SQLite or PostgreSQL | `STRATABENCH_DATABASE_URL` for Postgres |
 | Engines | fio, warp, vdbench, spdk, elbencho, sbk, gosbench, stratabench | Native Rust engine for block (opt-in profiles) |
-| Mid-run monitoring | Partial | mock, fio, warp, native engine live intervals + Prometheus/SSE |
+| Mid-run monitoring | Partial | mock, fio, warp, native, gosbench, sbk (pgbench) live intervals + Prometheus/SSE |
 | Reports | HTML + Excel | PDF not implemented |
 
 ---

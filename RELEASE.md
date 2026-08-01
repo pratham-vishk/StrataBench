@@ -1,24 +1,27 @@
 # Release Guide
 
-## v0.8.0-rc19 (current)
+## v0.8.0-rc20 (current)
 
-Kubernetes operator runs benchmarks as Jobs; `stratabench apply --status-out`; `lab validate --smoke-sbk`.
+Live interval streaming for gosbench (stdout parsing) and sbk (pgbench `-P 1` progress); mock synthetic intervals for both.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc19
-git push origin v0.8.0-rc19
-gh release create v0.8.0-rc19 --title "v0.8.0-rc19" --notes "Operator Job mode; apply status-out; SBK lab smoke."
+git tag v0.8.0-rc20
+git push origin v0.8.0-rc20
+gh release create v0.8.0-rc20 --title "v0.8.0-rc20" --notes "Live interval streaming for gosbench and sbk."
 ```
 
 ### Smoke test
 
 ```bash
-kubectl apply -k deploy/k8s/
-kubectl apply -f deploy/k8s/example-benchmark.yaml
-stratabench lab validate -f lab.yaml --smoke-sbk
+stratabench run --profile s3-gosbench-write --target 10.0.0.1:9000 --mock --watch
+stratabench run --profile sbk-postgresql-oltp --target postgres://localhost/bench --mock --watch
 ```
+
+## v0.8.0-rc19
+
+Kubernetes operator runs benchmarks as Jobs; `stratabench apply --status-out`; `lab validate --smoke-sbk`.
 
 ## v0.8.0-rc18
 

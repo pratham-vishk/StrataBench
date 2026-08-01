@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc20] - 2026-08-01
+
+### Added
+- **Live interval streaming for gosbench** — stdout/stderr parsing during `gosbench-server` runs; mock synthetic intervals
+- **Live interval streaming for sbk** — pgbench `-P 1` progress line parsing; mock synthetic intervals per driver
+
+### Changed
+- `docs/MONITORING.md` and `docs/ARCHITECTURE.md` — document gosbench/sbk live monitoring support
+
 ## [0.8.0-rc19] - 2026-08-01
 
 ### Added

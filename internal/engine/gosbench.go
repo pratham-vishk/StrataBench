@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pratham-vishk/stratabench/internal/schema"
 	"gopkg.in/yaml.v3"
@@ -20,7 +23,7 @@ func (g *GosbenchRunner) Name() string { return "gosbench" }
 
 func (g *GosbenchRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
 	if in.Mock {
-		return g.runSynthetic(in)
+		return g.runSynthetic(ctx, in)
 	}
 
 	bin := resolveGosbenchServerBin()
@@ -44,11 +47,48 @@ func (g *GosbenchRunner) Run(ctx context.Context, in RunInput) (*schema.Results,
 
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = in.WorkDir
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "gosbench-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("gosbench-server failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := cmd.Start(); err != nil {
+			return nil, nil, err
+		}
+		tailCtx, cancel := context.WithCancel(ctx)
+		var outBuf bytes.Buffer
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			scanGosbenchStream(tailCtx, stdout, in.OnInterval, &outBuf)
+		}()
+		go func() {
+			defer wg.Done()
+			scanGosbenchStream(tailCtx, stderr, in.OnInterval, &outBuf)
+		}()
+		waitErr := cmd.Wait()
+		cancel()
+		wg.Wait()
+		out = outBuf.Bytes()
+		_ = os.WriteFile(logPath, out, 0o644)
+		if waitErr != nil {
+			return nil, nil, fmt.Errorf("gosbench-server failed: %w\n%s", waitErr, string(out))
+		}
+	} else {
+		combined, err := cmd.CombinedOutput()
+		out = combined
+		_ = os.WriteFile(logPath, out, 0o644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("gosbench-server failed: %w\n%s", err, string(out))
+		}
 	}
 
 	duration := in.Profile.ParamInt("duration_sec", 60)
@@ -59,9 +99,19 @@ func (g *GosbenchRunner) Run(ctx context.Context, in RunInput) (*schema.Results,
 	return res, &schema.RawEngineOutput{Path: logPath, Format: "gosbench-text"}, nil
 }
 
-func (g *GosbenchRunner) runSynthetic(in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+func (g *GosbenchRunner) runSynthetic(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
 	duration := in.Profile.ParamInt("duration_sec", 60)
 	workers := in.Profile.ParamInt("workers", 1)
+	if in.OnInterval != nil {
+		intervals := gosbenchMockIntervals(duration, workers)
+		simDuration := time.Duration(duration) * time.Second
+		if simDuration > 3*time.Second {
+			simDuration = 3 * time.Second
+		}
+		if err := streamMockIntervals(ctx, in, intervals, simDuration); err != nil {
+			return nil, nil, err
+		}
+	}
 	ops := float64(workers) * 250
 	res := &schema.Results{
 		OpsPerSec:      ops,
