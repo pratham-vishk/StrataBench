@@ -19,11 +19,20 @@ jobs:
       - name: Build binaries
         run: |
           go build -o bin/stratabench ./cmd/stratabench
+          go build -o bin/stratabench-engine ./cmd/stratabench-engine
           go build -o bin/stratabench-agent ./cmd/stratabench-agent
           go build -o bin/stratabench-api ./cmd/stratabench-api
           go build -o bin/stratabench-operator ./cmd/stratabench-operator
           go build -o bin/stratabench-mcp ./cmd/stratabench-mcp
+      - name: Build Rust engine (optional)
+        run: |
+          if command -v cargo >/dev/null 2>&1; then
+            cargo build --release --manifest-path crates/stratabench-engine/Cargo.toml
+          else
+            echo "cargo not installed, skipping Rust engine build"
+          fi
       - name: Mock end-to-end run
         run: |
           ./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock --skip-validate
+          ./bin/stratabench-engine version
           ./bin/stratabench sample --skip-validate

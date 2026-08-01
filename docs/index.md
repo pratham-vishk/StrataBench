@@ -1,4 +1,4 @@
-# StrataBench
+# StrataBench Documentation
 
 **Agentic, honest storage benchmarking — HDD, NVMe, AFA, S3 RDMA, VM, and application workloads.**
 
@@ -6,11 +6,13 @@
 
 ## Highlights
 
-- **29 profiles** — block, file, object, VM, application (physical + virtual)
-- **7 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, mock
+- **30 profiles** — block, file, object, VM, application (physical + virtual)
+- **8 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, gosbench, native stub
 - **All topologies** — 1:1, N:1 pool, 1:N sweep, N:M shard, N×M matrix
 - **Validator** — honest workload rules + per-use-case hardware checks before every run
 - **Agentic loop** — natural language → plan → validate → run → report
+- **14 MCP tools** — Cursor, Claude Code, Devin
+- **Async runs** — API, CLI, SSE progress stream, Prometheus live gauges
 - **Kubernetes** — CRD, operator, agents, Docker on GHCR
 
 ## Documentation
@@ -21,6 +23,9 @@
 | [Hardware Validation](HARDWARE-VALIDATION.md) | Per-use-case tools, devices, and NIC checks |
 | [Agentic Guide](AGENTIC.md) | MCP server, CLI models, LLM setup |
 | [Topology Guide](TOPOLOGY.md) | Multi-client / multi-server patterns |
+| [Monitoring](MONITORING.md) | Live progress, Prometheus, Grafana, SSE |
+| [PostgreSQL Store](POSTGRES.md) | Shared database backend |
+| [Native Engine](NATIVE-ENGINE.md) | `stratabench-engine` binary contract |
 | [Development Guide](DEV.md) | Build, test, CLI reference |
 | [Architecture](ARCHITECTURE.md) | System design |
 | [Dell Lab Guide](DELL-LAB.md) | VM cluster deployment |
@@ -36,6 +41,9 @@ cd StrataBench && make build
 
 # Mock (no hardware)
 ./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock
+
+# Async + watch
+./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch
 
 # Agentic loop
 ./bin/stratabench agent "nvme oltp database" --target /dev/nvme0n1 --mock

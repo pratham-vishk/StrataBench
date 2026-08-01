@@ -20,6 +20,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/provenance"
 	"github.com/pratham-vishk/stratabench/internal/remote"
+	"github.com/pratham-vishk/stratabench/internal/runstate"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 	"github.com/pratham-vishk/stratabench/internal/store"
 	"github.com/pratham-vishk/stratabench/internal/topology"
@@ -43,6 +44,7 @@ type RunOptions struct {
 	GitRepo       string
 	BuildCmd      string
 	Provenance    schema.Provenance
+	RunID         string // optional; generated when empty
 }
 
 type Service struct {
@@ -50,8 +52,7 @@ type Service struct {
 }
 
 func NewService(dataDir string) (*Service, error) {
-	dbPath := filepath.Join(dataDir, "stratabench.db")
-	st, err := store.Open(dbPath)
+	st, err := store.OpenDefault(dataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +81,10 @@ func (s *Service) Validate(opts RunOptions) schema.ValidationResult {
 	})
 }
 
+func recordRunProgress(p runstate.Progress) {
+	metrics.RecordProgress(p.RunID, p.Profile, p.Phase, p.CompletedAssignments, p.TotalAssignments)
+}
+
 func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
 	opts.Profile = applyWarpClients(opts.Profile, opts.WarpClients)
 	targets := topology.MergeTargets(opts.Target, opts.Targets)
@@ -100,13 +105,29 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 		return nil, fmt.Errorf("validation failed: %v", validation.Errors)
 	}
 
-	runID := uuid.New().String()
+	runID := opts.RunID
+	if runID == "" {
+		runID = uuid.New().String()
+	}
 	started := time.Now().UTC()
 	hw := discovery.Snapshot()
+
+	progress := runstate.Progress{
+		RunID:            runID,
+		Phase:            "running",
+		Profile:          opts.Profile.Name,
+		StartedAt:        started,
+		TotalAssignments: len(plan.Assignments),
+	}
+	runstate.Set(progress)
+	recordRunProgress(progress)
+	defer runstate.Clear(runID)
+	defer metrics.ClearProgress(runID)
 
 	type item struct {
 		assignment topology.Assignment
 		results    schema.Results
+		raw        *schema.RawEngineOutput
 		err        error
 	}
 
@@ -117,8 +138,8 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 		wg.Add(1)
 		go func(assign topology.Assignment) {
 			defer wg.Done()
-			res, err := s.runAssignment(ctx, opts, assign)
-			ch <- item{assignment: assign, results: res, err: err}
+			res, raw, err := s.runAssignment(ctx, opts, assign)
+			ch <- item{assignment: assign, results: res, raw: raw, err: err}
 		}(a)
 	}
 	wg.Wait()
@@ -126,6 +147,7 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 
 	var clientRuns []schema.ClientResult
 	var resultSet []schema.Results
+	var rawOutput *schema.RawEngineOutput
 	var errs []string
 	targetBuckets := map[string][]schema.Results{}
 
@@ -133,9 +155,16 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 		if it.err != nil {
 			label := assignmentLabel(it.assignment)
 			errs = append(errs, fmt.Sprintf("%s: %v", label, it.err))
+			runstate.IncrementDone(runID)
+			if p, ok := runstate.Get(runID); ok {
+				recordRunProgress(p)
+			}
 			continue
 		}
 		resultSet = append(resultSet, it.results)
+		if rawOutput == nil && it.raw != nil {
+			rawOutput = it.raw
+		}
 		targetBuckets[it.assignment.Target] = append(targetBuckets[it.assignment.Target], it.results)
 		if it.assignment.Client != "" {
 			clientRuns = append(clientRuns, schema.ClientResult{
@@ -154,6 +183,10 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 				Results: it.results,
 			})
 		}
+		runstate.IncrementDone(runID)
+		if p, ok := runstate.Get(runID); ok {
+			recordRunProgress(p)
+		}
 	}
 	if len(resultSet) == 0 {
 		return nil, fmt.Errorf("all assignments failed: %s", strings.Join(errs, "; "))
@@ -165,6 +198,16 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 	}
 
 	agg := aggregate.Results(resultSet)
+	aggProgress := runstate.Progress{
+		RunID:                runID,
+		Phase:                "aggregating",
+		Profile:              opts.Profile.Name,
+		StartedAt:            started,
+		TotalAssignments:     len(plan.Assignments),
+		CompletedAssignments: len(plan.Assignments),
+	}
+	runstate.Set(aggProgress)
+	recordRunProgress(aggProgress)
 	pattern, blockSize, datasetSize, durationSec, rampSec, qd, threads, rwMix, directIO := opts.Profile.ToWorkload()
 	engineName := opts.Profile.Engine
 	if opts.Mock {
@@ -177,7 +220,7 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 	}
 
 	run, err := s.saveRun(opts, runID, started, durationSec, rampSec, engineName, validation, hw,
-		pattern, blockSize, datasetSize, qd, threads, rwMix, directIO, agg, nil, clientRuns, targetRuns, plan.Mode, primaryTarget)
+		pattern, blockSize, datasetSize, qd, threads, rwMix, directIO, agg, rawOutput, clientRuns, targetRuns, plan.Mode, primaryTarget)
 	if err != nil {
 		return nil, err
 	}
@@ -192,30 +235,30 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 	return run, nil
 }
 
-func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology.Assignment) (schema.Results, error) {
+func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology.Assignment) (schema.Results, *schema.RawEngineOutput, error) {
 	if a.Client == "" {
 		runner := engine.ForProfile(opts.Profile, opts.Mock)
-		results, _, err := runner.Run(ctx, engine.RunInput{
+		results, raw, err := runner.Run(ctx, engine.RunInput{
 			Profile: opts.Profile,
 			Target:  a.Target,
 			Mock:    opts.Mock,
 			WorkDir: filepath.Join(opts.WorkDir, sanitizePath(a.Target)),
 		})
 		if err != nil {
-			return schema.Results{}, err
+			return schema.Results{}, nil, err
 		}
-		return *results, nil
+		return *results, raw, nil
 	}
 
 	client := remote.NewClient(a.Client)
 	if _, err := client.Health(ctx); err != nil {
-		return schema.Results{}, fmt.Errorf("health check: %w", err)
+		return schema.Results{}, nil, fmt.Errorf("health check: %w", err)
 	}
 	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, opts.SkipValidate, opts.CheckHardware, opts.CacheBytes)
 	if err != nil {
-		return schema.Results{}, err
+		return schema.Results{}, nil, err
 	}
-	return run.Results, nil
+	return run.Results, run.RawOutput, nil
 }
 
 func assignmentLabel(a topology.Assignment) string {
@@ -315,6 +358,10 @@ func (s *Service) saveRun(
 		RawOutput: raw,
 		Clients:   clients,
 		Targets:   targets,
+	}
+
+	if audit := auditRunWarnings(run); len(audit) > 0 {
+		run.Validation.Warnings = append(run.Validation.Warnings, audit...)
 	}
 
 	if err := s.Store.Save(run); err != nil {

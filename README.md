@@ -4,7 +4,7 @@
 [![Docker](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Go](https://img.shields.io/badge/go-1.25+-00ADD8)
-![Profiles](https://img.shields.io/badge/profiles-29-brightgreen)
+![Profiles](https://img.shields.io/badge/profiles-30-brightgreen)
 
 **Agentic, honest storage benchmarking for every layer — HDD, NVMe, AFA, S3, VM, and application workloads.**
 
@@ -76,9 +76,9 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 ### Platform features
 
 - **Validator** — cache size, steady state, tail latency rules before every run
-- **29 workload profiles** — declarative YAML, extensible
+- **30 workload profiles** — declarative YAML, extensible
 - **Agentic loop** — `stratabench agent "nvme oltp database"` → plan → validate → run → analyze → report
-- **MCP server** — `stratabench-mcp` exposes 7 tools for Cursor, Claude, and other CLI models
+- **MCP server** — `stratabench-mcp` exposes 14 tools for Cursor, Claude, and other CLI models
 - **LLM planner** — Ollama or OpenAI-compatible APIs; keyword fallback
 - **Regression tracking** — explicit baselines + 30-day rolling comparison
 - **Branch compare** — benchmark two git branches, HTML impact report (`compare branches`)
@@ -86,7 +86,8 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 - **REST API** + **Prometheus metrics** + **Grafana dashboard**
 - **Kubernetes** — CRD, in-cluster operator, DaemonSet agents, CronJobs
 - **Cross-layer analysis** — compare block vs object vs app in one report
-- **SBK import** — ingest Storage Benchmark Kit CSV results
+- **SBK import** — ingest Storage Benchmark Kit CSV or JSON results
+- **Async runs** — `--async` / API `async: true` with `stratabench watch` and live Prometheus progress
 
 ---
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/inventory"
 	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/manifest"
+	"github.com/pratham-vishk/stratabench/internal/monitor"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/planner"
@@ -52,6 +54,8 @@ var (
 	ollamaModel   string
 	assumeDefaults bool
 	openReport     bool
+	runAsync       bool
+	watchRun       bool
 )
 
 func main() {
@@ -80,6 +84,7 @@ func main() {
 		agentCmd(),
 		planCmd(),
 		guideCmd(),
+		watchCmd(),
 		labCmd(),
 		profilesCmd(),
 		versionCmd(),
@@ -187,7 +192,7 @@ func runCmd() *cobra.Command {
 			if target != "" && len(targets) == 0 {
 				targets = []string{target}
 			}
-			run, err := svc.Run(cmd.Context(), orchestrator.RunOptions{
+			opts := orchestrator.RunOptions{
 				Profile:       p,
 				Target:        target,
 				Targets:       targets,
@@ -201,7 +206,22 @@ func runCmd() *cobra.Command {
 				CacheBytes:    cacheBytes,
 				DataDir:       paths.DataDir(),
 				GitRepo:       compare.DefaultRepo(""),
-			})
+			}
+
+			if runAsync {
+				id, err := svc.StartAsyncRun(cmd.Context(), opts)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Async run started: %s\n", id)
+				if watchRun {
+					return monitor.WatchRun(cmd.Context(), svc, id, time.Second, os.Stdout)
+				}
+				fmt.Printf("Watch with: stratabench watch --run-id %s\n", id)
+				return nil
+			}
+
+			run, err := svc.Run(cmd.Context(), opts)
 			if err != nil {
 				return err
 			}
@@ -236,6 +256,8 @@ func runCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", false, "Compare results against stored baseline after run")
 	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
 	cmd.Flags().BoolVar(&openReport, "open-report", false, "Open HTML report in browser after run")
+	cmd.Flags().BoolVar(&runAsync, "async", false, "Start run in background and return run ID immediately")
+	cmd.Flags().BoolVar(&watchRun, "watch", false, "With --async, block until run completes (prints progress)")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	_ = cmd.MarkFlagRequired("profile")
 	return cmd
@@ -370,17 +392,44 @@ func runsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%-38s %-22s %-10s %8s %10s\n", "RUN_ID", "PROFILE", "ENGINE", "MOCK", "IOPS")
+			fmt.Printf("%-38s %-12s %-22s %-10s %8s %10s\n", "RUN_ID", "STATUS", "PROFILE", "ENGINE", "MOCK", "IOPS")
 			for _, r := range runs {
 				mockTag := "no"
 				if r.Mock {
 					mockTag = "yes"
 				}
-				fmt.Printf("%-38s %-22s %-10s %8s %10.0f\n", r.RunID, r.Profile, r.Engine, mockTag, r.Results.IOPS)
+				status := r.Status
+				if status == "" {
+					status = "completed"
+				}
+				fmt.Printf("%-38s %-12s %-22s %-10s %8s %10.0f\n", r.RunID, status, r.Profile, r.Engine, mockTag, r.Results.IOPS)
 			}
 			return nil
 		},
 	}
+}
+
+func watchCmd() *cobra.Command {
+	var intervalSec int
+	cmd := &cobra.Command{
+		Use:   "watch",
+		Short: "Watch in-flight run progress until completion",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if runID == "" {
+				return fmt.Errorf("--run-id is required")
+			}
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			return monitor.WatchRun(cmd.Context(), svc, runID, time.Duration(intervalSec)*time.Second, os.Stdout)
+		},
+	}
+	cmd.Flags().StringVar(&runID, "run-id", "", "Run ID to watch")
+	cmd.Flags().IntVar(&intervalSec, "interval", 1, "Poll interval in seconds")
+	_ = cmd.MarkFlagRequired("run-id")
+	return cmd
 }
 
 func compareCmd() *cobra.Command {
@@ -511,6 +560,29 @@ func importCmd() *cobra.Command {
 					return err
 				}
 				fmt.Printf("imported run %s profile=%s IOPS=%.0f excel=%s\n", run.RunID, run.Profile, run.Results.IOPS, xlsx)
+			}
+			return nil
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "sbk-json [json-file]",
+		Short: "Import SBK or StrataBench JSON results into the store",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			runs, err := importsbk.ParseJSON(args[0])
+			if err != nil {
+				return err
+			}
+			for _, run := range runs {
+				if err := svc.Store.Save(run); err != nil {
+					return err
+				}
+				fmt.Printf("imported run %s profile=%s IOPS=%.0f\n", run.RunID, run.Profile, run.Results.IOPS)
 			}
 			return nil
 		},

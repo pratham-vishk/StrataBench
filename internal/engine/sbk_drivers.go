@@ -40,7 +40,14 @@ func (s *SBKRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sch
 			errs = append(errs, "kafka: "+err.Error())
 		}
 	default:
-		return nil, nil, fmt.Errorf("sbk driver %q not supported (use postgresql, rocksdb, or kafka)", driver)
+		errs = append(errs, fmt.Sprintf("driver %q has no native wrapper", driver))
+	}
+	if os.Getenv("STRATABENCH_SBK_BRIDGE") != "" {
+		if res, raw, err := runSBKBridge(ctx, in); err == nil {
+			return res, raw, nil
+		} else {
+			errs = append(errs, "sbk-bridge: "+err.Error())
+		}
 	}
 	if len(errs) == 0 {
 		return nil, nil, fmt.Errorf("sbk driver %q failed", driver)

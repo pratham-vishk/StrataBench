@@ -14,7 +14,7 @@
 - [x] fio wrapper (profile → job file → JSON parser)
 - [ ] StrataBench engine v0.1 (Rust): block I/O via `O_DIRECT` + libaio — **uses mock until native engine lands**
 - [x] CLI: `stratabench run`, `stratabench validate`, `stratabench report`
-- [x] 29 built-in workload profiles
+- [x] 30 built-in workload profiles
 - [x] HTML report generator (Grafana-style, multi-node, Excel export)
 - [x] Planner agent v0.1 (profile selection from keywords, no LLM required)
 
@@ -43,7 +43,7 @@
 ### Deliverables
 
 - [x] Warp wrapper (HTTP; native coordinator via `--warp-clients` or profile `warp_clients`)
-- [ ] GOSBench wrapper
+- [x] GOSBench wrapper (`gosbench-server` + generated YAML config; profile `s3-gosbench-write`)
 - [x] elbencho wrapper (file/block)
 - [x] `stratabench-agent` daemon (Go, HTTP JSON on :7777; optional `STRATABENCH_AGENT_TOKEN`)
 - [x] SSH-based multi-node deployment (`stratabench lab`, `scripts/lab-*.sh`)
@@ -83,7 +83,7 @@
 - [x] Warp RDMA mode (`--rdma=cpu`)
 - [x] Prometheus metrics exporter
 - [x] Grafana dashboards (bundled)
-- [ ] PostgreSQL backend option
+- [x] PostgreSQL backend option (`STRATABENCH_DATABASE_URL`)
 - [x] Regression baselines (per profile + target)
 - [x] Analyst agent (anomaly detection, regression alerts)
 - [x] Cross-layer comparison reports
@@ -92,7 +92,7 @@
 
 - AFA multi-LUN test via vdbench with unified report
 - SPDK peak vs. fio comparison on same NVMe device
-- Grafana dashboard live during 1-hour stress test — **post-run metrics only; mid-run watcher not yet implemented**
+- Grafana dashboard live during 1-hour stress test — **assignment progress via Prometheus + `stratabench watch`; full interval streaming deferred**
 
 ---
 
@@ -112,7 +112,7 @@
 - [x] Contributor guide + CI/CD (GitHub Actions)
 - [x] **Public open-source release**
 - [x] SBK native driver integration (pgbench, db_bench, kafka-producer-perf-test)
-- [ ] SBK full Storage Benchmark Kit bridge
+- [ ] SBK full Storage Benchmark Kit bridge — JSON import added; Python runner deferred
 
 ### Success criteria
 

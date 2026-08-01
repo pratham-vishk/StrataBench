@@ -2,6 +2,78 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc9] - 2026-08-01
+
+### Added
+- **SSE progress stream** — `GET /api/v1/runs/{id}/stream` (Server-Sent Events until done)
+- **`stratabench runs`** — shows `STATUS` column (running/completed/failed)
+- **Docs** — updated site index, `crates/README.md`
+
+## [0.8.0-rc8] - 2026-08-01
+
+### Added
+- **CLI `--async` / `--watch`** — background runs with live progress on terminal
+- **Rust engine scaffold** — `crates/stratabench-engine` (`make build-rust`)
+- **SBK bridge example** — `examples/sbk-bridge/sbk_bridge.py` + `.py` auto-invocation via `STRATABENCH_PYTHON`
+- **MCP** — `stratabench_import_json` tool
+- **Docs** — `docs/MONITORING.md` live monitoring guide
+
+### Changed
+- SBK runner tries `STRATABENCH_SBK_BRIDGE` after any native driver failure
+
+## [0.8.0-rc7] - 2026-08-01
+
+### Added
+- **`stratabench-engine` stub** — Go reference binary implementing native engine contract (`make build-engine`)
+- **`stratabench watch`** — CLI live progress until run completes
+- **MCP** — `stratabench_run_progress` tool; `async` on `stratabench_run`
+- **SBK Python bridge** — `STRATABENCH_SBK_BRIDGE` env for external Python runner (same JSON contract)
+- **Grafana dashboard** — live `stratabench_run_assignment_progress` panel
+
+### Changed
+- Docker image and CI build include `stratabench-engine`
+
+## [0.8.0-rc6] - 2026-08-01
+
+### Added
+- **Async API runs** — `POST /api/v1/runs` with `"async": true` returns `202 Accepted` and run ID
+- **SBK JSON import** — `stratabench import sbk-json` and `importsbk.ParseJSON`
+- **Native engine bridge** — `stratabench-engine` external binary contract (`STRATABENCH_ENGINE_BIN`)
+- **Live Prometheus progress** — `stratabench_run_assignment_progress` gauge during in-flight runs
+- **Docs** — `docs/NATIVE-ENGINE.md` for Rust engine integration
+
+### Changed
+- `engine: stratabench` invokes external binary when present; fails honestly otherwise
+
+## [0.8.0-rc5] - 2026-08-01
+
+### Added
+- **PostgreSQL store** — set `STRATABENCH_DATABASE_URL` to use shared Postgres instead of SQLite
+- **GOSBench engine** — `gosbench-server` wrapper with auto-generated YAML config; profile `s3-gosbench-write`
+- **Agent mTLS** — optional TLS via `STRATABENCH_AGENT_TLS_*` env vars (server + client certs)
+- **Run progress** — in-memory progress during multi-assignment runs; `GET /api/v1/runs/{id}/progress`
+
+### Changed
+- Orchestrator uses `store.OpenDefault` (Postgres or SQLite)
+- Remote agent client configures mTLS transport when connecting over HTTPS
+
+## [0.8.0-rc4] - 2026-08-01
+
+### Added
+- **Multi-node HTML reports** — per-node interval overlays, Grafana panels, and interval tables; cluster aggregate charts merge time buckets across nodes
+- **REST API** — `POST /api/v1/validate`, `GET|POST /api/v1/report/{id}`, `POST /api/v1/compare`
+- **MCP tools** — `stratabench_compare_runs`, `stratabench_report`, `stratabench_baseline_check`, `stratabench_export_json`; `stratabench_run` supports `clients`, `targets`, `topology`, `warp_clients`
+- **Agent auth** — bearer token via `STRATABENCH_AGENT_TOKEN` on agent and remote client
+- **CLI** — `--warp-clients` for native Warp coordinator mode (port 7761)
+- **Run honesty** — engines fail without `--mock` when tools are missing; synthetic output flagged on non-mock runs
+- **Tests** — aggregate interval merge, multi-node report, MCP extended tools, remote client, orchestrator, crosslayer analysis
+
+### Changed
+- Distributed runs record coordinator client rows for local multi-assignment topologies
+- Remote agent runs respect `SkipValidate` from coordinator (not hardcoded)
+- Docker image installs MinIO Warp; CI builds MCP and runs mock end-to-end smoke tests
+- Docs aligned to 29 profiles; topology and architecture status tables updated
+
 ## [0.7.0-rc1] - 2026-08-01
 
 ### Added

@@ -16,6 +16,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/planner"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/remote"
+	"github.com/pratham-vishk/stratabench/internal/runstate"
 )
 
 type Server struct {
@@ -23,12 +24,13 @@ type Server struct {
 }
 
 type runRequest struct {
-	Profile      string   `json:"profile"`
-	Target       string   `json:"target"`
-	Targets      []string `json:"targets"`
-	Clients      []string `json:"clients"`
-	Topology     string   `json:"topology"`
+	Profile       string   `json:"profile"`
+	Target        string   `json:"target"`
+	Targets       []string `json:"targets"`
+	Clients       []string `json:"clients"`
+	Topology      string   `json:"topology"`
 	Mock          bool     `json:"mock"`
+	Async         bool     `json:"async"`
 	SkipValidate  bool     `json:"skip_validate"`
 	CheckHardware bool     `json:"check_hardware"`
 	CacheBytes    int64    `json:"cache_bytes"`
@@ -210,7 +212,7 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		run, err := s.Svc.Run(r.Context(), orchestrator.RunOptions{
+		opts := orchestrator.RunOptions{
 			Profile:       p,
 			Target:        req.Target,
 			Targets:       req.Targets,
@@ -221,12 +223,36 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 			CheckHardware: req.CheckHardware,
 			CacheBytes:    req.CacheBytes,
 			DataDir:       paths.DataDir(),
-		})
+		}
+		if req.Async {
+			runID, err := s.Svc.StartAsyncRun(r.Context(), opts)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusAccepted)
+			writeJSON(w, map[string]string{"run_id": runID, "status": "running"})
+			return
+		}
+		run, err := s.Svc.Run(r.Context(), opts)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		writeJSON(w, run)
+	case path != "" && strings.HasSuffix(path, "/stream") && r.Method == http.MethodGet:
+		runID := strings.TrimSuffix(path, "/stream")
+		runID = strings.Trim(runID, "/")
+		s.handleRunStream(w, r, runID)
+	case path != "" && strings.HasSuffix(path, "/progress") && r.Method == http.MethodGet:
+		runID := strings.TrimSuffix(path, "/progress")
+		runID = strings.Trim(runID, "/")
+		progress, ok := runstate.Get(runID)
+		if !ok {
+			http.Error(w, "no active progress for run", http.StatusNotFound)
+			return
+		}
+		writeJSON(w, progress)
 	case path != "" && r.Method == http.MethodGet:
 		run, err := s.Svc.Store.Get(path)
 		if err != nil {

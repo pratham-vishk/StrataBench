@@ -7,6 +7,8 @@ ARG VERSION=dev
 RUN CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
     -o /stratabench ./cmd/stratabench && \
     CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
+    -o /stratabench-engine ./cmd/stratabench-engine && \
+    CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
     -o /stratabench-agent ./cmd/stratabench-agent && \
     CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
     -o /stratabench-api ./cmd/stratabench-api && \
@@ -20,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     | tar -xz -C /usr/local/bin warp && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=build /stratabench /usr/local/bin/stratabench
+COPY --from=build /stratabench-engine /usr/local/bin/stratabench-engine
 COPY --from=build /stratabench-agent /usr/local/bin/stratabench-agent
 COPY --from=build /stratabench-api /usr/local/bin/stratabench-api
 COPY --from=build /stratabench-operator /usr/local/bin/stratabench-operator

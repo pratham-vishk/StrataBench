@@ -71,6 +71,7 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 | `s3-mixed-workload` | warp | heavy |
 | `s3-cluster-put-get` | warp | heavy |
 | `s3-cluster-rdma` | warp | heavy |
+| `s3-gosbench-write` | gosbench | medium |
 
 ### VM object (virtual)
 

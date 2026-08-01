@@ -101,7 +101,7 @@ export WARP_SECRET_KEY=minioadmin
 
 ```
 .stratabench/
-  stratabench.db    # SQLite run history
+  stratabench.db    # SQLite run history (or PostgreSQL when STRATABENCH_DATABASE_URL is set)
   reports/          # HTML + JSON reports
   work/             # fio job files, temp data
 ```
@@ -109,6 +109,18 @@ export WARP_SECRET_KEY=minioadmin
 ## Mock mode
 
 Use `--mock` on Windows or when hardware is unavailable.
+
+## Live run monitoring
+
+```bash
+# Watch a run (async API or long multi-node run)
+./bin/stratabench watch --run-id <uuid>
+
+# Prometheus gauges during run (scrape /metrics on API)
+# stratabench_run_assignment_progress, stratabench_run_assignments_total
+```
+
+Import Grafana dashboard from `deploy/grafana/stratabench-dashboard.json`.
 
 ## Environment variables
 
@@ -118,6 +130,14 @@ Use `--mock` on Windows or when hardware is unavailable.
 | `STRATABENCH_MOCK_CACHE_BYTES` | Override cache size for validation |
 | `STRATABENCH_AGENT_LISTEN` | Agent bind address (default `:7777`) |
 | `STRATABENCH_AGENT_TOKEN` | Shared bearer token for agent HTTP API |
+| `STRATABENCH_DATABASE_URL` | PostgreSQL DSN (optional; default is SQLite) |
+| `STRATABENCH_AGENT_TLS_CERT` / `_KEY` | Agent HTTPS server certificate |
+| `STRATABENCH_AGENT_TLS_CA` | CA for mutual TLS (server requires client certs when set) |
+| `STRATABENCH_AGENT_TLS_CLIENT_CERT` / `_KEY` | Coordinator client cert for HTTPS agents |
+| `GOSBENCH_SERVER_BIN` | Path to `gosbench-server` binary (default: search PATH) |
+| `GOSBENCH_ACCESS_KEY` / `GOSBENCH_SECRET_KEY` | S3 credentials for GOSBench |
+| `STRATABENCH_ENGINE_BIN` | Native engine binary (default: `stratabench-engine` on PATH) |
+| `STRATABENCH_SBK_BRIDGE` | External SBK Python bridge executable |
 | `WARP_ACCESS_KEY` / `WARP_SECRET_KEY` | S3 credentials for Warp |
 | `OLLAMA_URL` | Ollama API base URL (default `http://localhost:11434`) |
 | `OLLAMA_MODEL` | Model for planner (default `llama3.2`) |

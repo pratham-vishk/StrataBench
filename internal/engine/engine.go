@@ -37,12 +37,12 @@ func ForProfile(p *profile.Profile, mock bool) Runner {
 	case "sbk":
 		return &SBKRunner{}
 	case "gosbench":
-		return unsupportedEngine("gosbench")
+		return &GosbenchRunner{}
 	case "stratabench":
 		if mock {
 			return &MockRunner{}
 		}
-		return nativeEnginePending("stratabench")
+		return &NativeRunner{}
 	default:
 		if mock {
 			return &MockRunner{}

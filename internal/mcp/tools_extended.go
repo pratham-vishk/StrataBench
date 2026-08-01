@@ -9,10 +9,12 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/compare"
 	"github.com/pratham-vishk/stratabench/internal/export"
+	"github.com/pratham-vishk/stratabench/internal/importsbk"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/report"
+	"github.com/pratham-vishk/stratabench/internal/runstate"
 )
 
 func (t *Tools) CompareRuns(ctx context.Context, args map[string]any) (any, error) {
@@ -124,6 +126,30 @@ func (t *Tools) ExportJSON(ctx context.Context, args map[string]any) (any, error
 	return map[string]any{"run_id": runID, "json_path": outPath}, nil
 }
 
+func (t *Tools) ImportJSON(ctx context.Context, args map[string]any) (any, error) {
+	path, _ := args["path"].(string)
+	if path == "" {
+		return nil, fmt.Errorf("path is required")
+	}
+	runs, err := importsbk.ParseJSON(path)
+	if err != nil {
+		return nil, err
+	}
+	svc, err := orchestrator.NewService(t.dataDir())
+	if err != nil {
+		return nil, err
+	}
+	defer svc.Close()
+	var imported []string
+	for _, run := range runs {
+		if err := svc.Store.Save(run); err != nil {
+			return nil, err
+		}
+		imported = append(imported, run.RunID)
+	}
+	return map[string]any{"imported": imported, "count": len(imported)}, nil
+}
+
 func runOptionsFromArgs(t *Tools, args map[string]any) (orchestrator.RunOptions, error) {
 	name, _ := args["profile"].(string)
 	target, _ := args["target"].(string)
@@ -158,6 +184,31 @@ func runOptionsFromArgs(t *Tools, args map[string]any) (orchestrator.RunOptions,
 		SkipValidate:  skipValidate,
 		CheckHardware: checkHW,
 		DataDir:       t.dataDir(),
+	}, nil
+}
+
+func (t *Tools) RunProgress(ctx context.Context, args map[string]any) (any, error) {
+	runID, _ := args["run_id"].(string)
+	if runID == "" {
+		return nil, fmt.Errorf("run_id is required")
+	}
+	if p, ok := runstate.Get(runID); ok {
+		return p, nil
+	}
+	svc, err := orchestrator.NewService(t.dataDir())
+	if err != nil {
+		return nil, err
+	}
+	defer svc.Close()
+	run, err := svc.Store.Get(runID)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"run_id": runID,
+		"phase":  run.Status,
+		"profile": run.Profile,
+		"iops":   run.Results.IOPS,
 	}, nil
 }
 
@@ -207,6 +258,28 @@ func extendedToolCatalog() []ToolDef {
 					"run_id": map[string]any{"type": "string"},
 				},
 				"required": []string{"run_id"},
+			},
+		},
+		{
+			Name:        "stratabench_run_progress",
+			Description: "Poll in-flight run progress (phase, assignments completed).",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"run_id": map[string]any{"type": "string"},
+				},
+				"required": []string{"run_id"},
+			},
+		},
+		{
+			Name:        "stratabench_import_json",
+			Description: "Import SBK or StrataBench JSON results into the local store.",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"path": map[string]any{"type": "string"},
+				},
+				"required": []string{"path"},
 			},
 		},
 	}

@@ -1,0 +1,20 @@
+name: s3-gosbench-write
+layer: object
+engine: gosbench
+category: staged
+description: "Staged S3 write workload via GOSBench server — COSBench-style mixed ops"
+workload:
+  pattern: write
+  duration_sec: 120
+  block_size: 64KB
+params:
+  write_weight: 100
+  read_weight: 0
+  workers: 2
+  parallel_clients: 4
+  buckets: 4
+  object_size_min_kb: 4
+  object_size_max_kb: 64
+  bucket_prefix: stratabench-
+  clean_after: true
+  skip_ssl_verify: true

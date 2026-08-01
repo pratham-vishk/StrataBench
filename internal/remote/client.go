@@ -14,6 +14,7 @@ import (
 
 	"github.com/pratham-vishk/stratabench/internal/agentapi"
 	"github.com/pratham-vishk/stratabench/internal/agentauth"
+	"github.com/pratham-vishk/stratabench/internal/agenttls"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
@@ -35,13 +36,23 @@ func NewClient(host string) *Client {
 	}
 }
 
+func (c *Client) httpClient() *http.Client {
+	if c.HTTPClient != nil {
+		agenttls.ConfigureClient(c.BaseURL, c.HTTPClient)
+		return c.HTTPClient
+	}
+	client := &http.Client{Timeout: 2 * time.Hour}
+	agenttls.ConfigureClient(c.BaseURL, client)
+	return client
+}
+
 func (c *Client) Health(ctx context.Context) (*agentapi.HealthResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/v1/health", nil)
 	if err != nil {
 		return nil, err
 	}
 	agentauth.SetAuthHeader(req)
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +90,7 @@ func (c *Client) Run(ctx context.Context, p *profile.Profile, target string, moc
 	}
 	req.Header.Set("Content-Type", "application/json")
 	agentauth.SetAuthHeader(req)
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}

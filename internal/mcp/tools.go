@@ -153,6 +153,20 @@ func (t *Tools) Run(ctx context.Context, args map[string]any) (any, error) {
 		return nil, err
 	}
 	defer svc.Close()
+
+	async, _ := args["async"].(bool)
+	if async {
+		runID, err := svc.StartAsyncRun(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"run_id": runID,
+			"status": "running",
+			"async":  true,
+		}, nil
+	}
+
 	run, err := svc.Run(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -352,6 +366,7 @@ func ToolCatalog() []ToolDef {
 					"warp_clients":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Native Warp client hosts (port 7761)"},
 					"topology":        map[string]any{"type": "string"},
 					"mock":            map[string]any{"type": "boolean"},
+					"async":           map[string]any{"type": "boolean", "description": "Return immediately with run_id; poll stratabench_run_progress"},
 					"skip_validate":   map[string]any{"type": "boolean"},
 					"check_hardware":  map[string]any{"type": "boolean"},
 				},
@@ -429,6 +444,10 @@ func (t *Tools) Call(ctx context.Context, name string, args map[string]any) (any
 		return t.BaselineCheck(ctx, args)
 	case "stratabench_export_json":
 		return t.ExportJSON(ctx, args)
+	case "stratabench_run_progress":
+		return t.RunProgress(ctx, args)
+	case "stratabench_import_json":
+		return t.ImportJSON(ctx, args)
 	default:
 		return nil, fmt.Errorf("unknown tool %q", name)
 	}

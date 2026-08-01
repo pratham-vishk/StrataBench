@@ -1,12 +1,16 @@
-.PHONY: build build-agent build-api build-operator build-mcp test run-mock validate clean init sample samples compare-mock \
+.PHONY: build build-agent build-api build-operator build-mcp build-engine test test-e2e run-mock validate clean init sample samples compare-mock \
 	lab-init lab-bootstrap lab-sync lab-check lab-run
 
 build:
 	go build -o bin/stratabench ./cmd/stratabench
+	go build -o bin/stratabench-engine ./cmd/stratabench-engine
 	go build -o bin/stratabench-agent ./cmd/stratabench-agent
 	go build -o bin/stratabench-api ./cmd/stratabench-api
 	go build -o bin/stratabench-operator ./cmd/stratabench-operator
 	go build -o bin/stratabench-mcp ./cmd/stratabench-mcp
+
+build-engine:
+	go build -o bin/stratabench-engine ./cmd/stratabench-engine
 
 build-mcp:
 	go build -o bin/stratabench-mcp ./cmd/stratabench-mcp
@@ -19,6 +23,11 @@ build-agent:
 
 test:
 	go test ./...
+
+test-e2e: build
+	./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock --skip-validate
+	./bin/stratabench sample --skip-validate
+	go run ./examples/generate-samples
 
 run-mock:
 	go run ./cmd/stratabench run --profile nvme-random-oltp --target /dev/null --mock
@@ -37,6 +46,9 @@ samples:
 
 compare-mock: build
 	./bin/stratabench compare branches --base main --head HEAD --profile nvme-random-oltp --target /dev/null --mock --skip-build --allow-dirty
+
+build-rust:
+	cd crates/stratabench-engine && cargo build --release
 
 clean:
 	rm -rf bin .stratabench

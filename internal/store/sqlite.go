@@ -15,7 +15,8 @@ import (
 )
 
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	dialect string // "sqlite" (default) or "postgres"
 }
 
 func Open(path string) (*Store, error) {
@@ -26,7 +27,7 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{db: db}
+	s := &Store{db: db, dialect: "sqlite"}
 	if err := s.migrate(); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -81,6 +82,9 @@ type HardwareRecord struct {
 }
 
 func (s *Store) SaveHardware(hostID, snapshotJSON string) error {
+	if s.dialect == "postgres" {
+		return s.saveHardwarePostgres(hostID, snapshotJSON)
+	}
 	_, err := s.db.ExecContext(context.Background(),
 		`INSERT OR REPLACE INTO hardware_inventory (host_id, snapshot_json, collected_at) VALUES (?, ?, ?)`,
 		hostID, snapshotJSON, time.Now().UTC().Format(time.RFC3339),
@@ -115,8 +119,11 @@ type SMARTRecord struct {
 }
 
 func (s *Store) SaveSMART(hostID, device, readingJSON string) error {
-	_, err := s.db.ExecContext(context.Background(),
-		`INSERT INTO smart_history (host_id, device, reading_json, collected_at) VALUES (?, ?, ?, ?)`,
+	q := `INSERT INTO smart_history (host_id, device, reading_json, collected_at) VALUES (?, ?, ?, ?)`
+	if s.dialect == "postgres" {
+		q = `INSERT INTO smart_history (host_id, device, reading_json, collected_at) VALUES ($1, $2, $3, $4)`
+	}
+	_, err := s.db.ExecContext(context.Background(), q,
 		hostID, device, readingJSON, time.Now().UTC().Format(time.RFC3339),
 	)
 	return err
@@ -126,8 +133,11 @@ func (s *Store) ListSMART(limit int) ([]SMARTRecord, error) {
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := s.db.QueryContext(context.Background(),
-		`SELECT host_id, device, reading_json, collected_at FROM smart_history ORDER BY collected_at DESC LIMIT ?`, limit,
+	q := `SELECT host_id, device, reading_json, collected_at FROM smart_history ORDER BY collected_at DESC LIMIT ?`
+	if s.dialect == "postgres" {
+		q = `SELECT host_id, device, reading_json, collected_at FROM smart_history ORDER BY collected_at DESC LIMIT $1`
+	}
+	rows, err := s.db.QueryContext(context.Background(), q, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -148,9 +158,12 @@ func (s *Store) ListSince(since time.Time, limit int) ([]schema.RunResult, error
 	if limit <= 0 {
 		limit = 500
 	}
-	rows, err := s.db.QueryContext(context.Background(),
-		`SELECT result_json FROM runs WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?`,
-		since.UTC().Format(time.RFC3339), limit,
+	sinceFmt := since.UTC().Format(time.RFC3339)
+	q := `SELECT result_json FROM runs WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?`
+	if s.dialect == "postgres" {
+		q = `SELECT result_json FROM runs WHERE created_at >= $1 ORDER BY created_at DESC LIMIT $2`
+	}
+	rows, err := s.db.QueryContext(context.Background(), q, sinceFmt, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -173,8 +186,11 @@ func (s *Store) ListSince(since time.Time, limit int) ([]schema.RunResult, error
 
 func (s *Store) GetHardware(hostID string) (*HardwareRecord, error) {
 	var rec HardwareRecord
-	err := s.db.QueryRowContext(context.Background(),
-		`SELECT host_id, snapshot_json, collected_at FROM hardware_inventory WHERE host_id = ?`, hostID,
+	q := `SELECT host_id, snapshot_json, collected_at FROM hardware_inventory WHERE host_id = ?`
+	if s.dialect == "postgres" {
+		q = `SELECT host_id, snapshot_json, collected_at FROM hardware_inventory WHERE host_id = $1`
+	}
+	err := s.db.QueryRowContext(context.Background(), q, hostID,
 	).Scan(&rec.HostID, &rec.SnapshotJSON, &rec.CollectedAt)
 	if err != nil {
 		return nil, fmt.Errorf("hardware %s: %w", hostID, err)
@@ -190,6 +206,9 @@ type BaselineRecord struct {
 }
 
 func (s *Store) SetBaseline(profile, targetKey, runID string) error {
+	if s.dialect == "postgres" {
+		return s.setBaselinePostgres(profile, targetKey, runID)
+	}
 	_, err := s.db.ExecContext(context.Background(),
 		`INSERT OR REPLACE INTO baselines (profile, target_key, run_id, set_at) VALUES (?, ?, ?, ?)`,
 		profile, targetKey, runID, time.Now().UTC().Format(time.RFC3339),
@@ -199,9 +218,11 @@ func (s *Store) SetBaseline(profile, targetKey, runID string) error {
 
 func (s *Store) GetBaseline(profile, targetKey string) (*BaselineRecord, error) {
 	var rec BaselineRecord
-	err := s.db.QueryRowContext(context.Background(),
-		`SELECT profile, target_key, run_id, set_at FROM baselines WHERE profile = ? AND target_key = ?`,
-		profile, targetKey,
+	q := `SELECT profile, target_key, run_id, set_at FROM baselines WHERE profile = ? AND target_key = ?`
+	if s.dialect == "postgres" {
+		q = `SELECT profile, target_key, run_id, set_at FROM baselines WHERE profile = $1 AND target_key = $2`
+	}
+	err := s.db.QueryRowContext(context.Background(), q, profile, targetKey,
 	).Scan(&rec.Profile, &rec.TargetKey, &rec.RunID, &rec.SetAt)
 	if err != nil {
 		return nil, fmt.Errorf("baseline %s/%s: %w", profile, targetKey, err)
@@ -229,14 +250,19 @@ func (s *Store) ListBaselines() ([]BaselineRecord, error) {
 }
 
 func (s *Store) DeleteBaseline(profile, targetKey string) error {
-	_, err := s.db.ExecContext(context.Background(),
-		`DELETE FROM baselines WHERE profile = ? AND target_key = ?`,
-		profile, targetKey,
+	q := `DELETE FROM baselines WHERE profile = ? AND target_key = ?`
+	if s.dialect == "postgres" {
+		q = `DELETE FROM baselines WHERE profile = $1 AND target_key = $2`
+	}
+	_, err := s.db.ExecContext(context.Background(), q, profile, targetKey,
 	)
 	return err
 }
 
 func (s *Store) Save(run *schema.RunResult) error {
+	if s.dialect == "postgres" {
+		return s.savePostgres(run)
+	}
 	data, err := json.Marshal(run)
 	if err != nil {
 		return err
@@ -254,7 +280,11 @@ func (s *Store) Save(run *schema.RunResult) error {
 
 func (s *Store) Get(runID string) (*schema.RunResult, error) {
 	var raw string
-	err := s.db.QueryRowContext(context.Background(), `SELECT result_json FROM runs WHERE run_id = ?`, runID).Scan(&raw)
+	q := `SELECT result_json FROM runs WHERE run_id = ?`
+	if s.dialect == "postgres" {
+		q = `SELECT result_json FROM runs WHERE run_id = $1`
+	}
+	err := s.db.QueryRowContext(context.Background(), q, runID).Scan(&raw)
 	if err != nil {
 		return nil, fmt.Errorf("run %s: %w", runID, err)
 	}
@@ -269,7 +299,11 @@ func (s *Store) List(limit int) ([]schema.RunResult, error) {
 	if limit <= 0 {
 		limit = 20
 	}
-	rows, err := s.db.QueryContext(context.Background(), `SELECT result_json FROM runs ORDER BY created_at DESC LIMIT ?`, limit)
+	q := `SELECT result_json FROM runs ORDER BY created_at DESC LIMIT ?`
+	if s.dialect == "postgres" {
+		q = `SELECT result_json FROM runs ORDER BY created_at DESC LIMIT $1`
+	}
+	rows, err := s.db.QueryContext(context.Background(), q, limit)
 	if err != nil {
 		return nil, err
 	}

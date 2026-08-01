@@ -35,7 +35,8 @@ Build and register in your MCP client config:
       "command": "stratabench-mcp",
       "args": [],
       "env": {
-        "STRATABENCH_DATA": "~/.stratabench"
+        "STRATABENCH_DATA": "~/.stratabench",
+        "STRATABENCH_AGENT_TOKEN": "<shared-secret-for-distributed-runs>"
       }
     }
   }
@@ -48,14 +49,20 @@ See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mc
 
 | Tool | Purpose |
 |------|---------|
-| `stratabench_list_profiles` | Catalog of 29 workload profiles |
+| `stratabench_list_profiles` | Catalog of 30 workload profiles |
 | `stratabench_plan` | NL intent → profile name (+ guidance summary) |
 | `stratabench_guide` | Discuss intent before run — questions, warnings, engine params |
 | `stratabench_validate` | Workload + hardware pre-check |
-| `stratabench_run` | Execute a profile |
+| `stratabench_run` | Execute a profile (`clients`, `targets`, `topology`, `warp_clients`, `async`) |
 | `stratabench_agent` | Full plan → validate → run → analyze → report |
 | `stratabench_analyze` | Post-run insights for a `run_id` |
 | `stratabench_list_runs` | Recent runs from SQLite store |
+| `stratabench_compare_runs` | Compare two run IDs (IOPS, latency, deltas) |
+| `stratabench_report` | HTML or JSON report for a run |
+| `stratabench_baseline_check` | Regression check against stored baseline |
+| `stratabench_export_json` | Export run result as JSON |
+| `stratabench_run_progress` | Poll in-flight run assignment progress |
+| `stratabench_import_json` | Import SBK/StrataBench JSON into store |
 
 ## CLI (for shell-based agents)
 
@@ -83,7 +90,12 @@ stratabench agent "s3 put 3kb-100kb duration 1h" --yes --mock
 | `/api/v1/health` | GET | Liveness |
 | `/api/v1/profiles` | GET | List profiles |
 | `/api/v1/plan` | POST | `{"intent":"...","use_llm":true}` |
-| `/api/v1/runs` | GET/POST | List or create runs |
+| `/api/v1/runs` | GET/POST | List runs, create run (`async: true` for background) |
+| `/api/v1/validate` | POST | Pre-run workload + hardware validation |
+| `/api/v1/report/{id}` | GET/POST | HTML or JSON report for a run |
+| `/api/v1/compare` | POST | Compare two runs by ID |
+| `/api/v1/runs/{id}/stream` | GET | SSE progress stream until run completes |
+| `/api/v1/runs/{id}/progress` | GET | In-flight assignment progress (while run is active) |
 | `/api/v1/agent` | POST | Full agentic loop |
 | `/api/v1/analyze/{run_id}` | GET | Insights |
 | `/metrics` | GET | Prometheus |
@@ -126,7 +138,7 @@ Works with Ollama, OpenAI, LiteLLM, vLLM, LocalAI, and any `/v1/chat/completions
 - Always **validate** before real runs on production storage
 - Never destructive: profiles use read-heavy or isolated test patterns; still confirm target with user
 - Do not commit secrets (API keys, WARP keys, Postgres DSNs)
-- For distributed runs, start `stratabench-agent` on client nodes first
+- For distributed runs, start `stratabench-agent` on client nodes first and set matching `STRATABENCH_AGENT_TOKEN` on coordinator and agents
 
 ## Docs
 

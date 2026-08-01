@@ -28,7 +28,7 @@
     {
       "type": "timeseries",
       "title": "p99 Latency (µs)",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "targets": [
         {
           "expr": "stratabench_latency_p99_us",
@@ -37,14 +37,36 @@
       ]
     },
     {
+      "type": "timeseries",
+      "title": "Run assignment progress (live)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "stratabench_run_assignment_progress",
+          "legendFormat": "{{profile}} {{phase}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "max": 1 }
+      }
+    },
+    {
       "type": "stat",
       "title": "Total Runs",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
       "targets": [
         { "expr": "sum(stratabench_runs_total)" }
       ]
+    },
+    {
+      "type": "stat",
+      "title": "Active assignments",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+      "targets": [
+        { "expr": "sum(stratabench_run_assignments_total)" }
+      ]
     }
   ],
   "schemaVersion": 39,
-  "version": 1
+  "version": 2
 }

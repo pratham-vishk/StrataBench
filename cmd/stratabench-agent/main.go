@@ -12,6 +12,7 @@ import (
 
 	"github.com/pratham-vishk/stratabench/internal/agentapi"
 	"github.com/pratham-vishk/stratabench/internal/agentauth"
+	"github.com/pratham-vishk/stratabench/internal/agenttls"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
@@ -79,7 +80,10 @@ func main() {
 	} else {
 		log.Print("agent auth: disabled (set STRATABENCH_AGENT_TOKEN in production)")
 	}
-	log.Fatal(http.ListenAndServe(listen, agentauth.Middleware(mux)))
+	if os.Getenv("STRATABENCH_AGENT_TLS_CERT") != "" {
+		log.Print("agent TLS: enabled (STRATABENCH_AGENT_TLS_CERT)")
+	}
+	log.Fatal(agenttls.ListenAndServe(listen, agentauth.Middleware(mux)))
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
