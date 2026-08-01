@@ -56,7 +56,7 @@ func ValidationMatrix(cfg Config, profilesDir string) ([]ValidationItem, error) 
 		}
 		return profiles[i].Name < profiles[j].Name
 	})
-	tgts := resolveTargets(cfg)
+	tgts := cfg.resolveTargets()
 	var rows []ValidationItem
 	for _, p := range profiles {
 		target := profileTarget(tgts, p)
@@ -81,138 +81,21 @@ func ValidationMatrix(cfg Config, profilesDir string) ([]ValidationItem, error) 
 	return rows, nil
 }
 
-type labTargets struct {
-	block      string
-	afa        string
-	spdk       string
-	file       string
-	s3         string
-	vm         string
-	vmS3       string
-	postgres   string
-	kafka      string
-	rocksdb    string
-	client     string
-	serverList string
-}
-
-func resolveTargets(cfg Config) labTargets {
-	s3 := cfg.ServerCSV()
-	if s3 == "" {
-		s3 = "10.0.1.10:9000"
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
-	firstS3 := strings.Split(s3, ",")[0]
-	client := "10.0.1.1:7777"
-	if len(cfg.Clients) > 0 {
-		client = fmt.Sprintf("%s:%d", cfg.Clients[0].Host, cfg.AgentPort)
-	}
-	vmHost := "10.0.1.20"
-	if len(cfg.Clients) > 0 {
-		vmHost = cfg.Clients[0].Host
-	}
-	vm := fmt.Sprintf("root@%s:/dev/vdb", vmHost)
-	tgts := labTargets{
-		block:      cfg.BlockTarget(),
-		afa:        envOr("LAB_AFA_LUNS", "/dev/sdb,/dev/sdc,/dev/sdd"),
-		spdk:       envOr("LAB_SPDK_PCI", "0000:01:00.0"),
-		file:       envOr("LAB_FILE_TARGET", "/mnt/nfs/share"),
-		s3:         firstS3,
-		vm:         vm,
-		vmS3:       envOr("LAB_VM_S3_TARGET", firstS3),
-		postgres:   envOr("LAB_POSTGRES_DSN", "postgres://bench@localhost/stratabench"),
-		kafka:      envOr("LAB_KAFKA_TARGET", "10.0.1.30:9092"),
-		rocksdb:    envOr("LAB_ROCKSDB_PATH", "/data/rocksdb"),
-		client:     client,
-		serverList: s3,
-	}
-	return tgts
-}
-
-func profileTarget(tgts labTargets, p *profile.Profile) string {
-	switch p.Layer {
-	case "block":
-		if p.Engine == "vdbench" || p.Name == "afa-multi-lun" {
-			return tgts.afa
-		}
-		if p.Engine == "spdk" {
-			return tgts.spdk
-		}
-		return tgts.block
-	case "file":
-		return tgts.file
-	case "object":
-		return tgts.s3
-	case "application":
-		return appTarget(tgts, p)
-	case "vm-block":
-		return vmBlockTarget(tgts, p)
-	case "vm-afa":
-		return fmt.Sprintf("root@%s:/dev/sdb,/dev/sdc,/dev/sdd", vmHost(tgts))
-	case "vm-file":
-		return vmFileTarget(tgts)
-	case "vm-object":
-		return tgts.vmS3
-	case "vm-application":
-		return vmAppTarget(tgts, p)
-	default:
-		return tgts.block
-	}
-}
-
-func vmHost(tgts labTargets) string {
-	vm := tgts.vm
-	if i := strings.Index(vm, "@"); i >= 0 {
-		vm = vm[i+1:]
-	}
-	if j := strings.Index(vm, ":"); j >= 0 {
-		return vm[:j]
-	}
-	if j := strings.Index(vm, "/"); j >= 0 {
-		return vm[:j]
-	}
-	return vm
-}
-
-func vmBlockTarget(tgts labTargets, p *profile.Profile) string {
-	host := vmHost(tgts)
-	if strings.Contains(p.Name, "passthrough") {
-		return fmt.Sprintf("root@%s:/dev/nvme0n1", host)
-	}
-	return fmt.Sprintf("root@%s:/dev/vdb", host)
-}
-
-func vmFileTarget(tgts labTargets) string {
-	return fmt.Sprintf("root@%s:/mnt/data", vmHost(tgts))
-}
-
-func appTarget(tgts labTargets, p *profile.Profile) string {
-	switch {
-	case strings.Contains(p.Name, "postgres"):
-		return tgts.postgres
-	case strings.Contains(p.Name, "kafka"):
-		return tgts.kafka
-	case strings.Contains(p.Name, "rocksdb"):
-		return tgts.rocksdb
-	default:
-		return tgts.postgres
-	}
-}
-
-func vmAppTarget(tgts labTargets, p *profile.Profile) string {
-	if strings.Contains(p.Name, "postgres") {
-		return `"postgres://bench@localhost/db"`
-	}
-	return "localhost:9092"
+	return def
 }
 
 func profileCommand(cfg Config, p *profile.Profile, target string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "stratabench run --profile %s --target %s", p.Name, target)
 	if profileNeedsClients(p) {
-		fmt.Fprintf(&b, " --clients %s", resolveTargets(cfg).client)
+		fmt.Fprintf(&b, " --clients %s", cfg.resolveTargets().client)
 	}
 	if p.Engine == "warp" && (strings.Contains(p.Name, "cluster") || p.ParamInt("warp_clients", 0) > 0 || len(p.ParamStringSlice("warp_clients")) > 0) {
-		tgts := resolveTargets(cfg)
+		tgts := cfg.resolveTargets()
 		if tgts.serverList != "" {
 			fmt.Fprintf(&b, " --targets %s", tgts.serverList)
 		}
@@ -356,21 +239,6 @@ func WriteValidationReportJSON(path string, rep *ValidateReport) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
-}
-
-func envOr(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
-
-// BlockTarget returns configured block device or default.
-func (c Config) BlockTarget() string {
-	if v := os.Getenv("LAB_BLOCK_TARGET"); v != "" {
-		return v
-	}
-	return "/dev/nvme0n1"
 }
 
 // DefaultValidationOutput returns a sensible report path beside lab config.

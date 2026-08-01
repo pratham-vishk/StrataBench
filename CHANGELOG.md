@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc25] - 2026-08-01
+
+### Added
+- **Profile-aware `lab run`** — resolves target, topology, and S3 requirements per engine/layer from `targets:` in lab.yaml
+- **`targets` section in lab.yaml** — block, afa_luns, file, spdk_pci, postgres_dsn, kafka, rocksdb_path, vm_block
+
+### Changed
+- `lab bootstrap` skips MinIO when `s3.deploy: skip` or no servers
+- `lab check` only validates S3 when MinIO deploy is enabled
+- `lab run` prints resolved plan and generates HTML/Excel/PDF report for any profile
+
 ## [0.8.0-rc24] - 2026-08-01
 
 ### Added

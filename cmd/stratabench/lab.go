@@ -251,12 +251,16 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 				if err != nil {
 					return err
 				}
-				target := cfg.PrimaryTarget()
-				if target == "" {
-					return fmt.Errorf("no server targets in lab config")
+				plan, err := cfg.ResolveRun(p)
+				if err != nil {
+					return err
 				}
-				os.Setenv("WARP_ACCESS_KEY", cfg.S3.AccessKey)
-				os.Setenv("WARP_SECRET_KEY", cfg.S3.SecretKey)
+				fmt.Printf("lab run: profile=%s layer=%s engine=%s target=%s topology=%s\n",
+					plan.Profile, plan.Layer, plan.Engine, plan.Target, plan.Topology)
+				if plan.NeedsS3 {
+					os.Setenv("WARP_ACCESS_KEY", cfg.S3.AccessKey)
+					os.Setenv("WARP_SECRET_KEY", cfg.S3.SecretKey)
+				}
 
 				svc, err := orchestrator.NewService(paths.DataDir())
 				if err != nil {
@@ -264,25 +268,12 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 				}
 				defer svc.Close()
 
-				topo := cfg.DefaultRun.Topology
-				if topo == "" {
-					topo = "shard"
-				}
-				var clientHosts []string
-				for _, c := range cfg.Clients {
-					clientHosts = append(clientHosts, fmt.Sprintf("%s:%d", c.Host, c.Port))
-				}
-				var serverHosts []string
-				for _, s := range cfg.Servers {
-					serverHosts = append(serverHosts, fmt.Sprintf("%s:%d", s.Host, s.Port))
-				}
-
 				run, err := svc.Run(cmd.Context(), orchestrator.RunOptions{
 					Profile:       p,
-					Target:        target,
-					Targets:       serverHosts,
-					Clients:       clientHosts,
-					Topology:      topo,
+					Target:        plan.Target,
+					Targets:       plan.ServerTargets,
+					Clients:       plan.ClientURLs,
+					Topology:      plan.Topology,
 					Mock:          mock,
 					CheckHardware: checkHardware && !mock,
 					DataDir:       paths.DataDir(),
@@ -298,7 +289,7 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 				}
 				fmt.Printf("run_id=%s profile=%s iops=%.0f throughput=%.1f MB/s\n",
 					run.RunID, run.Profile, run.Results.IOPS, run.Results.ThroughputMBps)
-				fmt.Printf("Report: %s\nExcel: %s\n", arts.HTML, arts.Excel)
+				fmt.Printf("Report: %s\nExcel: %s\nPDF: %s\n", arts.HTML, arts.Excel, arts.PDF)
 				if openReport {
 					_ = report.OpenInBrowser(arts.HTML)
 				}

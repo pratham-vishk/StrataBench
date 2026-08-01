@@ -52,8 +52,8 @@ func Bootstrap(ctx context.Context, cfg Config, repoRoot string) (*BootstrapRepo
 		report.Hosts = append(report.Hosts, hr)
 	}
 
-	// Servers: MinIO if deploy=docker
-	if cfg.S3.Deploy == "docker" {
+	// Servers: MinIO when S3 deploy is enabled
+	if cfg.NeedsMinIO() {
 		for _, n := range cfg.Servers {
 			already := false
 			for _, c := range cfg.Clients {

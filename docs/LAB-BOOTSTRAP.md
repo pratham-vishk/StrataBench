@@ -28,13 +28,17 @@ On your **Linux jump host** (SSH access to all nodes):
 git clone https://github.com/pratham-vishk/StrataBench.git
 cd StrataBench
 cp examples/lab.yaml.example lab.yaml
-# edit clients + servers IPs
+# edit clients, targets.block (/dev/sdb for HDD), and servers (only if you need S3)
 
 make build
 stratabench lab bootstrap -f lab.yaml --write-env lab.env
 stratabench lab check -f lab.yaml
-stratabench lab run -f lab.yaml s3-cluster-rdma
+stratabench lab run -f lab.yaml hdd-sequential-read    # block/HDD — no S3 needed
+stratabench lab run -f lab.yaml s3-cluster-rdma        # object — needs servers + MinIO
+stratabench lab run -f lab.yaml app-postgres-tpc-c     # SBK — needs targets.postgres_dsn
 ```
+
+`lab run` picks **target, topology, and engine** from the profile + `targets:` section in `lab.yaml`. You only pass the profile name.
 
 Or with **auto-discovery** when you only have a host list:
 

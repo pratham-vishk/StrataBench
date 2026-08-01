@@ -13,6 +13,18 @@ clients:
   - host: 10.0.1.2
   - host: 10.0.1.3
 
+# Block/file/app targets — used automatically by `stratabench lab run <profile>`
+targets:
+  block: /dev/sdb              # HDD/NVMe (hdd-sequential-read, nvme-random-oltp, fio)
+  afa_luns: /dev/sdb,/dev/sdc  # vdbench multi-LUN
+  file: /mnt/nfs/share         # elbencho file profiles
+  spdk_pci: "0000:01:00.0"
+  postgres_dsn: postgres://bench@10.0.1.5/stratabench
+  kafka: 10.0.1.30:9092
+  rocksdb_path: /data/rocksdb
+  vm_block: root@10.0.1.20:/dev/vdb
+
+# S3 servers — only needed for object/warp/gosbench profiles
 servers:
   - host: 10.0.1.10
     port: 9000
@@ -38,8 +50,8 @@ firewall:
   open_ports: [7777, 9000, 9001]
 
 default_run:
-  profile: s3-cluster-rdma
-  topology: shard
+  profile: hdd-sequential-read   # or s3-cluster-rdma, app-postgres-tpc-c, etc.
+  topology: single               # auto-inferred when omitted
 
 bin_dir: bin
 profiles_dir: profiles

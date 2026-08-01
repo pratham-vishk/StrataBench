@@ -11,17 +11,18 @@ import (
 
 // Config describes a benchmark lab cluster (clients, S3 servers, SSH, tools).
 type Config struct {
-	SSH         SSHConfig         `yaml:"ssh"`
-	InstallDir  string            `yaml:"install_dir"`
-	AgentPort   int               `yaml:"agent_port"`
-	Clients     []Node            `yaml:"clients"`
-	Servers     []Node            `yaml:"servers"`
-	S3          S3Config          `yaml:"s3"`
-	Tools       ToolsConfig       `yaml:"tools"`
-	Firewall    FirewallConfig    `yaml:"firewall"`
-	DefaultRun  DefaultRunConfig  `yaml:"default_run"`
-	BinDir      string            `yaml:"bin_dir"` // local coordinator binaries
-	ProfilesDir string            `yaml:"profiles_dir"`
+	SSH         SSHConfig        `yaml:"ssh"`
+	InstallDir  string           `yaml:"install_dir"`
+	AgentPort   int              `yaml:"agent_port"`
+	Clients     []Node           `yaml:"clients"`
+	Servers     []Node           `yaml:"servers"`
+	Targets     TargetsConfig    `yaml:"targets"`
+	S3          S3Config         `yaml:"s3"`
+	Tools       ToolsConfig      `yaml:"tools"`
+	Firewall    FirewallConfig   `yaml:"firewall"`
+	DefaultRun  DefaultRunConfig `yaml:"default_run"`
+	BinDir      string           `yaml:"bin_dir"` // local coordinator binaries
+	ProfilesDir string           `yaml:"profiles_dir"`
 }
 
 type SSHConfig struct {
@@ -158,6 +159,9 @@ func applyEnvFile(cfg *Config, content string) error {
 	if bd := vars["STRATABENCH_BIN"]; bd != "" {
 		cfg.BinDir = filepath.Dir(bd)
 	}
+	if bt := vars["LAB_BLOCK_TARGET"]; bt != "" {
+		cfg.Targets.Block = bt
+	}
 	if cfg.S3.Deploy == "" {
 		cfg.S3.Deploy = "docker"
 	}
@@ -261,6 +265,17 @@ func (c Config) ServerHosts() []string {
 	return h
 }
 
+func (c Config) BlockTarget() string {
+	if c.Targets.Block != "" {
+		return c.Targets.Block
+	}
+	if v := os.Getenv("LAB_BLOCK_TARGET"); v != "" {
+		return v
+	}
+	return "/dev/nvme0n1"
+}
+
+// PrimaryTarget returns the first S3 server endpoint (legacy). Prefer ResolveRun for profile-aware targets.
 func (c Config) PrimaryTarget() string {
 	if len(c.Servers) > 0 {
 		s := c.Servers[0]

@@ -46,7 +46,7 @@ func Check(ctx context.Context, cfg Config) (*CheckReport, error) {
 				}
 			}
 		}
-		if serverSet[st.Host] && cfg.S3.Deploy != "external" {
+		if serverSet[st.Host] && cfg.NeedsMinIO() {
 			if !st.S3OK {
 				rep.Details = append(rep.Details, fmt.Sprintf("%s: S3/MinIO not reachable on :9000", st.Host))
 			}

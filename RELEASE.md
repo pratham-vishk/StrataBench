@@ -1,24 +1,27 @@
 # Release Guide
 
-## v0.8.0-rc24 (current)
+## v0.8.0-rc25 (current)
 
-SBK driver probe CLI, lab validate `--check-sbk-tools`, and operator manual retry via annotation.
+Profile-aware lab run — one command per workload; correct target for HDD, S3, SBK, file, AFA, etc.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc24
-git push origin v0.8.0-rc24
-gh release create v0.8.0-rc24 --title "v0.8.0-rc24" --notes "SBK tools probe; operator manual retry."
+git tag v0.8.0-rc25
+git push origin v0.8.0-rc25
+gh release create v0.8.0-rc25 --title "v0.8.0-rc25" --notes "Profile-aware lab run for all engines."
 ```
 
 ### Smoke test
 
 ```bash
-stratabench sbk tools
-stratabench lab validate -f lab.yaml --check-sbk-tools
-kubectl annotate benchmark nightly-nvme-oltp stratabench.io/retry=2 -n stratabench --overwrite
+stratabench lab run -f lab.yaml hdd-sequential-read
+stratabench lab run -f lab.yaml s3-put-throughput
 ```
+
+## v0.8.0-rc24
+
+SBK driver probe CLI, lab validate `--check-sbk-tools`, and operator manual retry via annotation.
 
 ## v0.8.0-rc23
 
