@@ -17,6 +17,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/export"
 	"github.com/pratham-vishk/stratabench/internal/importsbk"
 	"github.com/pratham-vishk/stratabench/internal/inventory"
+	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/manifest"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
@@ -45,6 +46,7 @@ var (
 	checkHardware  bool
 	profilesCSV   string
 	useOllama     bool
+	useLLM        bool
 	ollamaURL     string
 	ollamaModel   string
 )
@@ -496,7 +498,9 @@ func planCmd() *cobra.Command {
 				Intent:      text,
 				Profiles:    profiles,
 				Hardware:    discovery.Snapshot(),
+				UseLLM:      useLLM || useOllama,
 				UseOllama:   useOllama,
+				LLM:         llm.FromEnv(),
 				OllamaURL:   ollamaURL,
 				OllamaModel: ollamaModel,
 			})
@@ -513,7 +517,8 @@ func planCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner (falls back to keywords)")
+	cmd.Flags().BoolVar(&useLLM, "llm", false, "Use LLM planner (Ollama or OpenAI-compatible)")
+	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm (Ollama)")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL (default http://localhost:11434)")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name (default llama3.2)")
 	return cmd
@@ -657,7 +662,9 @@ func agentCmd() *cobra.Command {
 				CheckBaseline: checkBaseline,
 				CheckHardware: checkHardware,
 				CacheBytes:    cacheBytes,
+				UseLLM:        useLLM || useOllama,
 				UseOllama:     useOllama,
+				LLM:           llm.FromEnv(),
 				OllamaURL:     ollamaURL,
 				OllamaModel:   ollamaModel,
 			})
@@ -673,7 +680,8 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
 	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
-	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Use Ollama LLM planner")
+	cmd.Flags().BoolVar(&useLLM, "llm", false, "Use LLM planner and reporter")
+	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name")
 	_ = cmd.MarkFlagRequired("target") // target or targets

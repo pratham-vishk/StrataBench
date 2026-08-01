@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/pratham-vishk/stratabench/internal/discovery"
-	"github.com/pratham-vishk/stratabench/internal/ollama"
+	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/schema"
@@ -19,9 +19,11 @@ type PlanOptions struct {
 	Intent      string
 	Profiles    []*profile.Profile
 	Hardware    schema.HardwareSnapshot
-	UseOllama   bool
-	OllamaURL   string
-	OllamaModel string
+	UseLLM      bool
+	UseOllama   bool // deprecated alias for UseLLM
+	LLM         llm.Config
+	OllamaURL   string // deprecated; use LLM.BaseURL
+	OllamaModel string // deprecated; use LLM.Model
 }
 
 type PlanResult struct {
@@ -31,30 +33,37 @@ type PlanResult struct {
 }
 
 func Plan(ctx context.Context, opts PlanOptions) PlanResult {
-	if opts.UseOllama {
-		if res, err := planWithOllama(ctx, opts); err == nil {
+	if opts.UseLLM || opts.UseOllama {
+		if res, err := planWithLLM(ctx, opts); err == nil {
 			return res
 		}
 	}
 	name := SuggestProfile(opts.Intent, opts.Profiles)
 	return PlanResult{
 		Profile:   name,
-		Rationale: "keyword match (Ollama unavailable or disabled)",
+		Rationale: "keyword match (LLM unavailable or disabled)",
 		Source:    "keyword",
 	}
 }
 
-func planWithOllama(ctx context.Context, opts PlanOptions) (PlanResult, error) {
+func planWithLLM(ctx context.Context, opts PlanOptions) (PlanResult, error) {
 	hw := opts.Hardware
 	if hw.CPUCores == 0 {
 		hw = discovery.Snapshot()
 	}
 
 	prompt := buildPlannerPrompt(opts.Intent, opts.Profiles, hw)
-	raw, err := ollama.Generate(ctx, ollama.Config{
-		URL:   opts.OllamaURL,
-		Model: opts.OllamaModel,
-	}, prompt, true)
+	cfg := opts.LLM
+	if cfg.Model == "" && opts.OllamaModel != "" {
+		cfg.Model = opts.OllamaModel
+	}
+	if cfg.BaseURL == "" && opts.OllamaURL != "" {
+		cfg.BaseURL = opts.OllamaURL
+	}
+	if cfg.Model == "" && cfg.BaseURL == "" && cfg.APIKey == "" {
+		cfg = llm.FromEnv()
+	}
+	raw, err := llm.Generate(ctx, cfg, prompt, true)
 	if err != nil {
 		return PlanResult{}, err
 	}
@@ -64,19 +73,27 @@ func planWithOllama(ctx context.Context, opts PlanOptions) (PlanResult, error) {
 		Rationale string `json:"rationale"`
 	}
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return PlanResult{}, fmt.Errorf("parse ollama response: %w", err)
+		return PlanResult{}, fmt.Errorf("parse llm response: %w", err)
 	}
 	if parsed.Profile == "" {
-		return PlanResult{}, fmt.Errorf("ollama returned empty profile")
+		return PlanResult{}, fmt.Errorf("llm returned empty profile")
 	}
 	if !profileExists(opts.Profiles, parsed.Profile) {
-		return PlanResult{}, fmt.Errorf("ollama suggested unknown profile %q", parsed.Profile)
+		return PlanResult{}, fmt.Errorf("llm suggested unknown profile %q", parsed.Profile)
+	}
+	source := cfg.Provider
+	if source == "" || source == llm.ProviderAuto {
+		source = "llm"
 	}
 	return PlanResult{
 		Profile:   parsed.Profile,
 		Rationale: parsed.Rationale,
-		Source:    "ollama",
+		Source:    source,
 	}, nil
+}
+
+func planWithOllama(ctx context.Context, opts PlanOptions) (PlanResult, error) {
+	return planWithLLM(ctx, opts)
 }
 
 func buildPlannerPrompt(intent string, profiles []*profile.Profile, hw schema.HardwareSnapshot) string {

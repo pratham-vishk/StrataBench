@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "stratabench": {
+      "command": "stratabench-mcp",
+      "args": [],
+      "env": {
+        "STRATABENCH_DATA": "${userHome}/.stratabench"
+      }
+    }
+  }
+}

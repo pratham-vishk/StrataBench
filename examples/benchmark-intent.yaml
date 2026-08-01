@@ -1,0 +1,10 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: nvme-oltp-intent
+spec:
+  intent: "nvme random oltp database workload on flash"
+  target: /dev/nvme0n1
+  useOllama: true
+  checkHardware: true
+  mock: false

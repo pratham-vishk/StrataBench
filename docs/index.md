@@ -19,6 +19,7 @@
 |----------|-------------|
 | [Engine Coverage](ENGINE-COVERAGE.md) | HDD / NVMe / AFA / S3 RDMA physical + virtual |
 | [Hardware Validation](HARDWARE-VALIDATION.md) | Per-use-case tools, devices, and NIC checks |
+| [Agentic Guide](AGENTIC.md) | MCP server, CLI models, LLM setup |
 | [Topology Guide](TOPOLOGY.md) | Multi-client / multi-server patterns |
 | [Development Guide](DEV.md) | Build, test, CLI reference |
 | [Architecture](ARCHITECTURE.md) | System design |

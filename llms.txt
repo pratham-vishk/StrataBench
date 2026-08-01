@@ -1,0 +1,29 @@
+# StrataBench
+
+> Agentic, honest storage benchmarking — HDD, NVMe, AFA, S3 RDMA, VM, and application workloads.
+
+## For AI agents
+
+- Read AGENTS.md for MCP tools, CLI commands, and REST API
+- MCP server: `cmd/stratabench-mcp` — tools for plan, validate, run, analyze
+- Default to mock mode unless user confirms real hardware targets
+- 30+ profiles in `profiles/`; engines: fio, vdbench, SPDK, warp, elbencho, sbk
+
+## Key commands
+
+```
+stratabench agent "intent" --target <path> --mock
+stratabench plan "intent" --llm
+stratabench validate --profile <name> --target <path>
+stratabench run --profile <name> --target <path>
+```
+
+## LLM env
+
+STRATABENCH_LLM_PROVIDER, STRATABENCH_LLM_URL, STRATABENCH_LLM_API_KEY, STRATABENCH_LLM_MODEL
+
+## Docs
+
+- docs/AGENTIC.md
+- docs/HARDWARE-VALIDATION.md
+- docs/ENGINE-COVERAGE.md

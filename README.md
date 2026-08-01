@@ -78,7 +78,8 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 - **Validator** — cache size, steady state, tail latency rules before every run
 - **30+ workload profiles** — declarative YAML, extensible
 - **Agentic loop** — `stratabench agent "nvme oltp database"` → plan → validate → run → analyze → report
-- **Ollama planner** — natural language profile selection with keyword fallback
+- **MCP server** — `stratabench-mcp` exposes 7 tools for Cursor, Claude, and other CLI models
+- **LLM planner** — Ollama or OpenAI-compatible APIs; keyword fallback
 - **Regression tracking** — explicit baselines + 30-day rolling comparison
 - **Hardware inventory** — NVMe model, firmware, block devices, SMART history
 - **REST API** + **Prometheus metrics** + **Grafana dashboard**
@@ -116,6 +117,24 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 
 # Full agentic loop
 ./bin/stratabench agent "ssd random 4k workload" --target /tmp/test --mock
+```
+
+### Use with CLI models (Cursor, Claude, MCP)
+
+```bash
+make build-mcp   # builds bin/stratabench-mcp
+
+# Register in Cursor MCP settings — see examples/mcp-cursor.json
+# Then ask your agent: "plan an nvme oltp benchmark with StrataBench"
+```
+
+See [AGENTS.md](AGENTS.md) and [docs/AGENTIC.md](docs/AGENTIC.md) for MCP tools, REST API, and LLM configuration.
+
+```bash
+# LLM planner (Ollama local or OpenAI-compatible)
+export OPENAI_API_KEY=sk-...   # or: ollama serve
+./bin/stratabench plan "s3 rdma cluster" --llm
+./bin/stratabench agent "afa multi lun" --target /dev/sdb --llm --mock
 ```
 
 ### Run on real storage (Linux)

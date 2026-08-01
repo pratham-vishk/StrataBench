@@ -8,6 +8,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/export"
+	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/planner"
@@ -28,7 +29,9 @@ type Options struct {
 	CheckBaseline bool
 	CheckHardware bool
 	CacheBytes    int64
+	UseLLM        bool
 	UseOllama     bool
+	LLM           llm.Config
 	OllamaURL     string
 	OllamaModel   string
 	DataDir       string
@@ -56,11 +59,23 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	}
 
 	fmt.Println("→ Planning...")
+	llmCfg := opts.LLM
+	if llmCfg.Model == "" && opts.OllamaModel != "" {
+		llmCfg.Model = opts.OllamaModel
+	}
+	if llmCfg.BaseURL == "" && opts.OllamaURL != "" {
+		llmCfg.BaseURL = opts.OllamaURL
+	}
+	if (opts.UseLLM || opts.UseOllama) && llmCfg.Model == "" && llmCfg.BaseURL == "" && llmCfg.APIKey == "" {
+		llmCfg = llm.FromEnv()
+	}
 	plan := planner.Plan(ctx, planner.PlanOptions{
 		Intent:      opts.Intent,
 		Profiles:    profiles,
 		Hardware:    discovery.Snapshot(),
+		UseLLM:      opts.UseLLM || opts.UseOllama,
 		UseOllama:   opts.UseOllama,
+		LLM:         llmCfg,
 		OllamaURL:   opts.OllamaURL,
 		OllamaModel: opts.OllamaModel,
 	})
@@ -121,7 +136,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 
 	fmt.Println("→ Reporting...")
 	summary := reporter.Summarize(ctx, run, insights, reporter.SummaryOptions{
+		UseLLM:      opts.UseLLM || opts.UseOllama,
 		UseOllama:   opts.UseOllama,
+		LLM:         llmCfg,
 		OllamaURL:   opts.OllamaURL,
 		OllamaModel: opts.OllamaModel,
 	})

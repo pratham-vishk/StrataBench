@@ -7,10 +7,13 @@ import (
 
 	"github.com/pratham-vishk/stratabench/internal/agentloop"
 	"github.com/pratham-vishk/stratabench/internal/analyst"
+	"github.com/pratham-vishk/stratabench/internal/discovery"
 	"github.com/pratham-vishk/stratabench/internal/inventory"
+	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/metrics"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
+	"github.com/pratham-vishk/stratabench/internal/planner"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/remote"
 )
@@ -35,9 +38,17 @@ type agentRequest struct {
 	Intent        string `json:"intent"`
 	Target        string `json:"target"`
 	Mock          bool   `json:"mock"`
+	UseLLM        bool   `json:"use_llm"`
 	UseOllama     bool   `json:"use_ollama"`
 	CheckBaseline bool   `json:"check_baseline"`
 	CheckHardware bool   `json:"check_hardware"`
+}
+
+type planRequest struct {
+	Intent   string `json:"intent"`
+	UseLLM   bool   `json:"use_llm"`
+	Provider string `json:"llm_provider"`
+	Model    string `json:"model"`
 }
 
 func (s *Server) Handler() http.Handler {
@@ -49,6 +60,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/runs", s.handleRuns)
 	mux.HandleFunc("/api/v1/inventory", s.handleInventory)
 	mux.HandleFunc("/api/v1/analyze/", s.handleAnalyze)
+	mux.HandleFunc("/api/v1/plan", s.handlePlan)
 	mux.HandleFunc("/api/v1/agent", s.handleAgent)
 	mux.Handle("/metrics", metrics.Handler())
 	return mux
@@ -109,7 +121,9 @@ func (s *Server) handleAgent(w http.ResponseWriter, r *http.Request) {
 		Intent:        req.Intent,
 		Target:        req.Target,
 		Mock:          req.Mock,
+		UseLLM:        req.UseLLM || req.UseOllama,
 		UseOllama:     req.UseOllama,
+		LLM:           llm.FromEnv(),
 		CheckBaseline: req.CheckBaseline,
 		CheckHardware: req.CheckHardware,
 		DataDir:       paths.DataDir(),
@@ -119,6 +133,42 @@ func (s *Server) handleAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, result)
+}
+
+func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req planRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if req.Intent == "" {
+		http.Error(w, "intent required", http.StatusBadRequest)
+		return
+	}
+	profiles, err := profile.List(paths.ProfilesDir())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	cfg := llm.FromEnv()
+	if req.Provider != "" {
+		cfg.Provider = req.Provider
+	}
+	if req.Model != "" {
+		cfg.Model = req.Model
+	}
+	res := planner.Plan(r.Context(), planner.PlanOptions{
+		Intent:   req.Intent,
+		Profiles: profiles,
+		Hardware: discovery.Snapshot(),
+		UseLLM:   req.UseLLM,
+		LLM:      cfg,
+	})
+	writeJSON(w, res)
 }
 
 func (s *Server) handleProfiles(w http.ResponseWriter, r *http.Request) {
