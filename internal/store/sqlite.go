@@ -27,6 +27,15 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, pragma := range []string{
+		`PRAGMA journal_mode=WAL`,
+		`PRAGMA busy_timeout=10000`,
+	} {
+		if _, err := db.ExecContext(context.Background(), pragma); err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("sqlite pragma: %w", err)
+		}
+	}
 	s := &Store{db: db, dialect: "sqlite"}
 	if err := s.migrate(); err != nil {
 		_ = db.Close()

@@ -62,7 +62,7 @@ Events: `progress` while running, `interval` for each time bucket (mock runs), `
 
 ## Limitations
 
-- Live interval streaming is implemented for **mock** runs and engines that invoke `OnInterval` (fio/Warp parsing deferred).
+- Live interval streaming is implemented for **mock** runs and **fio** (via log tailing); Warp parsing deferred.
 - Progress still tracks **topology assignments** alongside interval samples.
-- Full interval time-series for real fio/Warp runs appear in HTML reports **after** completion.
+- Full interval time-series for real **Warp** runs appear in HTML reports **after** completion.
 - For thermal/SMART live monitoring, use host tools alongside StrataBench (`smartctl`, `nvme`, etc.).

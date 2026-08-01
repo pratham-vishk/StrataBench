@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pratham-vishk/stratabench/internal/metrics"
 	"github.com/pratham-vishk/stratabench/internal/schema"
@@ -31,9 +33,30 @@ func (f *FioRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sch
 	}
 	defer os.Remove(jobPath)
 
+	prefix := fioLogPrefixBase(in.WorkDir)
 	cmd := exec.CommandContext(ctx, "fio", jobPath, "--output-format=json", "--output="+outPath)
 	cmd.Dir = in.WorkDir
-	if out, err := cmd.CombinedOutput(); err != nil {
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if in.OnInterval != nil {
+		if err := cmd.Start(); err != nil {
+			return nil, nil, err
+		}
+		tailCtx, cancel := context.WithCancel(ctx)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			watchFioLogIntervals(tailCtx, in.WorkDir, prefix, in.OnInterval)
+		}()
+		waitErr := cmd.Wait()
+		cancel()
+		wg.Wait()
+		if waitErr != nil {
+			return nil, nil, fmt.Errorf("fio failed: %w\n%s", waitErr, stderr.String())
+		}
+	} else if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, nil, fmt.Errorf("fio failed: %w\n%s", err, string(out))
 	}
 	defer os.Remove(outPath)
@@ -46,7 +69,7 @@ func (f *FioRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sch
 	if err != nil {
 		return nil, nil, err
 	}
-	attachFioIntervals(res, in.WorkDir, fioLogPrefixBase(in.WorkDir))
+	attachFioIntervals(res, in.WorkDir, prefix)
 	return res, &schema.RawEngineOutput{Path: outPath, Format: "fio-json"}, nil
 }
 

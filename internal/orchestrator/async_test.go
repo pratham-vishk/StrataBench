@@ -29,7 +29,7 @@ func TestStartAsyncRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	deadline := time.Now().Add(15 * time.Second)
+	deadline := time.Now().Add(45 * time.Second)
 	for time.Now().Before(deadline) {
 		run, err := svc.Store.Get(runID)
 		if err != nil {

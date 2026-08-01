@@ -2,12 +2,14 @@ package engine
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
@@ -106,6 +108,35 @@ func attachFioIntervals(res *schema.Results, workDir, prefix string) {
 	iv := parseFioLogIntervals(workDir, prefix)
 	if len(iv) > 0 {
 		res.Intervals = iv
+	}
+}
+
+// watchFioLogIntervals polls fio write_iops_log / write_bw_log files and invokes
+// onInterval for each new time bucket until ctx is cancelled (then flushes once).
+func watchFioLogIntervals(ctx context.Context, workDir, prefix string, onInterval func(schema.IntervalSample)) {
+	if onInterval == nil {
+		return
+	}
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	emitted := 0
+	flush := func() {
+		iv := parseFioLogIntervals(workDir, prefix)
+		for i := emitted; i < len(iv); i++ {
+			sample := iv[i]
+			sample.Timestamp = time.Now().UTC()
+			onInterval(sample)
+		}
+		emitted = len(iv)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			flush()
+			return
+		case <-ticker.C:
+			flush()
+		}
 	}
 }
 

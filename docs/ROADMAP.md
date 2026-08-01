@@ -92,7 +92,7 @@
 
 - AFA multi-LUN test via vdbench with unified report
 - SPDK peak vs. fio comparison on same NVMe device
-- Grafana dashboard live during 1-hour stress test — **assignment progress + live interval gauges (mock); fio/Warp mid-run parsing deferred**
+- Grafana dashboard live during 1-hour stress test — **assignment progress + live interval gauges (mock + fio); Warp mid-run parsing deferred**
 
 ---
 

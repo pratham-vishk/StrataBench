@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc11] - 2026-08-01
+
+### Added
+- **fio live interval tailing** — polls `write_iops_log` / `write_bw_log` during fio runs and emits `OnInterval` callbacks
+
+### Changed
+- fio runner uses start + log watch + wait when `OnInterval` is set (enables Prometheus/SSE live metrics for real block runs)
+- SQLite store enables WAL + `busy_timeout` for concurrent async run polling
+
 ## [0.8.0-rc10] - 2026-08-01
 
 ### Added
