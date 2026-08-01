@@ -33,6 +33,8 @@ Initial OSS release candidate — K8s manifests, Docker/GHCR CI, GitHub Pages do
 
 Settings → Pages → Build and deployment → **GitHub Actions**
 
+> **Note:** GitHub Pages requires a **public** repository (or GitHub Enterprise). While the repo is private, the Pages workflow will fail — this is expected. Make the repo public before enabling Pages.
+
 ### Make repository public
 
 When ready for external contributors:
