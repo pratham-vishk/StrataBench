@@ -74,7 +74,44 @@ func (t *Tools) Plan(ctx context.Context, args map[string]any) (any, error) {
 		UseLLM:   useLLM,
 		LLM:      cfg,
 	})
-	return res, nil
+	p, err := profile.LoadByName(paths.ProfilesDir(), res.Profile)
+	if err != nil {
+		return nil, err
+	}
+	g := planner.Guide(res, intent, p)
+	return map[string]any{"plan": res, "guidance": g, "discussion": planner.FormatGuidance(g)}, nil
+}
+
+func (t *Tools) Guide(ctx context.Context, args map[string]any) (any, error) {
+	intent, _ := args["intent"].(string)
+	if intent == "" {
+		return nil, fmt.Errorf("intent is required")
+	}
+	useLLM, _ := args["use_llm"].(bool)
+	profiles, err := profile.List(paths.ProfilesDir())
+	if err != nil {
+		return nil, err
+	}
+	cfg := llm.FromEnv()
+	res := planner.Plan(ctx, planner.PlanOptions{
+		Intent:   intent,
+		Profiles: profiles,
+		Hardware: discovery.Snapshot(),
+		UseLLM:   useLLM,
+		LLM:      cfg,
+	})
+	p, err := profile.LoadByName(paths.ProfilesDir(), res.Profile)
+	if err != nil {
+		return nil, err
+	}
+	g := planner.Guide(res, intent, p)
+	catalog := planner.EngineCatalog(p.Engine)
+	return map[string]any{
+		"plan":       res,
+		"guidance":   g,
+		"discussion": planner.FormatGuidance(g),
+		"engine_params": catalog,
+	}, nil
 }
 
 func (t *Tools) Validate(ctx context.Context, args map[string]any) (any, error) {
@@ -165,6 +202,7 @@ func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 		mock = v
 	}
 	useLLM, _ := args["use_llm"].(bool)
+	yes, _ := args["yes"].(bool)
 	cfg := llm.FromEnv()
 	clients := stringSliceArg(args, "clients")
 	targets := stringSliceArg(args, "targets")
@@ -179,6 +217,7 @@ func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 		UseLLM:        useLLM,
 		UseOllama:     useLLM,
 		LLM:           cfg,
+		AssumeDefaults: yes,
 		CheckHardware: !mock,
 		DataDir:       t.dataDir(),
 	})
@@ -296,6 +335,18 @@ func ToolCatalog() []ToolDef {
 			},
 		},
 		{
+			Name:        "stratabench_guide",
+			Description: "Discuss intent, surface questions/warnings, and list engine parameters before running.",
+			InputSchema: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"intent":  map[string]any{"type": "string"},
+					"use_llm": map[string]any{"type": "boolean"},
+				},
+				"required": []string{"intent"},
+			},
+		},
+		{
 			Name:        "stratabench_validate",
 			Description: "Validate workload design and hardware for a profile before running.",
 			InputSchema: map[string]any{
@@ -374,6 +425,8 @@ func (t *Tools) Call(ctx context.Context, name string, args map[string]any) (any
 		return t.ListProfiles(ctx, args)
 	case "stratabench_plan":
 		return t.Plan(ctx, args)
+	case "stratabench_guide":
+		return t.Guide(ctx, args)
 	case "stratabench_validate":
 		return t.Validate(ctx, args)
 	case "stratabench_run":

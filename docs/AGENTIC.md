@@ -101,6 +101,26 @@ See `examples/mcp-cursor.json`. Add under Cursor → Settings → MCP.
 
 ---
 
+## Guidance before run
+
+When intent is ambiguous, StrataBench **discusses** before proceeding:
+
+```bash
+stratabench guide "nvme object size 3kb-100kb clients ..."
+stratabench plan "..."    # includes guidance summary
+stratabench agent "..."   # blocks until clear, or use --yes
+```
+
+| Signal | Action |
+|--------|--------|
+| **Questions** | Missing target, layer confusion, incomplete topology |
+| **Warnings** | Duration below minimum, VM SSH format, credentials |
+| **Recommendations** | Better profile, topology default, engine params |
+
+MCP: `stratabench_guide` returns `discussion` text for agents to show the user.
+
+---
+
 ## Natural language parameters
 
 The planner extracts structured params from intent (keyword parser + optional LLM):
@@ -118,7 +138,9 @@ stratabench agent "clients 10.0.1.1:7777,10.0.1.2:7777 \
 | `3kb-100kb` object size | `object_size_min`, `object_size_max` |
 | `iodepth 64` | `iodepth` |
 | `threads 8` / `concurrent 32` | `numjobs`, `concurrent` |
-| `clients … servers …` | topology + node lists |
+| `clients … servers …` | topology + node lists (same host → `single`) |
+| `physical` / `virtual` / `vm` / `guest` | deploy context for profile selection |
+| `same node` / `colocated` / `localhost` | topology `single`, colocated hint |
 | `ramp 60` | `ramp_time` |
 | `70% read` | `rwmixread` |
 

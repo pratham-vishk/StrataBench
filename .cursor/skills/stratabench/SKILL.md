@@ -20,9 +20,10 @@ description: >-
 
 1. **List profiles** if unsure: MCP `stratabench_list_profiles` or `stratabench profiles`
 2. **Plan**: `stratabench plan "<intent>" --llm` or MCP `stratabench_plan`
-3. **Validate**: `stratabench validate --profile <name> --target <target> --check-hardware`
-4. **Run**: use `--mock` unless user confirmed real hardware
-5. **Analyze**: `stratabench analyze --run-id <uuid>` or MCP `stratabench_analyze`
+3. **Guide / discuss** when intent is ambiguous: `stratabench guide "<intent>"` or MCP `stratabench_guide` — show questions/warnings to the user before proceeding
+4. **Validate**: `stratabench validate --profile <name> --target <target> --check-hardware`
+5. **Run**: use `--mock` unless user confirmed real hardware; agent loop blocks on open questions unless `--yes`
+6. **Analyze**: `stratabench analyze --run-id <uuid>` or MCP `stratabench_analyze`
 
 ## MCP setup
 

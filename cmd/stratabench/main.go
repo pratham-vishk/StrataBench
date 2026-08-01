@@ -49,6 +49,7 @@ var (
 	useLLM        bool
 	ollamaURL     string
 	ollamaModel   string
+	assumeDefaults bool
 )
 
 func main() {
@@ -73,6 +74,7 @@ func main() {
 		analyzeCmd(),
 		agentCmd(),
 		planCmd(),
+		guideCmd(),
 		profilesCmd(),
 		versionCmd(),
 	)
@@ -524,6 +526,9 @@ func planCmd() *cobra.Command {
 			if len(result.Params) > 0 {
 				fmt.Printf("  params=%v\n", result.Params)
 			}
+			g := planner.Guide(result, text, p)
+			fmt.Print("\n")
+			fmt.Print(planner.FormatGuidance(g))
 			fmt.Printf("\nNext:\n  stratabench validate --profile %s\n", p.Name)
 			fmt.Printf("  stratabench run --profile %s --target <target> --mock\n", p.Name)
 			fmt.Printf("  stratabench agent %q --mock\n", text)
@@ -534,6 +539,55 @@ func planCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm (Ollama)")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL (default http://localhost:11434)")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name (default llama3.2)")
+	return cmd
+}
+
+func guideCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "guide [intent]",
+		Short: "Discuss and validate benchmark intent before running (all engines)",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			text := strings.Join(args, " ")
+			profiles, err := profile.List(paths.ProfilesDir())
+			if err != nil {
+				return err
+			}
+			result := planner.Plan(cmd.Context(), planner.PlanOptions{
+				Intent:      text,
+				Profiles:    profiles,
+				Hardware:    discovery.Snapshot(),
+				UseLLM:      useLLM || useOllama,
+				UseOllama:   useOllama,
+				LLM:         llm.FromEnv(),
+				OllamaURL:   ollamaURL,
+				OllamaModel: ollamaModel,
+			})
+			result = planner.MergePlan(result, planner.ParsedIntent{}, target, topology.ParseCSV(targetsCSV), remote.ParseHosts(clientsCSV), topologyMode)
+			p, err := profile.LoadByName(paths.ProfilesDir(), result.Profile)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Profile: %s (engine=%s layer=%s)\n", p.Name, p.Engine, p.Layer)
+			fmt.Printf("Engine parameters:\n")
+			for _, param := range planner.EngineCatalog(p.Engine) {
+				req := ""
+				if param.Required {
+					req = " [required]"
+				}
+				fmt.Printf("  - %s: %s (default %s)%s\n", param.Key, param.Description, param.Default, req)
+			}
+			g := planner.Guide(result, text, p)
+			fmt.Print("\n")
+			fmt.Print(planner.FormatGuidance(g))
+			if !g.Ready {
+				fmt.Println("\nRefine your intent, then run: stratabench agent \"...\" --yes")
+			}
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&useLLM, "llm", false, "Use LLM planner")
+	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm")
 	return cmd
 }
 
@@ -672,6 +726,7 @@ func agentCmd() *cobra.Command {
 				CheckBaseline: checkBaseline,
 				CheckHardware: checkHardware,
 				CacheBytes:    cacheBytes,
+				AssumeDefaults: assumeDefaults,
 				UseLLM:        useLLM || useOllama,
 				UseOllama:     useOllama,
 				LLM:           llm.FromEnv(),
@@ -689,6 +744,7 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
 	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
+	cmd.Flags().BoolVar(&assumeDefaults, "yes", false, "Proceed with recommendations despite open questions")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	cmd.Flags().BoolVar(&useLLM, "llm", false, "Use LLM planner and reporter")
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm")

@@ -1,10 +1,25 @@
 package planner
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/pratham-vishk/stratabench/internal/profile"
 )
+
+var reWordVM = regexp.MustCompile(`\bvm\b`)
+
+// containsKeyword matches intent keywords; short tokens use word boundaries to avoid false positives (e.g. vm in nvme).
+func containsKeyword(text, kw string) bool {
+	switch kw {
+	case "vm":
+		return reWordVM.MatchString(text)
+	case "read":
+		return regexp.MustCompile(`\bread\b`).MatchString(text)
+	default:
+		return strings.Contains(text, kw)
+	}
+}
 
 // SuggestProfile maps natural-language intent to a built-in profile name.
 func SuggestProfile(text string, profiles []*profile.Profile) string {
@@ -22,6 +37,9 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 		"s3-cluster-rdma":      {"s3", "rdma", "warp", "cluster", "object"},
 		"file-parallel-read":   {"file", "nfs", "lustre", "parallel", "elbencho"},
 		"vm-disk-random":       {"vm", "virtual", "guest", "disk", "random"},
+		"vm-nvme-oltp":         {"vm", "virtual", "guest", "nvme", "oltp"},
+		"vm-s3-rdma":           {"vm", "virtual", "guest", "s3", "rdma"},
+		"vm-afa-multi-lun":     {"vm", "virtual", "guest", "afa", "lun"},
 		"app-kafka-producer":   {"kafka", "message", "queue", "stream", "application"},
 		"app-rocksdb-read":     {"rocksdb", "kv", "embedded", "database", "application"},
 		"app-postgres-tpc-c":   {"postgres", "postgresql", "database", "oltp", "tpc", "application"},
@@ -32,7 +50,7 @@ func SuggestProfile(text string, profiles []*profile.Profile) string {
 	for name, keywords := range candidates {
 		score := 0
 		for _, kw := range keywords {
-			if strings.Contains(t, kw) {
+			if containsKeyword(t, kw) {
 				score++
 			}
 		}

@@ -17,9 +17,10 @@ Clone the repo → Claude Code and Devin pick up MCP automatically. Approve the 
 
 1. **Discover profiles** — `stratabench_list_profiles` (MCP) or `GET /api/v1/profiles`
 2. **Plan from intent** — `stratabench_plan` with `intent: "nvme oltp database"`
-3. **Validate** — `stratabench_validate` before real hardware runs
-4. **Run** — `stratabench_run` (default `mock: true` via MCP for safety)
-5. **Full loop** — `stratabench_agent` with `intent` + `target`
+3. **Discuss / guide** — `stratabench_guide` when intent is ambiguous (questions, warnings, recommendations)
+4. **Validate** — `stratabench_validate` before real hardware runs
+5. **Run** — `stratabench_run` (default `mock: true` via MCP for safety)
+6. **Full loop** — `stratabench_agent` with `intent` + `target` (blocks on open questions unless `yes: true`)
 
 Prefer **mock mode** unless the user explicitly requests real I/O on known hardware.
 
@@ -48,7 +49,8 @@ See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mc
 | Tool | Purpose |
 |------|---------|
 | `stratabench_list_profiles` | Catalog of 30+ workload profiles |
-| `stratabench_plan` | NL intent → profile name |
+| `stratabench_plan` | NL intent → profile name (+ guidance summary) |
+| `stratabench_guide` | Discuss intent before run — questions, warnings, engine params |
 | `stratabench_validate` | Workload + hardware pre-check |
 | `stratabench_run` | Execute a profile |
 | `stratabench_agent` | Full plan → validate → run → analyze → report |
@@ -58,6 +60,9 @@ See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mc
 ## CLI (for shell-based agents)
 
 ```bash
+# Discuss before running (all engines)
+stratabench guide "nvme object size 3kb-100kb clients 10.0.1.1 servers 10.0.1.10"
+
 # Plan
 stratabench plan "nvme oltp" --llm
 
@@ -65,9 +70,10 @@ stratabench plan "nvme oltp" --llm
 stratabench validate --profile nvme-random-oltp --target /dev/nvme0n1
 stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
-# Agentic loop
+# Agentic loop (pauses on open questions; --yes to accept recommendations)
 stratabench agent "ssd random 4k" --target /tmp/test --mock
 stratabench agent "nvme database oltp" --target /dev/nvme0n1 --llm --mock=false
+stratabench agent "s3 put 3kb-100kb duration 1h" --yes --mock
 ```
 
 ## REST API (`stratabench-api` on `:8080`)

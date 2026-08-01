@@ -30,6 +30,7 @@ type Options struct {
 	CheckBaseline bool
 	CheckHardware bool
 	CacheBytes    int64
+	AssumeDefaults bool // --yes: proceed despite open questions
 	UseLLM        bool
 	UseOllama     bool
 	LLM           llm.Config
@@ -40,6 +41,7 @@ type Options struct {
 
 type Result struct {
 	Plan       planner.PlanResult
+	Guidance   planner.Guidance
 	Validation schema.ValidationResult
 	Run        *schema.RunResult
 	Insights   []analyst.Insight
@@ -104,7 +106,14 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		return nil, err
 	}
 	prof := p.Clone()
+	guidance := planner.Guide(plan, opts.Intent, p)
+	fmt.Println("→ Guidance...")
+	fmt.Print(planner.FormatGuidance(guidance))
+	plan = applyGuidanceDefaults(plan, guidance)
 	prof.ApplyOverrides(plan.Params)
+	if !guidance.Ready && !opts.AssumeDefaults {
+		return &Result{Plan: plan, Guidance: guidance}, fmt.Errorf("clarification needed — refine intent or pass --yes to proceed with recommendations")
+	}
 
 	svc, err := orchestrator.NewService(opts.DataDir)
 	if err != nil {
@@ -135,7 +144,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 			fmt.Printf("    ERROR: %s\n", e)
 		}
 		if !opts.SkipValidate {
-			return &Result{Plan: plan, Validation: validation}, fmt.Errorf("validation failed")
+			return &Result{Plan: plan, Guidance: guidance, Validation: validation}, fmt.Errorf("validation failed")
 		}
 	}
 
@@ -172,6 +181,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 
 	return &Result{
 		Plan:       plan,
+		Guidance:   guidance,
 		Validation: validation,
 		Run:        run,
 		Insights:   insights,
@@ -195,4 +205,27 @@ func printPlan(plan planner.PlanResult) {
 	if len(plan.Params) > 0 {
 		fmt.Printf("  params=%v\n", plan.Params)
 	}
+}
+
+func applyGuidanceDefaults(plan planner.PlanResult, g planner.Guidance) planner.PlanResult {
+	if len(g.AppliedDefaults) == 0 {
+		return plan
+	}
+	if plan.Params == nil {
+		plan.Params = map[string]any{}
+	}
+	for k, v := range g.AppliedDefaults {
+		if k == "topology" {
+			if plan.Topology == "" || plan.Topology == "auto" {
+				if s, ok := v.(string); ok {
+					plan.Topology = s
+				}
+			}
+			continue
+		}
+		if _, exists := plan.Params[k]; !exists {
+			plan.Params[k] = v
+		}
+	}
+	return plan
 }

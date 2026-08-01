@@ -41,6 +41,28 @@ func TestParseIntentIodepthThreads(t *testing.T) {
 	}
 }
 
+func TestParseIntentColocatedSameNode(t *testing.T) {
+	text := "s3 rdma clients 10.0.1.10:7777 servers 10.0.1.10:9000 duration 1 hour"
+	p := planner.ParseIntent(text)
+	if p.Topology != "single" {
+		t.Fatalf("topology=%s want single", p.Topology)
+	}
+	if p.Params["colocated"] != true {
+		t.Fatalf("colocated=%v", p.Params["colocated"])
+	}
+}
+
+func TestParseIntentDeployContext(t *testing.T) {
+	p := planner.ParseIntent("virtual vm nvme oltp guest disk")
+	if p.Params["deploy_context"] != "virtual" {
+		t.Fatalf("deploy_context=%v", p.Params["deploy_context"])
+	}
+	p2 := planner.ParseIntent("physical bare metal nvme on /dev/nvme0n1")
+	if p2.Params["deploy_context"] != "physical" {
+		t.Fatalf("deploy_context=%v", p2.Params["deploy_context"])
+	}
+}
+
 func TestMergePlanCLIOverrides(t *testing.T) {
 	base := planner.PlanResult{
 		Profile: "s3-put-throughput",
