@@ -1,0 +1,14 @@
+name: block-native-io_uring
+layer: block
+engine: stratabench
+category: native
+description: "Native StrataBench engine — random 4K block I/O via Linux io_uring (requires stratabench-engine binary)"
+params:
+  pattern: randread
+  block_size: 4k
+  duration_sec: 60
+  queue_depth: 64
+  threads: 4
+  dataset_size: 1g
+  direct_io: true
+  io_engine: io_uring

@@ -31,6 +31,7 @@ type nativeEngineConfig struct {
 	Threads      int            `json:"threads"`
 	ReadWriteMix int            `json:"read_write_mix"`
 	DirectIO     bool           `json:"direct_io"`
+	IoEngine     string         `json:"io_engine,omitempty"`
 	ProgressPath string         `json:"progress_path,omitempty"`
 	Params       map[string]any `json:"params,omitempty"`
 }
@@ -42,6 +43,7 @@ func (n *NativeRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *
 	}
 
 	pattern, blockSize, datasetSize, durationSec, rampSec, qd, threads, rwMix, directIO := in.Profile.ToWorkload()
+	ioEngine := in.Profile.ParamString("ioengine", in.Profile.ParamString("io_engine", "pread"))
 	cfgPath := filepath.Join(in.WorkDir, "native-engine-config.json")
 	outPath := filepath.Join(in.WorkDir, "native-engine-results.json")
 	progressPath := ""
@@ -62,6 +64,7 @@ func (n *NativeRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *
 		Threads:      threads,
 		ReadWriteMix: rwMix,
 		DirectIO:     directIO,
+		IoEngine:     ioEngine,
 		ProgressPath: progressPath,
 		Params:       in.Profile.Params,
 	}

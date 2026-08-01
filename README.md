@@ -4,7 +4,7 @@
 [![Docker](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Go](https://img.shields.io/badge/go-1.25+-00ADD8)
-![Profiles](https://img.shields.io/badge/profiles-31-brightgreen)
+![Profiles](https://img.shields.io/badge/profiles-32-brightgreen)
 
 **Agentic, honest storage benchmarking for every layer — HDD, NVMe, AFA, S3, VM, and application workloads.**
 

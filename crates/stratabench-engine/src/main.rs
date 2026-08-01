@@ -10,7 +10,7 @@ use config::EngineConfig;
 use std::fs;
 use std::path::PathBuf;
 
-const VERSION: &str = "0.2.0-block";
+const VERSION: &str = "0.2.0-io_uring";
 
 #[derive(Parser)]
 #[command(name = "stratabench-engine", version = VERSION)]

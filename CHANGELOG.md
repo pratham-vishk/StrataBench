@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc15] - 2026-08-01
+
+### Added
+- **Rust io_uring block path** — `io_engine: io_uring` uses Linux `io_uring` with fallback to `pread`
+- **Profile `block-native-io_uring`** — native engine with io_uring queue depth from profile
+
+### Changed
+- Rust block engine refactored into `pread` and `io_uring` modules with shared metrics/progress
+
 ## [0.8.0-rc14] - 2026-08-01
 
 ### Added

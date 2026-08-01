@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct EngineConfig {
     pub target: String,
     #[serde(default)]
@@ -26,6 +26,8 @@ pub struct EngineConfig {
     pub read_write_mix: i32,
     #[serde(default)]
     pub direct_io: bool,
+    #[serde(default)]
+    pub io_engine: String,
     #[serde(default)]
     pub progress_path: String,
     #[serde(default)]
@@ -103,4 +105,18 @@ pub fn parse_size_bytes(s: &str) -> u64 {
         return 512 * 1024 * 1024;
     }
     parse_block_bytes(s)
+}
+
+impl EngineConfig {
+    pub fn io_engine(&self) -> String {
+        if !self.io_engine.is_empty() {
+            return self.io_engine.clone();
+        }
+        for key in ["ioengine", "io_engine"] {
+            if let Some(serde_json::Value::String(s)) = self.params.get(key) {
+                return s.clone();
+            }
+        }
+        "pread".into()
+    }
 }

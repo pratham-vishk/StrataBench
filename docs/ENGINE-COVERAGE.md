@@ -109,7 +109,7 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 
 | Layer | Physical | Virtual | Total |
 |-------|----------|---------|-------|
-| block | 7 | — | 7 |
+| block | 8 | — | 8 |
 | vm-block | — | 6 | 6 |
 | vm-afa | — | 1 | 1 |
 | file | 2 | — | 2 |
@@ -118,4 +118,4 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 | vm-object | — | 2 | 2 |
 | application | 3 | — | 3 |
 | vm-application | — | 2 | 2 |
-| **Total** | **18** | **13** | **31** |
+| **Total** | **19** | **13** | **32** |

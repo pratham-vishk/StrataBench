@@ -19,7 +19,7 @@ stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
 ## Status
 
-**v0.2.0** — Linux block I/O via `O_DIRECT` + `pread`/`pwrite` (falls back to buffered I/O or synthetic on failure / non-Linux).
+**v0.2.0** — Linux block I/O via `O_DIRECT` + `pread`/`pwrite` or `io_uring` (`io_engine: io_uring` in profile params).
 
 ```bash
 make build-rust
