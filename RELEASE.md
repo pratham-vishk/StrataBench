@@ -1,6 +1,26 @@
 # Release Guide
 
-## v0.8.0-rc16 (current)
+## v0.8.0-rc17 (current)
+
+Docker ships Rust `stratabench-engine`; `s3-gosbench-read` profile; doc sync to 33 profiles; `cargo test` in CI.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc17
+git push origin v0.8.0-rc17
+gh release create v0.8.0-rc17 --title "v0.8.0-rc17" --notes "Rust engine in Docker; s3-gosbench-read; docs + cargo test."
+```
+
+### Smoke test
+
+```bash
+docker build -t stratabench:rc17 .
+docker run --rm stratabench:rc17 /usr/local/bin/stratabench-engine version
+stratabench run --profile s3-gosbench-read --target 127.0.0.1:9000 --mock
+```
+
+## v0.8.0-rc16
 
 Batched io_uring (QD>1 in-flight per thread) and `stratabench lab validate` for Dell hardware sign-off.
 
@@ -155,7 +175,7 @@ curl -N http://localhost:8080/api/v1/runs/<run_id>/stream   # with API running
 - [x] Published container image (GHCR)
 - [x] Docs site live — https://pratham-vishk.github.io/StrataBench/
 - [x] Full Kubernetes operator
-- [x] 31 profiles, all engines, all topologies
+- [x] 33 profiles, all engines, all topologies
 - [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
 - [ ] Dell lab validation on real hardware
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)

@@ -2,7 +2,7 @@
 
 Complete validation on Linux VMs before promoting to **v1.0.0**. Covers every engine on **physical** and **virtual** targets.
 
-See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix (32 profiles).
+See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix (33 profiles).
 
 ## Quick start
 

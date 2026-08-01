@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct EngineConfig {
     pub target: String,
     #[serde(default)]
@@ -118,5 +118,22 @@ impl EngineConfig {
             }
         }
         "pread".into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_block_bytes, parse_size_bytes};
+
+    #[test]
+    fn parse_block_size_units() {
+        assert_eq!(parse_block_bytes("4k"), 4096);
+        assert_eq!(parse_block_bytes("1MB"), 1024 * 1024);
+    }
+
+    #[test]
+    fn parse_dataset_default() {
+        assert_eq!(parse_size_bytes(""), 512 * 1024 * 1024);
+        assert_eq!(parse_size_bytes("10GB"), 10 * 1024 * 1024 * 1024);
     }
 }

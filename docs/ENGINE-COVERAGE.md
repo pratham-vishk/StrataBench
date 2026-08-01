@@ -43,7 +43,7 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 | **spdk** | SPDK perf | block (NVMe userspace) | — (host PCIe only) | `spdk-nvme-peak` |
 | **elbencho** | elbencho | file | vm-file (SSH) | `file-parallel-*`, `vm-file-parallel-*` |
 | **warp** | MinIO Warp | object (+ RDMA) | vm-object (+ RDMA) | `s3-*`, `vm-s3-*` |
-| **gosbench** | GOSBench server | object (staged S3) | — | `s3-gosbench-write` |
+| **gosbench** | GOSBench server | object (staged S3) | — | `s3-gosbench-write`, `s3-gosbench-read` |
 | **sbk** | pgbench / db_bench / kafka | application | vm-application (agent) | `app-*`, `vm-app-*` |
 | **native** | `stratabench-engine` (Go/Rust) | block (opt-in) | — | `block-native-oltp`, `block-native-io_uring` |
 | **mock** | Synthetic | all (`--mock`) | all (`--mock`) | any profile |
@@ -85,6 +85,7 @@ stratabench run --profile s3-cluster-rdma --target 10.0.1.10:9000
 # S3 staged (GOSBench)
 export GOSBENCH_ACCESS_KEY=minioadmin GOSBENCH_SECRET_KEY=minioadmin
 stratabench run --profile s3-gosbench-write --target 10.0.1.10:9000
+stratabench run --profile s3-gosbench-read --target 10.0.1.10:9000
 ```
 
 ## Virtual commands (Dell lab)
@@ -114,8 +115,8 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 | vm-afa | — | 1 | 1 |
 | file | 2 | — | 2 |
 | vm-file | — | 2 | 2 |
-| object | 6 | — | 6 |
+| object | 7 | — | 7 |
 | vm-object | — | 2 | 2 |
 | application | 3 | — | 3 |
 | vm-application | — | 2 | 2 |
-| **Total** | **19** | **13** | **32** |
+| **Total** | **20** | **13** | **33** |

@@ -230,4 +230,24 @@ mod tests {
         assert_eq!(b.len(), 4096);
         assert_eq!(b.as_ptr() as usize % 4096, 0);
     }
+
+    #[test]
+    fn validate_block_cfg_aligns_dataset() {
+        let cfg = crate::config::EngineConfig {
+            target: "/dev/nvme0n1".into(),
+            layer: "block".into(),
+            block_size: "4k".into(),
+            dataset_size: "1MB".into(),
+            duration_sec: 60,
+            ramp_sec: 0,
+            queue_depth: 32,
+            threads: 4,
+            read_write_mix: 0,
+            direct_io: false,
+            ..Default::default()
+        };
+        let (bs, dataset) = validate_block_cfg(&cfg).unwrap();
+        assert_eq!(bs, 4096);
+        assert!(dataset >= bs as u64);
+    }
 }

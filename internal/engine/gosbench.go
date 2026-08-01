@@ -164,6 +164,7 @@ func writeGosbenchConfig(in RunInput) (string, error) {
 		Tests: []gosbenchTest{{
 			Name:                in.Profile.Name,
 			ReadWeight:          readWeight,
+			ExistingReadWeight:  in.Profile.ParamInt("existing_read_weight", 0),
 			WriteWeight:         writeWeight,
 			StopWithRuntime:     fmt.Sprintf("%ds", duration),
 			Workers:             workers,

@@ -27,6 +27,8 @@ jobs:
           go build -o bin/stratabench-mcp ./cmd/stratabench-mcp
       - name: Build Rust engine
         run: cargo build --release --manifest-path crates/stratabench-engine/Cargo.toml
+      - name: Test Rust engine
+        run: cargo test --manifest-path crates/stratabench-engine/Cargo.toml
       - name: Mock end-to-end run
         run: |
           ./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock --skip-validate

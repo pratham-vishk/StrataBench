@@ -1,3 +1,8 @@
+FROM rust:1-bookworm AS rust
+WORKDIR /src/crates/stratabench-engine
+COPY crates/stratabench-engine/ ./
+RUN cargo build --release
+
 FROM golang:1.25-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -6,8 +11,6 @@ COPY . .
 ARG VERSION=dev
 RUN CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
     -o /stratabench ./cmd/stratabench && \
-    CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
-    -o /stratabench-engine ./cmd/stratabench-engine && \
     CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
     -o /stratabench-agent ./cmd/stratabench-agent && \
     CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/internal/version.Version=${VERSION}" \
@@ -22,12 +25,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     | tar -xz -C /usr/local/bin warp && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=build /stratabench /usr/local/bin/stratabench
-COPY --from=build /stratabench-engine /usr/local/bin/stratabench-engine
+COPY --from=rust /src/crates/stratabench-engine/target/release/stratabench-engine /usr/local/bin/stratabench-engine
 COPY --from=build /stratabench-agent /usr/local/bin/stratabench-agent
 COPY --from=build /stratabench-api /usr/local/bin/stratabench-api
 COPY --from=build /stratabench-operator /usr/local/bin/stratabench-operator
 COPY profiles /etc/stratabench/profiles
 ENV STRATABENCH_ROOT=/etc/stratabench
+ENV STRATABENCH_ENGINE_BIN=/usr/local/bin/stratabench-engine
 WORKDIR /data
 EXPOSE 8080 7777
 CMD ["/usr/local/bin/stratabench", "profiles"]

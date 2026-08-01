@@ -1,6 +1,6 @@
 # Workload Profiles
 
-Declarative YAML definitions for benchmark tests. **31 profiles** across physical and virtual layers.
+Declarative YAML definitions for benchmark tests. **33 profiles** across physical and virtual layers.
 
 See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × deployment matrix.
 
@@ -8,12 +8,12 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 
 | Layer | Deployment | Engines |
 |-------|------------|---------|
-| `block` | Physical device | fio, vdbench, spdk |
+| `block` | Physical device | fio, vdbench, spdk, stratabench (native) |
 | `vm-block` | SSH into VM guest | fio |
 | `vm-afa` | SSH into VM guest (multi-LUN) | vdbench |
 | `file` | Physical mount | elbencho |
 | `vm-file` | SSH into VM guest | elbencho |
-| `object` | S3 endpoint | warp |
+| `object` | S3 endpoint | warp, gosbench |
 | `vm-object` | S3 on VM | warp |
 | `application` | Physical service | sbk |
 | `vm-application` | Agent on VM guest | sbk |
@@ -30,6 +30,13 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 | `nvme-max-stress` | fio | extreme |
 | `spdk-nvme-peak` | spdk | extreme |
 | `afa-multi-lun` | vdbench | heavy |
+
+### Block — native engine (physical, Linux)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `block-native-oltp` | stratabench | heavy |
+| `block-native-io_uring` | stratabench | heavy |
 
 ### VM block (virtual)
 
@@ -72,6 +79,7 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 | `s3-cluster-put-get` | warp | heavy |
 | `s3-cluster-rdma` | warp | heavy |
 | `s3-gosbench-write` | gosbench | medium |
+| `s3-gosbench-read` | gosbench | medium |
 
 ### VM object (virtual)
 

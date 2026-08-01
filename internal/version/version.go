@@ -1,6 +1,6 @@
 package version
 
 // Version is set at release time.
-const Version = "0.8.0-rc16"
+const Version = "0.8.0-rc17"
 
 const Name = "StrataBench"

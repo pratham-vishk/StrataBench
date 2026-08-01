@@ -53,6 +53,7 @@ func ValidationMatrix(cfg Config) []ValidationItem {
 		{Section: "object-warp", Profile: "s3-put-throughput", Engine: "warp", Target: s3, Command: fmt.Sprintf("stratabench run --profile s3-put-throughput --target %s", strings.Split(s3, ",")[0])},
 		{Section: "object-warp", Profile: "s3-cluster-rdma", Engine: "warp", Target: s3, Command: fmt.Sprintf("stratabench run --profile s3-cluster-rdma --target %s --clients %s", strings.Split(s3, ",")[0], client)},
 		{Section: "object-gosbench", Profile: "s3-gosbench-write", Engine: "gosbench", Target: strings.Split(s3, ",")[0], Command: fmt.Sprintf("stratabench run --profile s3-gosbench-write --target %s", strings.Split(s3, ",")[0])},
+		{Section: "object-gosbench", Profile: "s3-gosbench-read", Engine: "gosbench", Target: strings.Split(s3, ",")[0], Command: fmt.Sprintf("stratabench run --profile s3-gosbench-read --target %s", strings.Split(s3, ",")[0])},
 		{Section: "vm-block", Profile: "vm-nvme-oltp", Engine: "fio", Target: vm, Command: fmt.Sprintf("stratabench run --profile vm-nvme-oltp --target %s", vm)},
 		{Section: "monitoring", Profile: "nvme-random-oltp", Engine: "mock", Target: "/dev/null", Command: "stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch"},
 	}

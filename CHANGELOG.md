@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc17] - 2026-08-01
+
+### Added
+- **Profile `s3-gosbench-read`** — GOSBench staged read workload with `existing_read_weight`
+- **Rust unit tests** — config parsing and block alignment helpers; `cargo test` in CI
+
+### Changed
+- **Docker image** — multi-stage build ships Rust `stratabench-engine` (`STRATABENCH_ENGINE_BIN` set)
+- **Docs** — 33 profiles across README, profiles index, ENGINE-COVERAGE, ARCHITECTURE, AGENTS
+- **GOSBench** — `existing_read_weight` param wired in generated config
+
 ## [0.8.0-rc16] - 2026-08-01
 
 ### Added

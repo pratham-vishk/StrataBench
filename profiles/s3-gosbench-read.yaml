@@ -1,0 +1,22 @@
+name: s3-gosbench-read
+layer: object
+engine: gosbench
+category: staged
+description: "Staged S3 read workload via GOSBench server — read existing objects"
+workload:
+  pattern: read
+  duration_sec: 120
+  block_size: 64KB
+params:
+  write_weight: 0
+  read_weight: 0
+  existing_read_weight: 100
+  workers: 2
+  parallel_clients: 4
+  buckets: 4
+  objects_per_bucket: 100
+  object_size_min_kb: 4
+  object_size_max_kb: 64
+  bucket_prefix: stratabench-
+  clean_after: false
+  skip_ssl_verify: true

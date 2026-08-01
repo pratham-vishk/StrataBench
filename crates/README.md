@@ -19,14 +19,16 @@ stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
 ## Status
 
-**v0.2.0** — Linux block I/O via `O_DIRECT` + `pread`/`pwrite` or `io_uring` (`io_engine: io_uring` in profile params).
+**v0.2.0** — Linux block I/O via `O_DIRECT` + `pread`/`pwrite` or batched `io_uring` (`io_engine: io_uring`).
+
+The Docker image (`Dockerfile`) builds and ships this binary as `/usr/local/bin/stratabench-engine`.
 
 ```bash
 make build-rust
 export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
-stratabench run --profile block-native-oltp --target /dev/nvme0n1
+stratabench run --profile block-native-io_uring --target /dev/nvme0n1
 ```
 
-Planned: io_uring, libaio, S3 HTTP client for object profiles.
+Planned: S3 HTTP client for object profiles.
 
 See [docs/NATIVE-ENGINE.md](../docs/NATIVE-ENGINE.md) for the JSON contract.

@@ -6,8 +6,8 @@
 
 ## Highlights
 
-- **31 profiles** — block, file, object, VM, application (physical + virtual)
-- **8 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, gosbench, native stub
+- **33 profiles** — block, file, object, VM, application (physical + virtual)
+- **8 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, gosbench, native (Rust block I/O)
 - **All topologies** — 1:1, N:1 pool, 1:N sweep, N:M shard, N×M matrix
 - **Validator** — honest workload rules + per-use-case hardware checks before every run
 - **Agentic loop** — natural language → plan → validate → run → report
