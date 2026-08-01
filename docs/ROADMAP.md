@@ -14,7 +14,7 @@
 - [x] fio wrapper (profile → job file → JSON parser)
 - [x] StrataBench engine v0.2 (Rust): block I/O via `O_DIRECT` + pread/pwrite on Linux — synthetic fallback elsewhere
 - [x] CLI: `stratabench run`, `stratabench validate`, `stratabench report`
-- [x] 30 built-in workload profiles
+- [x] 31 built-in workload profiles
 - [x] HTML report generator (Grafana-style, multi-node, Excel export)
 - [x] Planner agent v0.1 (profile selection from keywords, no LLM required)
 

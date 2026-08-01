@@ -6,7 +6,7 @@
 
 ## Highlights
 
-- **30 profiles** — block, file, object, VM, application (physical + virtual)
+- **31 profiles** — block, file, object, VM, application (physical + virtual)
 - **8 engines** — fio, SPDK, vdbench, Warp, elbencho, SBK, gosbench, native stub
 - **All topologies** — 1:1, N:1 pool, 1:N sweep, N:M shard, N×M matrix
 - **Validator** — honest workload rules + per-use-case hardware checks before every run

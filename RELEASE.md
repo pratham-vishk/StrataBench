@@ -121,7 +121,7 @@ curl -N http://localhost:8080/api/v1/runs/<run_id>/stream   # with API running
 - [x] Published container image (GHCR)
 - [x] Docs site live — https://pratham-vishk.github.io/StrataBench/
 - [x] Full Kubernetes operator
-- [x] 30 profiles, all engines, all topologies
+- [x] 31 profiles, all engines, all topologies
 - [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
 - [ ] Dell lab validation on real hardware
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)

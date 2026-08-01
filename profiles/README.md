@@ -1,6 +1,6 @@
 # Workload Profiles
 
-Declarative YAML definitions for benchmark tests. **30 profiles** across physical and virtual layers.
+Declarative YAML definitions for benchmark tests. **31 profiles** across physical and virtual layers.
 
 See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × deployment matrix.
 
