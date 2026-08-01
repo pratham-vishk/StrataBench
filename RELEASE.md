@@ -1,24 +1,27 @@
 # Release Guide
 
-## v0.8.0-rc22 (current)
+## v0.8.0-rc23 (current)
 
-Operator re-runs benchmarks when the Benchmark CR spec changes after a completed or failed run.
+PDF executive summary reports alongside HTML and Excel.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc22
-git push origin v0.8.0-rc22
-gh release create v0.8.0-rc22 --title "v0.8.0-rc22" --notes "Operator re-run on spec change."
+git tag v0.8.0-rc23
+git push origin v0.8.0-rc23
+gh release create v0.8.0-rc23 --title "v0.8.0-rc23" --notes "PDF executive summary reports."
 ```
 
 ### Smoke test
 
 ```bash
-kubectl apply -k deploy/k8s/
-kubectl apply -f deploy/k8s/example-benchmark.yaml
-# Edit spec.profile or spec.target, then kubectl apply again — operator should start a new Job
+stratabench run --profile nvme-random-oltp --target /dev/null --mock
+stratabench export pdf --run-id <uuid>
 ```
+
+## v0.8.0-rc22
+
+Operator re-runs benchmarks when the Benchmark CR spec changes after a completed or failed run.
 
 ## v0.8.0-rc21
 
@@ -228,5 +231,5 @@ curl -N http://localhost:8080/api/v1/runs/<run_id>/stream   # with API running
 - [x] Full Kubernetes operator
 - [x] 33 profiles, all engines, all topologies
 - [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
-- [ ] Dell lab validation on real hardware
+- [ ] Dell lab validation on real hardware (deferred — run after feature-complete)
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)

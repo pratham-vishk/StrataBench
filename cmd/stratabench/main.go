@@ -246,6 +246,7 @@ func runCmd() *cobra.Command {
 			printRunSummary(run)
 			fmt.Printf("Report:  %s\n", arts.HTML)
 			fmt.Printf("Excel:   %s\n", arts.Excel)
+			fmt.Printf("PDF:     %s\n", arts.PDF)
 			if openReport {
 				_ = report.OpenInBrowser(arts.HTML)
 			}
@@ -271,7 +272,7 @@ func runCmd() *cobra.Command {
 }
 
 func reportCmd() *cobra.Command {
-	var withExcel bool
+	var withExcel, withPDF bool
 	cmd := &cobra.Command{
 		Use:   "report",
 		Short: "Generate visual report card for a completed run",
@@ -297,6 +298,9 @@ func reportCmd() *cobra.Command {
 			if withExcel {
 				fmt.Printf("Excel: %s\n", arts.Excel)
 			}
+			if withPDF {
+				fmt.Printf("PDF: %s\n", arts.PDF)
+			}
 			if openReport {
 				return report.OpenInBrowser(arts.HTML)
 			}
@@ -305,6 +309,7 @@ func reportCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&runID, "run-id", "", "Run UUID")
 	cmd.Flags().BoolVar(&withExcel, "excel", true, "Also write Excel workbook")
+	cmd.Flags().BoolVar(&withPDF, "pdf", true, "Also write PDF summary")
 	cmd.Flags().BoolVar(&openReport, "open", false, "Open report in browser")
 	return cmd
 }
@@ -314,7 +319,7 @@ func exportCmd() *cobra.Command {
 	var lastN int
 	cmd := &cobra.Command{
 		Use:   "export",
-		Short: "Export run results (JSON or Excel)",
+		Short: "Export run results (JSON, Excel, or PDF)",
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "json",
@@ -325,6 +330,22 @@ func exportCmd() *cobra.Command {
 				return err
 			}
 			return export.WriteJSON(run, filepath.Join(paths.ReportsDir(), run.RunID+".json"))
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "pdf",
+		Short: "Export single run as PDF summary",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			run, err := loadRunForExport()
+			if err != nil {
+				return err
+			}
+			out := filepath.Join(paths.ReportsDir(), run.RunID+".pdf")
+			if err := report.WritePDF(run, out); err != nil {
+				return err
+			}
+			fmt.Printf("PDF: %s\n", out)
+			return nil
 		},
 	})
 	cmd.AddCommand(&cobra.Command{

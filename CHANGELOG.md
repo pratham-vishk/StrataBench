@@ -2,6 +2,14 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc23] - 2026-08-01
+
+### Added
+- **PDF reports** — executive summary PDF via `go-pdf/fpdf`; included in `WriteRunArtifacts`, `stratabench report`, and `stratabench export pdf`
+
+### Changed
+- `docs/ARCHITECTURE.md` — reports now HTML + Excel + PDF
+
 ## [0.8.0-rc22] - 2026-08-01
 
 ### Added

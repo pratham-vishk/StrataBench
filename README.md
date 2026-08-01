@@ -270,7 +270,7 @@ kubectl get benchmarks -n stratabench -w
 | `import sbk` | Import SBK CSV results |
 | `compare` | Compare runs (`compare runs`) or git branches (`compare branches`) |
 | `init` | Create `.stratabench` data directories |
-| `report` | Generate HTML report |
+| `report` | Generate HTML, Excel, and PDF report |
 
 Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` · `--mock` · `--check-baseline` · `--ollama`
 

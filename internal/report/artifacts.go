@@ -15,15 +15,17 @@ type Artifacts struct {
 	HTML  string
 	JSON  string
 	Excel string
+	PDF   string
 }
 
-// WriteRunArtifacts generates HTML report card, JSON, and Excel for a run.
+// WriteRunArtifacts generates HTML report card, JSON, Excel, and PDF for a run.
 func WriteRunArtifacts(run *schema.RunResult, opts Options) (Artifacts, error) {
 	dir := paths.ReportsDir()
 	a := Artifacts{
 		HTML:  filepath.Join(dir, run.RunID+".html"),
 		JSON:  filepath.Join(dir, run.RunID+".json"),
 		Excel: filepath.Join(dir, run.RunID+".xlsx"),
+		PDF:   filepath.Join(dir, run.RunID+".pdf"),
 	}
 	if err := WriteHTMLWithOptions(run, opts, a.HTML); err != nil {
 		return a, err
@@ -32,6 +34,9 @@ func WriteRunArtifacts(run *schema.RunResult, opts Options) (Artifacts, error) {
 		return a, err
 	}
 	if err := export.WriteExcel(run, a.Excel); err != nil {
+		return a, err
+	}
+	if err := WritePDFWithOptions(run, opts, a.PDF); err != nil {
 		return a, err
 	}
 	return a, nil

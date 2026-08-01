@@ -51,7 +51,7 @@ StrataBench follows a **layered architecture**: agent intelligence on top, orche
 | Result store | SQLite or PostgreSQL | `STRATABENCH_DATABASE_URL` for Postgres |
 | Engines | fio, warp, vdbench, spdk, elbencho, sbk, gosbench, stratabench | Native Rust engine for block (opt-in profiles) |
 | Mid-run monitoring | Partial | mock, fio, warp, native, gosbench, sbk, elbencho, vdbench, spdk live intervals + Prometheus/SSE |
-| Reports | HTML + Excel | PDF not implemented |
+| Reports | HTML + Excel + PDF | PDF is executive summary; charts remain in HTML |
 
 ---
 
