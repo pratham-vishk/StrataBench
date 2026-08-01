@@ -1,0 +1,25 @@
+name: vm-s3-rdma
+version: "1.0"
+layer: vm-object
+engine: warp
+description: "S3 PUT via Warp with RDMA to MinIO running in VM — requires SR-IOV/RDMA vNIC on guest"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  operation: put
+  duration_sec: 300
+  concurrent: 64
+  object_size: 4MiB
+  bucket: stratabench-vm-rdma
+  rdma: cpu
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p99

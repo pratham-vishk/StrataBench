@@ -2,6 +2,14 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [Unreleased]
+
+### Added
+- Virtual parity for HDD, NVMe passthrough, AFA, and S3 RDMA:
+  - `vm-hdd-sequential`, `vm-nvme-passthrough`, `vm-afa-multi-lun`, `vm-s3-rdma`
+- `vm_vdbench.go` — vdbench via SSH into VM guest for multi-LUN AFA workloads
+- `vm-afa` layer for virtual array testing
+
 ## [0.6.0-rc1] - 2026-08-01
 
 ### Added

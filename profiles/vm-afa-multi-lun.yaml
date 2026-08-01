@@ -1,0 +1,26 @@
+name: vm-afa-multi-lun
+version: "1.0"
+layer: vm-afa
+engine: vdbench
+description: "Multi-LUN AFA workload inside VM guest via SSH — requires vSCSI/RDM LUNs presented to guest"
+load: heavy
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 60
+  require_percentiles: [50, 99]
+  dataset_vs_cache: "2x"
+
+params:
+  pattern: randread
+  block_size: 4k
+  threads: 16
+  duration_sec: 300
+  warmup_sec: 60
+  guest_devices: /dev/sdb,/dev/sdc,/dev/sdd
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99

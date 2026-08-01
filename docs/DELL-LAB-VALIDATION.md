@@ -68,25 +68,34 @@ export WARP_ACCESS_KEY=... WARP_SECRET_KEY=...
 
 | Profile | Command | Pass |
 |---------|---------|------|
+| `vm-hdd-sequential` | `stratabench run --profile vm-hdd-sequential --target root@10.0.1.20:/dev/vdb` | |
 | `vm-disk-random` | `stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb` | |
 | `vm-disk-sequential` | `stratabench run --profile vm-disk-sequential --target root@10.0.1.20:/dev/vdb` | |
 | `vm-nvme-oltp` | `stratabench run --profile vm-nvme-oltp --target root@10.0.1.20:/dev/vdb` | |
+| `vm-nvme-passthrough` | `stratabench run --profile vm-nvme-passthrough --target root@10.0.1.20:/dev/nvme0n1` | |
 | `vm-disk-stress` | `stratabench run --profile vm-disk-stress --target root@10.0.1.20:/dev/vdb` | |
 
-## 8. VM file — elbencho via SSH (virtual)
+## 8. VM AFA — vdbench via SSH (virtual)
+
+| Profile | Command | Pass |
+|---------|---------|------|
+| `vm-afa-multi-lun` | `stratabench run --profile vm-afa-multi-lun --target root@10.0.1.20:/dev/sdb,/dev/sdc,/dev/sdd` | |
+
+## 9. VM file — elbencho via SSH (virtual)
 
 | Profile | Command | Pass |
 |---------|---------|------|
 | `vm-file-parallel-read` | `stratabench run --profile vm-file-parallel-read --target root@10.0.1.20:/mnt/data` | |
 | `vm-file-parallel-write` | `stratabench run --profile vm-file-parallel-write --target root@10.0.1.20:/mnt/data` | |
 
-## 9. VM object — warp (virtual)
+## 10. VM object — warp (virtual)
 
 | Profile | Command | Pass |
 |---------|---------|------|
 | `vm-s3-put-throughput` | `stratabench run --profile vm-s3-put-throughput --target 10.0.1.20:9000` | |
+| `vm-s3-rdma` | `stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000` | |
 
-## 10. VM application — sbk via agent (virtual)
+## 11. VM application — sbk via agent (virtual)
 
 ```bash
 # On guest VM
@@ -98,7 +107,7 @@ stratabench-agent
 | `vm-app-postgres` | `stratabench run --profile vm-app-postgres --target "postgres://bench@localhost/db" --clients 10.0.1.20:7777` | |
 | `vm-app-kafka` | `stratabench run --profile vm-app-kafka --target localhost:9092 --clients 10.0.1.20:7777` | |
 
-## 11. Agentic loop + regression
+## 12. Agentic loop + regression
 
 ```bash
 stratabench agent "nvme oltp database" --target /dev/nvme0n1 --check-baseline
@@ -106,7 +115,7 @@ stratabench baseline set --run-id <uuid>
 stratabench run --profile nvme-random-oltp --target /dev/nvme0n1 --check-baseline
 ```
 
-## 12. Kubernetes
+## 13. Kubernetes
 
 ```bash
 kubectl apply -k deploy/k8s/
@@ -119,8 +128,10 @@ kubectl get benchmarks -n stratabench
 | Check | Pass |
 |-------|------|
 | All 7 engines exercised (fio, vdbench, spdk, elbencho, warp, sbk, mock) | |
-| Physical block + file + object + app | |
-| Virtual vm-block + vm-file + vm-object + vm-app | |
+| HDD physical + virtual | |
+| NVMe physical + virtual (incl. passthrough) | |
+| AFA physical + virtual | |
+| S3 RDMA physical + virtual | |
 | Validator catches bad workload design | |
 | Baseline regression alerts on re-run | |
 | Operator sets benchmark status.runId | |

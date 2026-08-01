@@ -4,7 +4,7 @@ import "strings"
 
 func isVMLayer(layer string) bool {
 	switch layer {
-	case "vm-block", "vm-file", "vm-object", "vm-application":
+	case "vm-block", "vm-file", "vm-object", "vm-application", "vm-afa":
 		return true
 	default:
 		return false

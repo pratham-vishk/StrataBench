@@ -1,0 +1,33 @@
+name: vm-nvme-passthrough
+version: "1.0"
+layer: vm-block
+engine: fio
+description: "NVMe PCIe passthrough inside VM guest (vfio-pci) — fio on /dev/nvme0n1 via SSH"
+load: extreme
+
+validation:
+  require_direct_io: true
+  min_runtime_sec: 300
+  min_ramp_sec: 60
+  require_percentiles: [50, 95, 99, 99.9]
+  dataset_vs_cache: gt
+
+params:
+  ioengine: libaio
+  direct: 1
+  rw: randrw
+  rwmixread: 70
+  bs: 16k
+  iodepth: 64
+  numjobs: 8
+  size: 100g
+  ramp_time: 60
+  runtime: 300
+  percentile_list: "50:95:99:99.9"
+  guest_device: /dev/nvme0n1
+
+metrics:
+  - iops
+  - throughput_mbps
+  - latency_p99
+  - latency_p99_9

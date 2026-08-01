@@ -18,6 +18,9 @@ type VdbenchRunner struct{}
 func (v *VdbenchRunner) Name() string { return "vdbench" }
 
 func (v *VdbenchRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+	if isVMSSH(in) {
+		return runVMVdbench(ctx, in)
+	}
 	if _, err := exec.LookPath("vdbench"); err != nil {
 		return nil, nil, fmt.Errorf("vdbench not found in PATH (install vdbench or use --mock)")
 	}

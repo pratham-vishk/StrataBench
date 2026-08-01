@@ -1,6 +1,6 @@
 # Workload Profiles
 
-Declarative YAML definitions for benchmark tests. **25 profiles** across physical and virtual layers.
+Declarative YAML definitions for benchmark tests. **30 profiles** across physical and virtual layers.
 
 See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × deployment matrix.
 
@@ -10,6 +10,7 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 |-------|------------|---------|
 | `block` | Physical device | fio, vdbench, spdk |
 | `vm-block` | SSH into VM guest | fio |
+| `vm-afa` | SSH into VM guest (multi-LUN) | vdbench |
 | `file` | Physical mount | elbencho |
 | `vm-file` | SSH into VM guest | elbencho |
 | `object` | S3 endpoint | warp |
@@ -35,9 +36,17 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 | Profile | Engine | Load |
 |---------|--------|------|
 | `vm-disk-random` | fio | medium |
+| `vm-hdd-sequential` | fio | light |
 | `vm-disk-sequential` | fio | light |
 | `vm-nvme-oltp` | fio | heavy |
+| `vm-nvme-passthrough` | fio | extreme |
 | `vm-disk-stress` | fio | extreme |
+
+### VM AFA (virtual)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `vm-afa-multi-lun` | vdbench | heavy |
 
 ### File (physical)
 
@@ -68,6 +77,7 @@ See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × depl
 | Profile | Engine | Load |
 |---------|--------|------|
 | `vm-s3-put-throughput` | warp | medium |
+| `vm-s3-rdma` | warp | heavy |
 
 ### Application (physical)
 
@@ -96,6 +106,12 @@ stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
 # Virtual app (agent on guest)
 stratabench run --profile vm-app-postgres \
   --target "postgres://bench@localhost/db" --clients 10.0.1.20:7777
+
+# Virtual HDD / NVMe / AFA / S3 RDMA
+stratabench run --profile vm-hdd-sequential --target root@10.0.1.20:/dev/vdb
+stratabench run --profile vm-nvme-passthrough --target root@10.0.1.20:/dev/nvme0n1
+stratabench run --profile vm-afa-multi-lun --target root@10.0.1.20:/dev/sdb,/dev/sdc,/dev/sdd
+stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 
 # Mock (no tools required)
 stratabench run --profile nvme-random-oltp --target /dev/null --mock
