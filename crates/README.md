@@ -19,8 +19,14 @@ stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
 ## Status
 
-**v0.1.0-stub** — synthetic results from profile parameters (same as Go reference stub in `cmd/stratabench-engine`).
+**v0.2.0** — Linux block I/O via `O_DIRECT` + `pread`/`pwrite` (falls back to buffered I/O or synthetic on failure / non-Linux).
 
-Planned: `O_DIRECT` block I/O, libaio/io_uring, S3 HTTP client for object profiles.
+```bash
+make build-rust
+export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
+stratabench run --profile block-native-oltp --target /dev/nvme0n1
+```
+
+Planned: io_uring, libaio, S3 HTTP client for object profiles.
 
 See [docs/NATIVE-ENGINE.md](../docs/NATIVE-ENGINE.md) for the JSON contract.

@@ -45,7 +45,7 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 | **warp** | MinIO Warp | object (+ RDMA) | vm-object (+ RDMA) | `s3-*`, `vm-s3-*` |
 | **gosbench** | GOSBench server | object (staged S3) | — | `s3-gosbench-write` |
 | **sbk** | pgbench / db_bench / kafka | application | vm-application (agent) | `app-*`, `vm-app-*` |
-| **native** | `stratabench-engine` (Go/Rust stub) | block (opt-in) | — | any profile with `engine: native` |
+| **native** | `stratabench-engine` (Go/Rust) | block (opt-in) | — | `block-native-oltp`, any profile with `engine: stratabench` |
 | **mock** | Synthetic | all (`--mock`) | all (`--mock`) | any profile |
 
 ## Layer × deployment
@@ -109,7 +109,7 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 
 | Layer | Physical | Virtual | Total |
 |-------|----------|---------|-------|
-| block | 6 | — | 6 |
+| block | 7 | — | 7 |
 | vm-block | — | 6 | 6 |
 | vm-afa | — | 1 | 1 |
 | file | 2 | — | 2 |
@@ -118,4 +118,4 @@ stratabench run --profile vm-s3-rdma --target 10.0.1.20:9000
 | vm-object | — | 2 | 2 |
 | application | 3 | — | 3 |
 | vm-application | — | 2 | 2 |
-| **Total** | **17** | **13** | **30** |
+| **Total** | **18** | **13** | **31** |

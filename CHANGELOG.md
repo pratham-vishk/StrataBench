@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc13] - 2026-08-01
+
+### Added
+- **Rust block engine v0.2** — Linux `O_DIRECT` random/sequential read/write via `pread`/`pwrite` with per-second intervals
+- **Profile `block-native-oltp`** — native engine block workload sample
+
+### Changed
+- Rust engine falls back to synthetic on non-Linux or when block open fails; Go stub unchanged
+
 ## [0.8.0-rc12] - 2026-08-01
 
 ### Added

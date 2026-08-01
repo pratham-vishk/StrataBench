@@ -1,0 +1,13 @@
+name: block-native-oltp
+layer: block
+engine: stratabench
+category: native
+description: "Native StrataBench engine — random 4K O_DIRECT block I/O (requires stratabench-engine binary)"
+params:
+  pattern: randread
+  block_size: 4k
+  duration_sec: 60
+  queue_depth: 32
+  threads: 4
+  dataset_size: 1g
+  direct_io: true

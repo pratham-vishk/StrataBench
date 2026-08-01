@@ -1,6 +1,26 @@
 # Release Guide
 
-## v0.8.0-rc12 (current)
+## v0.8.0-rc13 (current)
+
+Rust native engine v0.2: Linux O_DIRECT block I/O with interval buckets; profile `block-native-oltp`.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc13
+git push origin v0.8.0-rc13
+```
+
+### Smoke test
+
+```bash
+make build-rust
+export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
+stratabench run --profile block-native-oltp --target /dev/nvme0n1   # Linux + root
+stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch
+```
+
+## v0.8.0-rc12
 
 Warp live interval streaming via stdout parsing and benchdata analysis; S3 runs get interval time-series in reports.
 

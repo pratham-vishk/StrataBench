@@ -52,6 +52,8 @@ make build-rust
 export STRATABENCH_ENGINE_BIN=$PWD/crates/stratabench-engine/target/release/stratabench-engine
 ```
 
+On **Linux**, the Rust binary performs real block I/O with `O_DIRECT` when `direct_io` is true (profile `block-native-oltp`). On failure or other platforms it falls back to synthetic results matching the Go stub.
+
 The Rust crate in `crates/stratabench-engine/` implements the same CLI contract as the Go reference stub in `cmd/stratabench-engine/`.
 
 ## Go reference stub
