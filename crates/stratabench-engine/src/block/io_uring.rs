@@ -65,16 +65,17 @@ pub fn run_block_io_uring(
                     let offset =
                         pick_offset(&pattern, dataset, bs, &mut seq_off, tid, &mut rng);
                     let buf = buffers[slot].as_mut_slice();
-                    let mut sqe = if write {
+                    let sqe = if write {
                         opcode::Write::new(worker_fd, buf.as_mut_ptr(), bs as u32)
                             .offset(offset)
                             .build()
+                            .user_data(slot as u64)
                     } else {
                         opcode::Read::new(worker_fd, buf.as_mut_ptr(), bs as u32)
                             .offset(offset)
                             .build()
+                            .user_data(slot as u64)
                     };
-                    sqe.user_data(slot as u64);
                     let pushed = unsafe {
                         let mut sq = ring.submission();
                         sq.push(&sqe).is_ok()
