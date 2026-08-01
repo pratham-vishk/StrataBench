@@ -62,7 +62,7 @@ Events: `progress` while running, `interval` for each time bucket (mock runs), `
 
 ## Limitations
 
-- Live interval streaming is implemented for **mock**, **fio**, **warp**, **native** (`progress_path` JSONL from `stratabench-engine`), **gosbench** (stdout parsing), and **sbk** (pgbench `-P 1` progress lines; mock synthetic intervals).
+- Live interval streaming is implemented for **mock**, **fio**, **warp**, **native** (`progress_path` JSONL from `stratabench-engine`), **gosbench**, **sbk** (pgbench `-P 1`), **elbencho** (`--livecsv stdout`), **vdbench** (stdout interval lines), and **spdk** (perf periodic stats).
 - Progress still tracks **topology assignments** alongside interval samples.
 - Full interval time-series for engines without log/benchdata hooks still appear in HTML reports **after** completion only.
 - For thermal/SMART live monitoring, use host tools alongside StrataBench (`smartctl`, `nvme`, etc.).

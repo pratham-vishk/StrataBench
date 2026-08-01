@@ -43,11 +43,21 @@ func runVMVdbench(ctx context.Context, in RunInput) (*schema.Results, *schema.Ra
 
 	sshCmd := fmt.Sprintf("mkdir -p %s && vdbench -f %s -o %s", remoteOut, remoteParm, remoteOut)
 	cmd := exec.CommandContext(ctx, "ssh", sshHost, sshCmd)
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "vm-vdbench-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("guest vdbench failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		out, err = runStreamedCommand(ctx, cmd, in.OnInterval, scanVdbenchStream)
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("guest vdbench failed: %w\n%s", err, string(out))
+		}
+	} else {
+		out, err = cmd.CombinedOutput()
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("guest vdbench failed: %w\n%s", err, string(out))
+		}
 	}
 
 	res, parseErr := parseVdbenchOutput(string(out), "")

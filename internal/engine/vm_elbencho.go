@@ -46,6 +46,9 @@ func runVMElbencho(ctx context.Context, in RunInput) (*schema.Results, *schema.R
 	if in.Profile.ParamBool("rand", true) {
 		args = append(args, "--rand")
 	}
+	if in.OnInterval != nil {
+		args = append(args, "--livecsv", "stdout", "--liveint", "1000")
+	}
 	args = append(args, mountPath)
 
 	remoteScript := "/tmp/stratabench-elbencho.sh"
@@ -61,11 +64,22 @@ func runVMElbencho(ctx context.Context, in RunInput) (*schema.Results, *schema.R
 	}
 
 	cmd := exec.CommandContext(ctx, "ssh", sshHost, "bash "+remoteScript)
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "vm-elbencho-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("guest elbencho failed: %w\n%s", err, string(out))
+
+	var out []byte
+	var err error
+	if in.OnInterval != nil {
+		out, err = runStreamedCommand(ctx, cmd, in.OnInterval, scanElbenchoStream)
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("guest elbencho failed: %w\n%s", err, string(out))
+		}
+	} else {
+		out, err = cmd.CombinedOutput()
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("guest elbencho failed: %w\n%s", err, string(out))
+		}
 	}
 
 	res, parseErr := parseElbenchoOutput(string(out))

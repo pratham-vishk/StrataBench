@@ -32,11 +32,21 @@ func (v *VdbenchRunner) Run(ctx context.Context, in RunInput) (*schema.Results, 
 
 	cmd := exec.CommandContext(ctx, "vdbench", "-f", parmPath, "-o", outDir)
 	cmd.Dir = in.WorkDir
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "vdbench-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("vdbench failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		out, err = runStreamedCommand(ctx, cmd, in.OnInterval, scanVdbenchStream)
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("vdbench failed: %w\n%s", err, string(out))
+		}
+	} else {
+		out, err = cmd.CombinedOutput()
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("vdbench failed: %w\n%s", err, string(out))
+		}
 	}
 
 	res, parseErr := parseVdbenchOutput(string(out), outDir)

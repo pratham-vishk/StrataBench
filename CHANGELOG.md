@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc21] - 2026-08-01
+
+### Added
+- **Live interval streaming for elbencho** — `--livecsv stdout` with CSV/live-line parsing; VM SSH path included
+- **Live interval streaming for vdbench** — stdout interval/rate line parsing; VM SSH path included
+- **Live interval streaming for spdk** — periodic IOPS/MiB/s from perf stdout
+
+### Changed
+- Shared `runStreamedCommand` helper for stdout/stderr streaming runners
+- `docs/MONITORING.md` and `docs/ARCHITECTURE.md` — all engines now support live intervals
+
 ## [0.8.0-rc20] - 2026-08-01
 
 ### Added

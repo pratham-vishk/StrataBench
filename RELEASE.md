@@ -1,23 +1,27 @@
 # Release Guide
 
-## v0.8.0-rc20 (current)
+## v0.8.0-rc21 (current)
 
-Live interval streaming for gosbench (stdout parsing) and sbk (pgbench `-P 1` progress); mock synthetic intervals for both.
+Live interval streaming for elbencho, vdbench, and spdk — completes live monitoring across all engines.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc20
-git push origin v0.8.0-rc20
-gh release create v0.8.0-rc20 --title "v0.8.0-rc20" --notes "Live interval streaming for gosbench and sbk."
+git tag v0.8.0-rc21
+git push origin v0.8.0-rc21
+gh release create v0.8.0-rc21 --title "v0.8.0-rc21" --notes "Live interval streaming for elbencho, vdbench, and spdk."
 ```
 
 ### Smoke test
 
 ```bash
-stratabench run --profile s3-gosbench-write --target 10.0.0.1:9000 --mock --watch
-stratabench run --profile sbk-postgresql-oltp --target postgres://localhost/bench --mock --watch
+stratabench run --profile file-parallel-read --target /mnt/nfs --mock --watch
+stratabench run --profile afa-multi-lun --target /dev/sdb,/dev/sdc --mock --watch
 ```
+
+## v0.8.0-rc20
+
+Live interval streaming for gosbench (stdout parsing) and sbk (pgbench `-P 1` progress); mock synthetic intervals for both.
 
 ## v0.8.0-rc19
 

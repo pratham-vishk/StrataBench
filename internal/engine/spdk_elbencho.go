@@ -3,7 +3,6 @@ package engine
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -49,15 +48,29 @@ func (e *ElbenchoRunner) Run(ctx context.Context, in RunInput) (*schema.Results,
 	if in.Profile.ParamBool("rand", true) {
 		args = append(args, "--rand")
 	}
+	if in.OnInterval != nil {
+		args = append(args, "--livecsv", "stdout", "--liveint", "1000")
+	}
 	args = append(args, target)
 
 	cmd := exec.CommandContext(ctx, "elbencho", args...)
 	cmd.Dir = in.WorkDir
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "elbencho-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("elbencho failed: %w\n%s", err, string(out))
+
+	var out []byte
+	var err error
+	if in.OnInterval != nil {
+		out, err = runStreamedCommand(ctx, cmd, in.OnInterval, scanElbenchoStream)
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("elbencho failed: %w\n%s", err, string(out))
+		}
+	} else {
+		out, err = cmd.CombinedOutput()
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("elbencho failed: %w\n%s", err, string(out))
+		}
 	}
 	res, err := parseElbenchoOutput(string(out))
 	if err != nil {
@@ -119,11 +132,21 @@ func (s *SPDKRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 	}
 	cmd := exec.CommandContext(ctx, perf, args...)
 	cmd.Dir = in.WorkDir
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "spdk-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("spdk perf failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		out, err = runStreamedCommand(ctx, cmd, in.OnInterval, scanSPDKStream)
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("spdk perf failed: %w\n%s", err, string(out))
+		}
+	} else {
+		out, err = cmd.CombinedOutput()
+		writeCommandOutput(logPath, out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("spdk perf failed: %w\n%s", err, string(out))
+		}
 	}
 	res, parseErr := parseSPDKOutput(string(out))
 	if parseErr != nil {
