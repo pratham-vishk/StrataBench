@@ -27,23 +27,57 @@ type PlanOptions struct {
 }
 
 type PlanResult struct {
-	Profile   string `json:"profile"`
-	Rationale string `json:"rationale"`
-	Source    string `json:"source"`
+	Profile   string         `json:"profile"`
+	Rationale string         `json:"rationale"`
+	Source    string         `json:"source"`
+	Target    string         `json:"target,omitempty"`
+	Targets   []string       `json:"targets,omitempty"`
+	Clients   []string       `json:"clients,omitempty"`
+	Topology  string         `json:"topology,omitempty"`
+	Params    map[string]any `json:"params,omitempty"`
 }
 
 func Plan(ctx context.Context, opts PlanOptions) PlanResult {
+	parsed := ParseIntent(opts.Intent)
+	var base PlanResult
 	if opts.UseLLM || opts.UseOllama {
 		if res, err := planWithLLM(ctx, opts); err == nil {
-			return res
+			base = res
 		}
 	}
-	name := SuggestProfile(opts.Intent, opts.Profiles)
-	return PlanResult{
-		Profile:   name,
-		Rationale: "keyword match (LLM unavailable or disabled)",
-		Source:    "keyword",
+	if base.Profile == "" {
+		name := SuggestProfile(opts.Intent, opts.Profiles)
+		base = PlanResult{
+			Profile:   name,
+			Rationale: "keyword match (LLM unavailable or disabled)",
+			Source:    "keyword",
+		}
 	}
+	return mergeParsedIntoPlan(base, parsed)
+}
+
+func mergeParsedIntoPlan(base PlanResult, parsed ParsedIntent) PlanResult {
+	if base.Params == nil {
+		base.Params = map[string]any{}
+	}
+	for k, v := range parsed.Params {
+		if _, exists := base.Params[k]; !exists {
+			base.Params[k] = v
+		}
+	}
+	if base.Target == "" {
+		base.Target = parsed.Target
+	}
+	if len(base.Targets) == 0 {
+		base.Targets = parsed.Targets
+	}
+	if len(base.Clients) == 0 {
+		base.Clients = parsed.Clients
+	}
+	if base.Topology == "" {
+		base.Topology = parsed.Topology
+	}
+	return base
 }
 
 func planWithLLM(ctx context.Context, opts PlanOptions) (PlanResult, error) {
@@ -69,8 +103,13 @@ func planWithLLM(ctx context.Context, opts PlanOptions) (PlanResult, error) {
 	}
 
 	var parsed struct {
-		Profile   string `json:"profile"`
-		Rationale string `json:"rationale"`
+		Profile   string         `json:"profile"`
+		Rationale string         `json:"rationale"`
+		Target    string         `json:"target"`
+		Targets   []string       `json:"targets"`
+		Clients   []string       `json:"clients"`
+		Topology  string         `json:"topology"`
+		Params    map[string]any `json:"params"`
 	}
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
 		return PlanResult{}, fmt.Errorf("parse llm response: %w", err)
@@ -89,6 +128,11 @@ func planWithLLM(ctx context.Context, opts PlanOptions) (PlanResult, error) {
 		Profile:   parsed.Profile,
 		Rationale: parsed.Rationale,
 		Source:    source,
+		Target:    parsed.Target,
+		Targets:   parsed.Targets,
+		Clients:   parsed.Clients,
+		Topology:  parsed.Topology,
+		Params:    parsed.Params,
 	}, nil
 }
 

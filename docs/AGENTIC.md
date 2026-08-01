@@ -101,7 +101,30 @@ See `examples/mcp-cursor.json`. Add under Cursor → Settings → MCP.
 
 ---
 
-## REST API
+## Natural language parameters
+
+The planner extracts structured params from intent (keyword parser + optional LLM):
+
+```bash
+stratabench agent "clients 10.0.1.1:7777,10.0.1.2:7777 \
+  servers 10.0.1.10:9000,10.0.1.11:9000 \
+  s3 object size 3kb-100kb duration 1 hour threads 32 topology shard" \
+  --llm --mock
+```
+
+| Intent phrase | Param |
+|---------------|-------|
+| `1 hour` / `60 minutes` | `duration_sec`, `runtime` |
+| `3kb-100kb` object size | `object_size_min`, `object_size_max` |
+| `iodepth 64` | `iodepth` |
+| `threads 8` / `concurrent 32` | `numjobs`, `concurrent` |
+| `clients … servers …` | topology + node lists |
+| `ramp 60` | `ramp_time` |
+| `70% read` | `rwmixread` |
+
+CLI flags (`--target`, `--clients`, `--topology`) override parsed intent.
+
+---
 
 ```bash
 stratabench-api   # :8080

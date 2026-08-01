@@ -16,6 +16,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/report"
 	"github.com/pratham-vishk/stratabench/internal/reporter"
 	"github.com/pratham-vishk/stratabench/internal/schema"
+	"github.com/pratham-vishk/stratabench/internal/topology"
 )
 
 type Options struct {
@@ -79,12 +80,31 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		OllamaURL:   opts.OllamaURL,
 		OllamaModel: opts.OllamaModel,
 	})
-	fmt.Printf("  profile=%s source=%s\n  %s\n", plan.Profile, plan.Source, plan.Rationale)
+	plan = planner.MergePlan(plan, planner.ParsedIntent{}, opts.Target, opts.Targets, opts.Clients, opts.Topology)
+	printPlan(plan)
+
+	target := plan.Target
+	targets := plan.Targets
+	if target != "" && len(targets) == 0 {
+		targets = []string{target}
+	}
+	if len(targets) == 0 && opts.Target != "" {
+		target = opts.Target
+		targets = topology.MergeTargets(opts.Target, opts.Targets)
+	}
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("no target — specify --target/--targets or include endpoints in intent (e.g. servers 10.0.1.10:9000)")
+	}
+	if target == "" {
+		target = targets[0]
+	}
 
 	p, err := profile.LoadByName(paths.ProfilesDir(), plan.Profile)
 	if err != nil {
 		return nil, err
 	}
+	prof := p.Clone()
+	prof.ApplyOverrides(plan.Params)
 
 	svc, err := orchestrator.NewService(opts.DataDir)
 	if err != nil {
@@ -94,11 +114,11 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 
 	fmt.Println("→ Validating...")
 	runOpts := orchestrator.RunOptions{
-		Profile:       p,
-		Target:        opts.Target,
-		Targets:       opts.Targets,
-		Clients:       opts.Clients,
-		Topology:      opts.Topology,
+		Profile:       prof,
+		Target:        target,
+		Targets:       targets,
+		Clients:       plan.Clients,
+		Topology:      plan.Topology,
 		Mock:          opts.Mock,
 		SkipValidate:  opts.SkipValidate,
 		CheckBaseline: opts.CheckBaseline,
@@ -159,4 +179,20 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		JSONPath:   jsonPath,
 		Summary:    summary,
 	}, nil
+}
+
+func printPlan(plan planner.PlanResult) {
+	fmt.Printf("  profile=%s source=%s\n  %s\n", plan.Profile, plan.Source, plan.Rationale)
+	if plan.Target != "" {
+		fmt.Printf("  target=%s\n", plan.Target)
+	}
+	if len(plan.Targets) > 0 {
+		fmt.Printf("  targets=%v\n", plan.Targets)
+	}
+	if len(plan.Clients) > 0 {
+		fmt.Printf("  clients=%v topology=%s\n", plan.Clients, plan.Topology)
+	}
+	if len(plan.Params) > 0 {
+		fmt.Printf("  params=%v\n", plan.Params)
+	}
 }

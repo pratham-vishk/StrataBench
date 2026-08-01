@@ -157,8 +157,8 @@ func (t *Tools) Run(ctx context.Context, args map[string]any) (any, error) {
 func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 	intent, _ := args["intent"].(string)
 	target, _ := args["target"].(string)
-	if intent == "" || target == "" {
-		return nil, fmt.Errorf("intent and target are required")
+	if intent == "" {
+		return nil, fmt.Errorf("intent is required")
 	}
 	mock := true
 	if v, ok := args["mock"].(bool); ok {
@@ -166,9 +166,15 @@ func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 	}
 	useLLM, _ := args["use_llm"].(bool)
 	cfg := llm.FromEnv()
+	clients := stringSliceArg(args, "clients")
+	targets := stringSliceArg(args, "targets")
+	topology, _ := args["topology"].(string)
 	res, err := agentloop.Run(ctx, agentloop.Options{
 		Intent:        intent,
 		Target:        target,
+		Targets:       targets,
+		Clients:       clients,
+		Topology:      topology,
 		Mock:          mock,
 		UseLLM:        useLLM,
 		UseOllama:     useLLM,
@@ -187,6 +193,32 @@ func (t *Tools) Agent(ctx context.Context, args map[string]any) (any, error) {
 		"summary":    res.Summary,
 		"report":     res.ReportPath,
 	}, nil
+}
+
+func stringSliceArg(args map[string]any, key string) []string {
+	raw, ok := args[key]
+	if !ok {
+		return nil
+	}
+	switch v := raw.(type) {
+	case []string:
+		return v
+	case []any:
+		var out []string
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	case string:
+		if v == "" {
+			return nil
+		}
+		return []string{v}
+	default:
+		return nil
+	}
 }
 
 func (t *Tools) Analyze(ctx context.Context, args map[string]any) (any, error) {

@@ -504,6 +504,7 @@ func planCmd() *cobra.Command {
 				OllamaURL:   ollamaURL,
 				OllamaModel: ollamaModel,
 			})
+			result = planner.MergePlan(result, planner.ParsedIntent{}, target, topology.ParseCSV(targetsCSV), remote.ParseHosts(clientsCSV), topologyMode)
 			p, err := profile.LoadByName(paths.ProfilesDir(), result.Profile)
 			if err != nil {
 				return err
@@ -511,9 +512,21 @@ func planCmd() *cobra.Command {
 			fmt.Printf("Suggested profile: %s (source: %s)\n", p.Name, result.Source)
 			fmt.Printf("  %s\n", result.Rationale)
 			fmt.Printf("  engine=%s layer=%s load=%s\n", p.Engine, p.Layer, p.Load)
+			if result.Target != "" {
+				fmt.Printf("  target=%s\n", result.Target)
+			}
+			if len(result.Targets) > 0 {
+				fmt.Printf("  targets=%v\n", result.Targets)
+			}
+			if len(result.Clients) > 0 {
+				fmt.Printf("  clients=%v topology=%s\n", result.Clients, result.Topology)
+			}
+			if len(result.Params) > 0 {
+				fmt.Printf("  params=%v\n", result.Params)
+			}
 			fmt.Printf("\nNext:\n  stratabench validate --profile %s\n", p.Name)
 			fmt.Printf("  stratabench run --profile %s --target <target> --mock\n", p.Name)
-			fmt.Printf("  stratabench agent %q --target <target> --mock\n", text)
+			fmt.Printf("  stratabench agent %q --mock\n", text)
 			return nil
 		},
 	}
@@ -648,12 +661,9 @@ func agentCmd() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targets := topology.MergeTargets(target, topology.ParseCSV(targetsCSV))
-			if len(targets) == 0 {
-				return fmt.Errorf("--target or --targets is required")
-			}
 			_, err := agentloop.Run(cmd.Context(), agentloop.Options{
 				Intent:        strings.Join(args, " "),
-				Target:        targets[0],
+				Target:        target,
 				Targets:       targets,
 				Clients:       remote.ParseHosts(clientsCSV),
 				Topology:      topologyMode,
@@ -684,7 +694,7 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm")
 	cmd.Flags().StringVar(&ollamaURL, "ollama-url", "", "Ollama API URL")
 	cmd.Flags().StringVar(&ollamaModel, "model", "", "Ollama model name")
-	_ = cmd.MarkFlagRequired("target") // target or targets
+	_ = cmd.MarkFlagRequired("target") // optional if intent includes servers/target device
 	return cmd
 }
 
