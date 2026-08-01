@@ -2,6 +2,15 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc12] - 2026-08-01
+
+### Added
+- **Warp live interval streaming** — parse stdout/stderr MiB/s + obj/s lines during runs; `--benchdata` + `warp analyze` for post-run interval CSV
+- **Warp HTML report intervals** — completed S3 runs attach time-bucket series from benchdata analysis
+
+### Changed
+- Warp runner streams live samples when `OnInterval` is set (async watch / SSE / Prometheus)
+
 ## [0.8.0-rc11] - 2026-08-01
 
 ### Added

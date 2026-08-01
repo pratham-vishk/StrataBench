@@ -1,6 +1,25 @@
 # Release Guide
 
-## v0.8.0-rc11 (current)
+## v0.8.0-rc12 (current)
+
+Warp live interval streaming via stdout parsing and benchdata analysis; S3 runs get interval time-series in reports.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc12
+git push origin v0.8.0-rc12
+```
+
+### Smoke test
+
+```bash
+make build
+stratabench run --profile s3-put-throughput --target 127.0.0.1:9000 --async --watch   # requires warp + MinIO
+stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch
+```
+
+## v0.8.0-rc11
 
 fio live interval tailing: real block benchmarks stream IOPS/throughput to Prometheus and SSE while running.
 

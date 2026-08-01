@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
@@ -35,15 +37,18 @@ func (w *WarpRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 	accessKey := envOr("WARP_ACCESS_KEY", "minioadmin")
 	secretKey := envOr("WARP_SECRET_KEY", "minioadmin")
 
+	benchPrefix := warpBenchPrefix(in.WorkDir)
+
 	args := []string{
 		op,
 		"--host", host,
 		"--access-key", accessKey,
 		"--secret-key", secretKey,
 		"--duration", fmt.Sprintf("%ds", duration),
-		"--concurrent", strconv.Itoa(concurrent),
+		"--concurrent", fmt.Sprintf("%d", concurrent),
 		"--obj.size", objSize,
 		"--bucket", bucket,
+		"--benchdata", benchPrefix,
 	}
 
 	for _, client := range in.Profile.ParamStringSlice("warp_clients") {
@@ -55,12 +60,50 @@ func (w *WarpRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 
 	cmd := exec.CommandContext(ctx, "warp", args...)
 	cmd.Dir = in.WorkDir
-	out, err := cmd.CombinedOutput()
 	logPath := filepath.Join(in.WorkDir, "warp-output.txt")
-	_ = os.WriteFile(logPath, out, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("warp failed: %w\n%s", err, string(out))
+
+	var out []byte
+	if in.OnInterval != nil {
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := cmd.Start(); err != nil {
+			return nil, nil, err
+		}
+		tailCtx, cancel := context.WithCancel(ctx)
+		var outBuf bytes.Buffer
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			scanWarpStream(tailCtx, stdout, in.OnInterval, &outBuf)
+		}()
+		go func() {
+			defer wg.Done()
+			scanWarpStream(tailCtx, stderr, in.OnInterval, &outBuf)
+		}()
+		waitErr := cmd.Wait()
+		cancel()
+		wg.Wait()
+		out = outBuf.Bytes()
+		if waitErr != nil {
+			_ = os.WriteFile(logPath, out, 0o644)
+			return nil, nil, fmt.Errorf("warp failed: %w\n%s", waitErr, string(out))
+		}
+	} else {
+		combined, err := cmd.CombinedOutput()
+		if err != nil {
+			_ = os.WriteFile(logPath, combined, 0o644)
+			return nil, nil, fmt.Errorf("warp failed: %w\n%s", err, string(combined))
+		}
+		out = combined
 	}
+	_ = os.WriteFile(logPath, out, 0o644)
 
 	res, parseErr := parseWarpOutput(string(out), duration)
 	if parseErr != nil {
@@ -74,6 +117,8 @@ func (w *WarpRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 			return nil, nil, fmt.Errorf("parse warp output: %w (see %s)", parseErr, logPath)
 		}
 	}
+
+	attachWarpIntervals(ctx, in.WorkDir, benchPrefix, duration, res)
 	return res, &schema.RawEngineOutput{Path: logPath, Format: "warp-text"}, nil
 }
 
