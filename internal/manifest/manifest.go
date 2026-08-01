@@ -1,0 +1,81 @@
+package manifest
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/pratham-vishk/stratabench/internal/orchestrator"
+	"github.com/pratham-vishk/stratabench/internal/paths"
+	"github.com/pratham-vishk/stratabench/internal/profile"
+)
+
+// Benchmark is a declarative benchmark manifest (CRD-compatible shape).
+type Benchmark struct {
+	APIVersion string          `yaml:"apiVersion"`
+	Kind       string          `yaml:"kind"`
+	Metadata   Metadata        `yaml:"metadata"`
+	Spec       BenchmarkSpec   `yaml:"spec"`
+}
+
+type Metadata struct {
+	Name      string `yaml:"name"`
+	Namespace string `yaml:"namespace,omitempty"`
+}
+
+type BenchmarkSpec struct {
+	Profile       string   `yaml:"profile"`
+	Target        string   `yaml:"target"`
+	Clients       []string `yaml:"clients,omitempty"`
+	Mock          bool     `yaml:"mock,omitempty"`
+	SkipValidate  bool     `yaml:"skipValidate,omitempty"`
+	CheckBaseline bool     `yaml:"checkBaseline,omitempty"`
+	Intent        string   `yaml:"intent,omitempty"`
+	UseOllama     bool     `yaml:"useOllama,omitempty"`
+}
+
+func Load(path string) (*Benchmark, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var b Benchmark
+	if err := yaml.Unmarshal(data, &b); err != nil {
+		return nil, err
+	}
+	if b.Spec.Profile == "" && b.Spec.Intent == "" {
+		return nil, fmt.Errorf("spec.profile or spec.intent is required")
+	}
+	return &b, nil
+}
+
+func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*ApplyResult, error) {
+	if b.Spec.Intent != "" {
+		return nil, fmt.Errorf("intent-based apply: use stratabench agent %q", b.Spec.Intent)
+	}
+	p, err := profile.LoadByName(paths.ProfilesDir(), b.Spec.Profile)
+	if err != nil {
+		return nil, err
+	}
+	run, err := svc.Run(ctx, orchestrator.RunOptions{
+		Profile:       p,
+		Target:        b.Spec.Target,
+		Clients:       b.Spec.Clients,
+		Mock:          b.Spec.Mock,
+		SkipValidate:  b.Spec.SkipValidate,
+		CheckBaseline: b.Spec.CheckBaseline,
+		DataDir:       paths.DataDir(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &ApplyResult{RunID: run.RunID, Profile: run.Profile, Status: run.Status}, nil
+}
+
+type ApplyResult struct {
+	RunID   string `json:"run_id"`
+	Profile string `json:"profile"`
+	Status  string `json:"status"`
+}

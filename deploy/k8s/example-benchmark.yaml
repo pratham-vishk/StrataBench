@@ -1,0 +1,10 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: nightly-nvme-oltp
+  namespace: stratabench
+spec:
+  profile: nvme-random-oltp
+  target: /dev/nvme0n1
+  checkBaseline: true
+  skipValidate: false

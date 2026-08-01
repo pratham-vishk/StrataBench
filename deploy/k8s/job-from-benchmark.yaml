@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: benchmark-nightly-nvme-oltp
+  namespace: stratabench
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: stratabench
+          image: ghcr.io/pratham-vishk/stratabench:latest
+          command: ["/usr/local/bin/stratabench"]
+          args:
+            - apply
+            - /manifests/benchmark.yaml
+          env:
+            - name: STRATABENCH_ROOT
+              value: /etc/stratabench
+          volumeMounts:
+            - name: manifest
+              mountPath: /manifests
+            - name: data
+              mountPath: /data
+            - name: nvme
+              mountPath: /dev/nvme0n1
+          securityContext:
+            privileged: true
+      volumes:
+        - name: manifest
+          configMap:
+            name: benchmark-nightly-nvme-oltp
+        - name: data
+          persistentVolumeClaim:
+            claimName: stratabench-data
+        - name: nvme
+          hostPath:
+            path: /dev/nvme0n1
+            type: CharDevice

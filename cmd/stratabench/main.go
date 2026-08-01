@@ -17,6 +17,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/export"
 	"github.com/pratham-vishk/stratabench/internal/importsbk"
 	"github.com/pratham-vishk/stratabench/internal/inventory"
+	"github.com/pratham-vishk/stratabench/internal/manifest"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/planner"
@@ -52,6 +53,7 @@ func main() {
 
 	root.AddCommand(
 		validateCmd(),
+		applyCmd(),
 		runCmd(),
 		reportCmd(),
 		exportCmd(),
@@ -111,6 +113,34 @@ func validateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&profileName, "profile", "", "Workload profile name")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed array cache size in bytes")
 	_ = cmd.MarkFlagRequired("profile")
+	return cmd
+}
+
+func applyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "apply",
+		Short: "Apply a declarative benchmark manifest (YAML)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return fmt.Errorf("manifest file path required")
+			}
+			b, err := manifest.Load(args[0])
+			if err != nil {
+				return err
+			}
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			result, err := manifest.Apply(cmd.Context(), svc, b)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("benchmark applied: run_id=%s profile=%s status=%s\n", result.RunID, result.Profile, result.Status)
+			return nil
+		},
+	}
 	return cmd
 }
 

@@ -107,13 +107,12 @@
 - [x] Analyst agent (regression, tail latency, client variance)
 - [x] Regression tracking (baseline per profile + target)
 - [x] Hardware inventory database (NVMe model, firmware, SMART history)
-- [ ] Kubernetes operator for in-cluster benchmarking
-- [x] Kubernetes deployment manifests (API, agent, CronJob)
+- [x] Kubernetes deployment manifests (API, agent, CronJob, CRD)
 - [x] Public documentation site (GitHub Pages)
 - [x] Contributor guide + CI/CD (GitHub Actions)
 - [ ] **Public open-source release**
-- [x] SBK application profiles (Kafka, RocksDB, PostgreSQL)
-- [ ] SBK native driver integration (live workloads)
+- [x] SBK native driver integration (pgbench, db_bench, kafka-producer-perf-test)
+- [ ] SBK full Storage Benchmark Kit bridge
 
 ### Success criteria
 

@@ -4,6 +4,8 @@ namespace: stratabench
 resources:
   - namespace.yaml
   - pvc.yaml
+  - crd-benchmark.yaml
   - api-deployment.yaml
   - agent-daemonset.yaml
   - cronjob-nvme.yaml
+  - example-benchmark.yaml
