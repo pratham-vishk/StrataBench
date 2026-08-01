@@ -1,0 +1,168 @@
+{
+  "schema_version": "",
+  "run_id": "s3-put-mock",
+  "profile": "s3-put-throughput",
+  "layer": "object",
+  "engine": "warp",
+  "status": "",
+  "mock": true,
+  "provenance": {},
+  "validation": {
+    "passed": true,
+    "rules_checked": null,
+    "warnings": null
+  },
+  "target": {
+    "type": "object",
+    "endpoint": "127.0.0.1:9000",
+    "vm": null
+  },
+  "workload": {
+    "pattern": "put",
+    "duration_sec": 300
+  },
+  "results": {
+    "iops": 8500,
+    "write_iops": 8500,
+    "throughput_mbps": 34000,
+    "ops_per_sec": 8500,
+    "latency_us": {
+      "min": 1800,
+      "max": 45000,
+      "mean": 4800,
+      "p50": 4200,
+      "p99": 12500
+    },
+    "intervals": [
+      {
+        "seq": 1,
+        "timestamp": "2026-08-01T09:30:06.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 2,
+        "timestamp": "2026-08-01T09:30:31.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 3,
+        "timestamp": "2026-08-01T09:30:56.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 4,
+        "timestamp": "2026-08-01T09:31:21.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 5,
+        "timestamp": "2026-08-01T09:31:46.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 6,
+        "timestamp": "2026-08-01T09:32:11.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 7,
+        "timestamp": "2026-08-01T09:32:36.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 8,
+        "timestamp": "2026-08-01T09:33:01.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 9,
+        "timestamp": "2026-08-01T09:33:26.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 10,
+        "timestamp": "2026-08-01T09:33:51.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 11,
+        "timestamp": "2026-08-01T09:34:16.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      },
+      {
+        "seq": 12,
+        "timestamp": "2026-08-01T09:34:41.1236357Z",
+        "iops": 8500,
+        "write_iops": 8500,
+        "throughput_mbps": 34000,
+        "avg_latency_us": 4800,
+        "min_latency_us": 1800,
+        "max_latency_us": 45000
+      }
+    ],
+    "totals": {
+      "total_mb": 10200000,
+      "total_records": 2550000
+    }
+  },
+  "hardware_snapshot": {},
+  "timestamps": {
+    "started_at": "2026-08-01T09:25:06.1236357Z",
+    "completed_at": "2026-08-01T09:30:06.1236357Z"
+  }
+}

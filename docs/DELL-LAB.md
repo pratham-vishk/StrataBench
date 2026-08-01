@@ -2,6 +2,8 @@
 
 Use this guide when running StrataBench on Dell lab VMs (static IPs, shared storage cluster).
 
+**Full automation:** see [LAB-BOOTSTRAP.md](LAB-BOOTSTRAP.md) — `stratabench lab bootstrap` installs warp/fio/agent, deploys MinIO, and runs benchmarks from `lab.yaml`.
+
 ## Topology
 
 ```

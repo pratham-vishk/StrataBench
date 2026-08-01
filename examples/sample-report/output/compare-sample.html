@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StrataBench — Benchmark comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#080c10;--surface:#0f1419;--card:#151b24;--border:#2a3548;--text:#f0f4f8;--muted:#8b9cb3;
+      --accent:#14b8a6;--good:#4ade80;--bad:#f87171;--sidebar-w:240px;--gap:1.5rem;--section-gap:3.5rem}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 1rem;overflow-y:auto}
+    .sidebar h2{font-size:.95rem;color:var(--accent)} .sidebar p{font-size:.75rem;color:var(--muted)}
+    .nav a{display:block;padding:.5rem .75rem;color:var(--muted);text-decoration:none;font-size:.82rem;border-radius:6px;margin-bottom:2px}
+    .nav a:hover{background:var(--card);color:var(--text)}
+    main{margin-left:var(--sidebar-w);padding:2rem 2.5rem 4rem;max-width:1200px}
+    h1{font-size:1.6rem;margin-bottom:.35rem}
+    .subtitle{color:var(--muted);margin-bottom:2rem}
+    .verdict{padding:1.15rem 1.35rem;border-radius:12px;margin-bottom:2rem;border:1px solid var(--border)}
+    .verdict.improved{border-color:#166534;background:#052e1622}
+    .verdict.regressed{border-color:#7f1d1d;background:#450a0a22}
+    .verdict.neutral{border-color:var(--border);background:var(--card)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--section-gap)}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.35rem;margin-bottom:var(--gap)}
+    .panel.grafana{border-left:3px solid var(--accent)}
+    .panel h3{font-size:.72rem;color:var(--muted);text-transform:uppercase;margin:0 0 1rem}
+    .chart-box{height:360px;position:relative}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    th,td{padding:.55rem .7rem;border-bottom:1px solid var(--border);text-align:right}
+    th:first-child,td:first-child{text-align:left}
+    .good{color:var(--good)} .bad{color:var(--bad)} .neutral{color:var(--muted)}
+    .report-links{display:flex;gap:1rem;margin:1rem 0 2rem;flex-wrap:wrap}
+    .report-links a{color:var(--accent);text-decoration:none;padding:.5rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem}
+    .report-links a:hover{background:var(--card)}
+    footer{margin-top:3rem;color:var(--muted);font-size:.72rem}
+    a{color:var(--accent)}
+    .note{color:var(--muted);font-size:.85rem;margin-bottom:1.5rem;padding:.75rem 1rem;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+  @media(max-width:900px){.grid-2{grid-template-columns:1fr}main{margin-left:0;padding:1rem}}
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <h2>StrataBench</h2><p>Benchmark compare</p>
+  <nav class="nav" style="margin-top:1.5rem">
+    <a href="#summary">Summary</a>
+    <a href="#runs">Base vs Candidate</a>
+    <a href="#grafana">Operations (Grafana)</a>
+    <a href="#charts">Summary charts</a>
+    <a href="#metrics">All metrics</a>
+  </nav>
+</aside>
+<main>
+  <h1 id="summary">Benchmark comparison</h1>
+  <p class="subtitle">nvme-random-oltp · /dev/null · IOPS · sequential base → candidate</p>
+  <p class="note">Base benchmark ran first; candidate ran after (not parallel). Compare relies on the completed base run.</p>
+  <div class="verdict improved">
+    <strong>Improved</strong> — Head branch looks faster: IOPS &#43;30.4%, p99 -10.6%
+  </div>
+  
+  <div class="report-links">
+    <a href="base-benchmark.html">→ Base benchmark report (full Grafana dashboard)</a>
+    <a href="candidate-benchmark.html">→ Candidate benchmark report (full Grafana dashboard)</a>
+  </div>
+  
+
+  <section id="runs" style="margin-bottom:var(--section-gap)">
+    <div class="grid-2">
+      <div class="panel"><h3>Base (baseline)</h3>
+        <p><strong>master@5e8900a (dirty)</strong></p>
+        <p style="margin:.5rem 0;color:var(--muted)">Run <code>00d39789-b60d-476a-8839-4d813436dc32</code></p>
+        <p>IOPS <strong>988842</strong> · p99 <strong>305 µs</strong></p>
+      </div>
+      <div class="panel"><h3>Candidate (after base)</h3>
+        <p><strong>master@5e8900a (dirty)</strong></p>
+        <p style="margin:.5rem 0;color:var(--muted)">Run <code>25993d98-0dd1-44ef-925d-ab0c0aa229c2</code></p>
+        <p>IOPS <strong>1289466</strong> · p99 <strong>273 µs</strong></p>
+      </div>
+    </div>
+  </section>
+
+  
+  <section id="grafana" style="margin-bottom:var(--section-gap)">
+    <h2 style="font-size:1.05rem;margin-bottom:1.25rem">Operations dashboard — base vs candidate overlay</h2>
+    <div class="panel grafana"><h3>IOPS over time</h3><div class="chart-box"><canvas id="grafanaOps"></canvas></div></div>
+    <div class="panel grafana"><h3>Throughput (MB/s) over time</h3><div class="chart-box"><canvas id="grafanaMbps"></canvas></div></div>
+    <div class="panel grafana"><h3>Latency (avg µs) over time</h3><div class="chart-box"><canvas id="grafanaLat"></canvas></div></div>
+  </section>
+  
+
+  <section id="charts" style="margin-bottom:var(--section-gap)">
+    <div class="panel"><h3>Throughput comparison</h3><div class="chart-box"><canvas id="cmpThroughput"></canvas></div></div>
+    <div class="panel"><h3>Latency comparison (p50 / p99 / max)</h3><div class="chart-box"><canvas id="cmpLatency"></canvas></div></div>
+    <div class="panel"><h3>Candidate vs base delta (%)</h3><div class="chart-box"><canvas id="cmpDelta"></canvas></div></div>
+  </section>
+
+  <section id="metrics">
+    <div class="panel">
+      <h3>Metric comparison (candidate vs base)</h3>
+      <table>
+        <tr><th>Metric</th><th>Base</th><th>Candidate</th><th>Δ%</th><th></th></tr>
+        
+        <tr>
+          <td>IOPS</td><td>988842.37</td><td>1289466.39</td>
+          <td>&#43;30.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Throughput (MB/s)</td><td>15450.66</td><td>20147.91</td>
+          <td>&#43;30.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Read IOPS</td><td>692189.66</td><td>902626.47</td>
+          <td>&#43;30.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Write IOPS</td><td>296652.71</td><td>386839.92</td>
+          <td>&#43;30.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Latency mean (µs)</td><td>88.00</td><td>88.00</td>
+          <td>&#43;0.0%</td>
+          <td class="neutral">neutral</td>
+        </tr>
+        <tr>
+          <td>Latency p50 (µs)</td><td>80.00</td><td>80.00</td>
+          <td>&#43;0.0%</td>
+          <td class="neutral">neutral</td>
+        </tr>
+        <tr>
+          <td>Latency p99 (µs)</td><td>305.48</td><td>272.98</td>
+          <td>-10.6%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Latency p99.9 (µs)</td><td>359.68</td><td>338.22</td>
+          <td>-6.0%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>Latency max (µs)</td><td>1200.00</td><td>1200.00</td>
+          <td>&#43;0.0%</td>
+          <td class="neutral">neutral</td>
+        </tr>
+        <tr>
+          <td>p5 (µs)</td><td>91.52</td><td>85.14</td>
+          <td>-7.0%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p10 (µs)</td><td>75.16</td><td>77.83</td>
+          <td>&#43;3.6%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p15 (µs)</td><td>97.67</td><td>71.11</td>
+          <td>-27.2%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p20 (µs)</td><td>97.38</td><td>85.05</td>
+          <td>-12.7%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p25 (µs)</td><td>87.68</td><td>102.20</td>
+          <td>&#43;16.6%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p30 (µs)</td><td>76.60</td><td>99.06</td>
+          <td>&#43;29.3%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p35 (µs)</td><td>93.12</td><td>94.07</td>
+          <td>&#43;1.0%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p40 (µs)</td><td>65.19</td><td>77.09</td>
+          <td>&#43;18.3%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p45 (µs)</td><td>78.49</td><td>66.22</td>
+          <td>-15.6%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p50 (µs)</td><td>80.00</td><td>80.00</td>
+          <td>&#43;0.0%</td>
+          <td class="neutral">neutral</td>
+        </tr>
+        <tr>
+          <td>p55 (µs)</td><td>64.40</td><td>82.51</td>
+          <td>&#43;28.1%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p60 (µs)</td><td>92.23</td><td>65.94</td>
+          <td>-28.5%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p65 (µs)</td><td>86.38</td><td>85.30</td>
+          <td>-1.2%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p70 (µs)</td><td>98.94</td><td>81.63</td>
+          <td>-17.5%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p75 (µs)</td><td>77.74</td><td>71.09</td>
+          <td>-8.6%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p80 (µs)</td><td>102.37</td><td>76.38</td>
+          <td>-25.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p85 (µs)</td><td>91.62</td><td>75.86</td>
+          <td>-17.2%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p90 (µs)</td><td>214.07</td><td>191.88</td>
+          <td>-10.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p92.5 (µs)</td><td>171.07</td><td>180.84</td>
+          <td>&#43;5.7%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p95 (µs)</td><td>161.02</td><td>214.64</td>
+          <td>&#43;33.3%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p97.5 (µs)</td><td>171.60</td><td>224.53</td>
+          <td>&#43;30.8%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99 (µs)</td><td>305.48</td><td>272.98</td>
+          <td>-10.6%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.25 (µs)</td><td>337.58</td><td>363.84</td>
+          <td>&#43;7.8%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.5 (µs)</td><td>348.42</td><td>268.20</td>
+          <td>-23.0%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.75 (µs)</td><td>322.16</td><td>256.02</td>
+          <td>-20.5%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.9 (µs)</td><td>359.68</td><td>338.22</td>
+          <td>-6.0%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.95 (µs)</td><td>259.83</td><td>308.70</td>
+          <td>&#43;18.8%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.99 (µs)</td><td>346.85</td><td>387.62</td>
+          <td>&#43;11.8%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+  <footer>StrataBench · 2026-08-01T09:35:30Z · compare report (sequential benchmarks)</footer>
+</main>
+<script>
+const cmp = {"opsLabel":"IOPS","baseIOPS":988842.3714202272,"headIOPS":1289466.388136121,"baseMBps":15450.66205344105,"headMBps":20147.91231462689,"baseP50":80,"baseP99":305.47661486891036,"baseMax":1200,"headP50":80,"headP99":272.9829527018565,"headMax":1200,"deltaLabels":["IOPS","Throughput (MB/s)","Latency p50 (µs)","Latency p99 (µs)","Latency p99.9 (µs)"],"deltaPcts":[30.401611561620463,30.401611561620463,0,-10.637037529369609,-5.967198265732758],"hasIntervals":true,"intervalLabels":["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"],"baseIOPSOver":[1119511.900872181,1182354.1054971418,1136444.1105205913,1102744.2002061803,1206100.9379277413,1036687.9890405941,1196609.7250567356,1163340.1886726513,1099433.6691304955,1167188.85490665,1107807.1014860906,1101887.0708826205],"headIOPSOver":[1047926.9568601567,1181793.8719159972,1202910.4158422076,1229486.233606658,1069603.0000074552,1080588.8760282367,1101933.9851778154,1025334.1470973872,1189381.958814689,1092814.8694031355,1058620.0264020374,1154287.3060282923],"baseMbpsOver":[15288.709309360087,16146.919211480677,15519.945467794854,15059.719781808724,16471.21984443212,14157.617526529833,16341.602290152427,15887.254042280143,15014.509233143439,15939.813679417108,15128.861722926304,15048.014322440025],"headMbpsOver":[18661.9095240494,21045.866001818566,21421.918005855467,21895.190979130053,19047.925317808826,19243.566266827384,19623.68865333791,18259.56757747885,21180.997739996485,19461.291730143654,18852.336056183714,20556.017887354847],"baseLatOver":[84.89673930436655,80.15196203387214,84.2446470463365,83.93474084767658,72.2173171320353,95.47012310101525,75.10161925823711,75.8136751194286,85.74491269381835,83.64607033675993,88.49314117845276,73.72578181356475],"headLatOver":[81.40835419160155,90.94832580510592,80.32773591118043,78.28398675731565,81.59803911045634,72.18496671328248,81.2454276979779,87.664545545529,90.30151668521547,72.15712542419935,75.45865537156853,95.93294168654758]};
+const palette = ['#14b8a6','#38bdf8','#fbbf24','#f472b6'];
+const tick = '#8b9cb3', grid = '#1e2836';
+const baseOpts = {responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:tick}}},
+  scales:{y:{beginAtZero:true,grid:{color:grid},ticks:{color:tick}},x:{grid:{display:false},ticks:{color:tick,maxRotation:45}}}};
+function overlayChart(id, labels, baseData, headData, label, unit) {
+  const el = document.getElementById(id); if (!el || !labels.length) return;
+  new Chart(el, {type:'line', data:{labels, datasets:[
+    {label:'Base '+label, data:baseData, borderColor:palette[0], backgroundColor:palette[0]+'18', borderWidth:2, tension:0.3, pointRadius:2},
+    {label:'Candidate '+label, data:headData, borderColor:palette[2], backgroundColor:palette[2]+'18', borderWidth:2, borderDash:[6,4], tension:0.3, pointRadius:2}
+  ]}, options:baseOpts});
+}
+if (cmp.hasIntervals) {
+  overlayChart('grafanaOps', cmp.intervalLabels, cmp.baseIOPSOver, cmp.headIOPSOver, cmp.opsLabel, '');
+  overlayChart('grafanaMbps', cmp.intervalLabels, cmp.baseMbpsOver, cmp.headMbpsOver, 'MB/s', '');
+  overlayChart('grafanaLat', cmp.intervalLabels, cmp.baseLatOver, cmp.headLatOver, 'µs', '');
+}
+new Chart(document.getElementById('cmpThroughput'), {type:'bar',data:{
+  labels:['Base','Candidate'],
+  datasets:[
+    {label:cmp.opsLabel,data:[cmp.baseIOPS,cmp.headIOPS],backgroundColor:palette[0]+'bb'},
+    {label:'MB/s',data:[cmp.baseMBps,cmp.headMBps],backgroundColor:palette[1]+'bb'}
+  ]},options:baseOpts});
+new Chart(document.getElementById('cmpLatency'), {type:'bar',data:{
+  labels:['p50','p99','max'],
+  datasets:[
+    {label:'Base µs',data:[cmp.baseP50,cmp.baseP99,cmp.baseMax],backgroundColor:palette[0]+'bb'},
+    {label:'Candidate µs',data:[cmp.headP50,cmp.headP99,cmp.headMax],backgroundColor:palette[2]+'bb'}
+  ]},options:baseOpts});
+new Chart(document.getElementById('cmpDelta'), {type:'bar',data:{
+  labels:cmp.deltaLabels,
+  datasets:[{label:'Δ%',data:cmp.deltaPcts,backgroundColor:cmp.deltaPcts.map(v=>v>=0?palette[0]+'bb':palette[3]+'bb')}]
+},options:{...baseOpts,plugins:{legend:{display:false}}}});
+</script>
+</body>
+</html>

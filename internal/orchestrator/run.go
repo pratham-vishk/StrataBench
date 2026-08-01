@@ -18,6 +18,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/inventory"
 	"github.com/pratham-vishk/stratabench/internal/metrics"
 	"github.com/pratham-vishk/stratabench/internal/profile"
+	"github.com/pratham-vishk/stratabench/internal/provenance"
 	"github.com/pratham-vishk/stratabench/internal/remote"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 	"github.com/pratham-vishk/stratabench/internal/store"
@@ -38,6 +39,9 @@ type RunOptions struct {
 	CacheBytes    int64
 	WorkDir       string
 	DataDir       string
+	GitRepo       string
+	BuildCmd      string
+	Provenance    schema.Provenance
 }
 
 type Service struct {
@@ -252,6 +256,15 @@ func (s *Service) saveRun(
 		meta["targets"] = strings.Join(allTargets, ",")
 	}
 
+	prov := opts.Provenance
+	if prov.ToolVersion == "" && prov.GitBranch == "" {
+		repo := opts.GitRepo
+		if repo == "" {
+			repo = opts.WorkDir
+		}
+		prov = provenance.Capture(repo, opts.BuildCmd, "")
+	}
+
 	run := &schema.RunResult{
 		SchemaVersion: schema.SchemaVersion,
 		RunID:         runID,
@@ -260,6 +273,7 @@ func (s *Service) saveRun(
 		Engine:        engineName,
 		Status:        "completed",
 		Mock:          opts.Mock,
+		Provenance:    prov,
 		Validation:    validation,
 		Topology:      topologyMode,
 		Target: schema.Target{

@@ -5,87 +5,33 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
-type reportData struct {
-	*schema.RunResult
-	Insights []analyst.Insight
-	Summary  string
-}
-
-const htmlTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>StrataBench Report — {{.RunID}}</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; background: #0f1419; color: #e7ecf3; }
-    h1 { color: #5eead4; }
-    .meta { color: #94a3b8; margin-bottom: 1.5rem; }
-    table { border-collapse: collapse; width: 100%; max-width: 720px; }
-    th, td { border: 1px solid #334155; padding: 0.5rem 0.75rem; text-align: left; }
-    th { background: #1e293b; }
-    .ok { color: #4ade80; }
-    .warn { color: #fbbf24; }
-    .critical { color: #f87171; }
-    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; background: #1e3a5f; font-size: 0.85rem; }
-    .summary { background: #1e293b; padding: 1rem; border-radius: 8px; margin: 1rem 0; max-width: 720px; }
-    .insight { margin: 0.4rem 0; }
-  </style>
-</head>
-<body>
-  <h1>StrataBench Report</h1>
-  <p class="meta">
-    Run <code>{{.RunID}}</code> · Profile <strong>{{.Profile}}</strong> ·
-    Engine <span class="badge">{{.Engine}}</span>
-    {{if .Mock}}<span class="badge">MOCK</span>{{end}}
-  </p>
-  {{if .Summary}}<div class="summary">{{.Summary}}</div>{{end}}
-  {{if .Insights}}<h2>Analyst</h2>
-  {{range .Insights}}<p class="insight {{.Severity}}">[{{.Severity}}/{{.Type}}] {{.Message}}</p>{{end}}{{end}}
-  <h2>Validation</h2>
-  <p class="{{if .Validation.Passed}}ok{{else}}warn{{end}}">
-    {{if .Validation.Passed}}Passed{{else}}Failed{{end}} — checked: {{range $i, $r := .Validation.RulesChecked}}{{if $i}}, {{end}}{{$r}}{{end}}
-  </p>
-  {{if .Validation.Errors}}<ul>{{range .Validation.Errors}}<li class="warn">{{.}}</li>{{end}}</ul>{{end}}
-  <h2>Results</h2>
-  <table>
-    <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>IOPS</td><td>{{printf "%.0f" .Results.IOPS}}</td></tr>
-    <tr><td>Throughput (MB/s)</td><td>{{printf "%.2f" .Results.ThroughputMBps}}</td></tr>
-    <tr><td>Latency p50 (µs)</td><td>{{printf "%.1f" .Results.LatencyUS.P50}}</td></tr>
-    <tr><td>Latency p95 (µs)</td><td>{{printf "%.1f" .Results.LatencyUS.P95}}</td></tr>
-    <tr><td>Latency p99 (µs)</td><td>{{printf "%.1f" .Results.LatencyUS.P99}}</td></tr>
-    <tr><td>Latency p99.9 (µs)</td><td>{{printf "%.1f" .Results.LatencyUS.P999}}</td></tr>
-    <tr><td>CPU %</td><td>{{printf "%.1f" .Results.CPUPercent}}</td></tr>
-  </table>
-  <h2>Target</h2>
-  <table>
-    <tr><th>Layer</th><td>{{.Layer}}</td></tr>
-    <tr><th>Target</th><td>{{.Target.Device}}</td></tr>
-    <tr><th>Duration</th><td>{{.Workload.DurationSec}}s (ramp {{.Workload.RampTimeSec}}s)</td></tr>
-  </table>
-  {{if .Clients}}<h2>Clients ({{len .Clients}})</h2>
-  <table>
-    <tr><th>Host</th><th>IOPS</th><th>Throughput MB/s</th><th>p99 µs</th></tr>
-    {{range .Clients}}<tr><td>{{.Host}}</td><td>{{printf "%.0f" .Results.IOPS}}</td><td>{{printf "%.2f" .Results.ThroughputMBps}}</td><td>{{printf "%.1f" .Results.LatencyUS.P99}}</td></tr>{{end}}
-  </table>{{end}}
-</body>
-</html>`
-
+// WriteHTML writes a visual report card for a run.
 func WriteHTML(run *schema.RunResult, outPath string) error {
-	return writeHTML(reportData{RunResult: run}, outPath)
+	return WriteHTMLWithOptions(run, Options{}, outPath)
 }
 
+// WriteHTMLWithInsights writes a report card with analyst output.
 func WriteHTMLWithInsights(run *schema.RunResult, insights []analyst.Insight, summary, outPath string) error {
-	return writeHTML(reportData{RunResult: run, Insights: insights, Summary: summary}, outPath)
+	return WriteHTMLWithOptions(run, Options{Insights: insights, Summary: summary}, outPath)
 }
 
-func writeHTML(data reportData, outPath string) error {
-	tmpl, err := template.New("report").Parse(htmlTemplate)
+// WriteHTMLWithOptions writes the full report card.
+func WriteHTMLWithOptions(run *schema.RunResult, opts Options, outPath string) error {
+	cd, err := buildCardData(run, opts)
+	if err != nil {
+		return err
+	}
+	return writeCard(cd, outPath)
+}
+
+func writeCard(data CardData, outPath string) error {
+	tmpl, err := template.New("card").Parse(cardHTMLTemplate + chartScript + chartScriptEnd)
 	if err != nil {
 		return err
 	}
@@ -102,4 +48,32 @@ func writeHTML(data reportData, outPath string) error {
 	}
 	fmt.Printf("report written: %s\n", outPath)
 	return nil
+}
+
+// OpenInBrowser opens the report file in the default browser (best-effort).
+func OpenInBrowser(path string) error {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	var cmd string
+	var args []string
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start", "", abs}
+	case "darwin":
+		cmd = "open"
+		args = []string{abs}
+	default:
+		cmd = "xdg-open"
+		args = []string{abs}
+	}
+	return execOpen(cmd, args...)
+}
+
+// execOpen is overridden in tests.
+var execOpen = func(name string, arg ...string) error {
+	// use os/exec without importing in signature for testability - import exec in open_unix.go style
+	return openBrowser(name, arg...)
 }

@@ -1,0 +1,540 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "sample-multi-node-001",
+  "profile": "nvme-random-oltp",
+  "layer": "block",
+  "engine": "fio",
+  "status": "completed",
+  "mock": true,
+  "validation": {
+    "passed": true,
+    "rules_checked": [
+      "mock"
+    ],
+    "warnings": null
+  },
+  "target": {
+    "type": "block",
+    "device": "/dev/nvme0n1",
+    "host": "storage-node-01.dell.lab",
+    "vm": null
+  },
+  "workload": {
+    "pattern": "random",
+    "block_size": "4k",
+    "read_write_mix": 70,
+    "queue_depth": 32,
+    "threads": 8,
+    "duration_sec": 600,
+    "ramp_time_sec": 60,
+    "direct_io": true
+  },
+  "results": {
+    "iops": 248500,
+    "read_iops": 174000,
+    "write_iops": 74500,
+    "throughput_mbps": 969.1,
+    "ops_per_sec": 248500,
+    "latency_us": {
+      "min": 18.2,
+      "max": 3200,
+      "mean": 142.5,
+      "p50": 118,
+      "p75": 165.4,
+      "p90": 210.8,
+      "p95": 285.6,
+      "p99": 412.3,
+      "p99_9": 890.1,
+      "p99_99": 1840
+    },
+    "percentiles": {
+      "p10": 106.2,
+      "p15": 106.2,
+      "p20": 106.2,
+      "p25": 106.2,
+      "p30": 106.2,
+      "p35": 106.2,
+      "p40": 106.2,
+      "p45": 106.2,
+      "p5": 106.2,
+      "p50": 118,
+      "p55": 106.2,
+      "p60": 106.2,
+      "p65": 106.2,
+      "p70": 106.2,
+      "p75": 106.2,
+      "p80": 106.2,
+      "p85": 106.2,
+      "p90": 106.2,
+      "p92.5": 106.2,
+      "p95": 106.2,
+      "p97.5": 106.2,
+      "p99": 587.4659999999999,
+      "p99.25": 640.872,
+      "p99.5": 623.0699999999999,
+      "p99.75": 640.872,
+      "p99.9": 623.0699999999999,
+      "p99.95": 640.872,
+      "p99.99": 640.872
+    },
+    "percentile_counts": {
+      "p10": 1491000,
+      "p15": 1491000,
+      "p20": 1491000,
+      "p25": 1491000,
+      "p30": 1491000,
+      "p35": 1491000,
+      "p40": 1491000,
+      "p45": 1491000,
+      "p5": 1491000,
+      "p50": 1491000,
+      "p55": 1491000,
+      "p60": 1491000,
+      "p65": 1491000,
+      "p70": 1491000,
+      "p75": 1491000,
+      "p80": 1491000,
+      "p85": 1491000,
+      "p90": 1491000,
+      "p92.5": 1491000,
+      "p95": 1491000,
+      "p97.5": 1491000,
+      "p99": 1491000,
+      "p99.25": 1491000,
+      "p99.5": 1491000,
+      "p99.75": 1491000,
+      "p99.9": 1491000,
+      "p99.95": 1491000,
+      "p99.99": 1491000
+    },
+    "intervals": [
+      {
+        "seq": 1,
+        "timestamp": "2026-08-01T08:51:42.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 228620,
+        "read_iops": 160034,
+        "write_iops": 68586,
+        "throughput_mbps": 891.5720000000001,
+        "avg_latency_us": 108.56,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 2,
+        "timestamp": "2026-08-01T08:51:47.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 233590,
+        "read_iops": 163513,
+        "write_iops": 70077,
+        "throughput_mbps": 910.9540000000001,
+        "avg_latency_us": 110.92,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 3,
+        "timestamp": "2026-08-01T08:51:52.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 238560.00000000003,
+        "read_iops": 166992,
+        "write_iops": 71568,
+        "throughput_mbps": 930.3360000000001,
+        "avg_latency_us": 113.28000000000002,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 4,
+        "timestamp": "2026-08-01T08:51:57.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 243530,
+        "read_iops": 170471,
+        "write_iops": 73059,
+        "throughput_mbps": 949.718,
+        "avg_latency_us": 115.64,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 5,
+        "timestamp": "2026-08-01T08:52:02.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 248500,
+        "read_iops": 173950,
+        "write_iops": 74550,
+        "throughput_mbps": 969.1,
+        "avg_latency_us": 118,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 6,
+        "timestamp": "2026-08-01T08:52:07.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 228620,
+        "read_iops": 160034,
+        "write_iops": 68586,
+        "throughput_mbps": 891.5720000000001,
+        "avg_latency_us": 108.56,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 7,
+        "timestamp": "2026-08-01T08:52:12.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 233590,
+        "read_iops": 163513,
+        "write_iops": 70077,
+        "throughput_mbps": 910.9540000000001,
+        "avg_latency_us": 110.92,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 8,
+        "timestamp": "2026-08-01T08:52:17.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 238560.00000000003,
+        "read_iops": 166992,
+        "write_iops": 71568,
+        "throughput_mbps": 930.3360000000001,
+        "avg_latency_us": 113.28000000000002,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 9,
+        "timestamp": "2026-08-01T08:52:22.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 243530,
+        "read_iops": 170471,
+        "write_iops": 73059,
+        "throughput_mbps": 949.718,
+        "avg_latency_us": 115.64,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 10,
+        "timestamp": "2026-08-01T08:52:27.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 248500,
+        "read_iops": 173950,
+        "write_iops": 74550,
+        "throughput_mbps": 969.1,
+        "avg_latency_us": 118,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 11,
+        "timestamp": "2026-08-01T08:52:32.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 228620,
+        "read_iops": 160034,
+        "write_iops": 68586,
+        "throughput_mbps": 891.5720000000001,
+        "avg_latency_us": 108.56,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 12,
+        "timestamp": "2026-08-01T08:52:37.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 233590,
+        "read_iops": 163513,
+        "write_iops": 70077,
+        "throughput_mbps": 910.9540000000001,
+        "avg_latency_us": 110.92,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 13,
+        "timestamp": "2026-08-01T08:52:42.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 238560.00000000003,
+        "read_iops": 166992,
+        "write_iops": 71568,
+        "throughput_mbps": 930.3360000000001,
+        "avg_latency_us": 113.28000000000002,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 14,
+        "timestamp": "2026-08-01T08:52:47.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 243530,
+        "read_iops": 170471,
+        "write_iops": 73059,
+        "throughput_mbps": 949.718,
+        "avg_latency_us": 115.64,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 15,
+        "timestamp": "2026-08-01T08:52:52.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 248500,
+        "read_iops": 173950,
+        "write_iops": 74550,
+        "throughput_mbps": 969.1,
+        "avg_latency_us": 118,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 16,
+        "timestamp": "2026-08-01T08:52:57.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 228620,
+        "read_iops": 160034,
+        "write_iops": 68586,
+        "throughput_mbps": 891.5720000000001,
+        "avg_latency_us": 108.56,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 17,
+        "timestamp": "2026-08-01T08:53:02.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 233590,
+        "read_iops": 163513,
+        "write_iops": 70077,
+        "throughput_mbps": 910.9540000000001,
+        "avg_latency_us": 110.92,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 18,
+        "timestamp": "2026-08-01T08:53:07.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 238560.00000000003,
+        "read_iops": 166992,
+        "write_iops": 71568,
+        "throughput_mbps": 930.3360000000001,
+        "avg_latency_us": 113.28000000000002,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 19,
+        "timestamp": "2026-08-01T08:53:12.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 243530,
+        "read_iops": 170471,
+        "write_iops": 73059,
+        "throughput_mbps": 949.718,
+        "avg_latency_us": 115.64,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 20,
+        "timestamp": "2026-08-01T08:53:17.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 248500,
+        "read_iops": 173950,
+        "write_iops": 74550,
+        "throughput_mbps": 969.1,
+        "avg_latency_us": 118,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 21,
+        "timestamp": "2026-08-01T08:53:22.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 228620,
+        "read_iops": 160034,
+        "write_iops": 68586,
+        "throughput_mbps": 891.5720000000001,
+        "avg_latency_us": 108.56,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 22,
+        "timestamp": "2026-08-01T08:53:27.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 233590,
+        "read_iops": 163513,
+        "write_iops": 70077,
+        "throughput_mbps": 910.9540000000001,
+        "avg_latency_us": 110.92,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 23,
+        "timestamp": "2026-08-01T08:53:32.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 238560.00000000003,
+        "read_iops": 166992,
+        "write_iops": 71568,
+        "throughput_mbps": 930.3360000000001,
+        "avg_latency_us": 113.28000000000002,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      },
+      {
+        "seq": 24,
+        "timestamp": "2026-08-01T08:53:37.9711993Z",
+        "elapsed_sec": 5,
+        "iops": 243530,
+        "read_iops": 170471,
+        "write_iops": 73059,
+        "throughput_mbps": 949.718,
+        "avg_latency_us": 115.64,
+        "min_latency_us": 47.2,
+        "max_latency_us": 354
+      }
+    ],
+    "cpu_percent": 42.3,
+    "total_bytes_read": 600000000000,
+    "total_bytes_written": 257000000000,
+    "total_operations": 149100000
+  },
+  "hardware_snapshot": {
+    "hostname": "storage-node-01.dell.lab",
+    "cpu_model": "Intel Xeon Platinum 8480+",
+    "cpu_cores": 56,
+    "memory_bytes": 549755813888,
+    "os": "RHEL 9.4",
+    "arch": "x86_64"
+  },
+  "timestamps": {
+    "started_at": "2026-08-01T08:39:42.9711993Z",
+    "completed_at": "2026-08-01T08:51:42.9711993Z"
+  },
+  "clients": [
+    {
+      "host": "client-01.dell.lab",
+      "target": "storage-node-01.dell.lab:/dev/nvme0n1",
+      "results": {
+        "iops": 83500,
+        "read_iops": 58449.99999999999,
+        "write_iops": 25050,
+        "throughput_mbps": 325.2,
+        "ops_per_sec": 83500,
+        "latency_us": {
+          "min": 44.8,
+          "max": 3136,
+          "mean": 143.36,
+          "p50": 128,
+          "p75": 175,
+          "p90": 245,
+          "p95": 285,
+          "p99": 445,
+          "p99_9": 980,
+          "p99_99": 1862
+        },
+        "cpu_percent": 46.35
+      }
+    },
+    {
+      "host": "client-02.dell.lab",
+      "target": "storage-node-01.dell.lab:/dev/nvme0n1",
+      "results": {
+        "iops": 82100,
+        "read_iops": 57469.99999999999,
+        "write_iops": 24630,
+        "throughput_mbps": 319.8,
+        "ops_per_sec": 82100,
+        "latency_us": {
+          "min": 42.699999999999996,
+          "max": 2944,
+          "mean": 136.64000000000001,
+          "p50": 122,
+          "p75": 168,
+          "p90": 238,
+          "p95": 275,
+          "p99": 428,
+          "p99_9": 920,
+          "p99_99": 1748
+        },
+        "cpu_percent": 46.21
+      }
+    },
+    {
+      "host": "client-03.dell.lab",
+      "target": "storage-node-02.dell.lab:/dev/nvme0n1",
+      "results": {
+        "iops": 82900,
+        "read_iops": 58029.99999999999,
+        "write_iops": 24870,
+        "throughput_mbps": 323.1,
+        "ops_per_sec": 82900,
+        "latency_us": {
+          "min": 43.75,
+          "max": 3040,
+          "mean": 140,
+          "p50": 125,
+          "p75": 172,
+          "p90": 252,
+          "p95": 290,
+          "p99": 438,
+          "p99_9": 950,
+          "p99_99": 1805
+        },
+        "cpu_percent": 46.29
+      }
+    }
+  ],
+  "targets": [
+    {
+      "target": "storage-node-01.dell.lab",
+      "results": {
+        "iops": 165600,
+        "read_iops": 115919.99999999999,
+        "write_iops": 49680,
+        "throughput_mbps": 646.9,
+        "ops_per_sec": 165600,
+        "latency_us": {
+          "min": 37.8,
+          "max": 2624,
+          "mean": 120.96000000000001,
+          "p50": 108,
+          "p75": 148,
+          "p90": 198,
+          "p95": 240,
+          "p99": 380,
+          "p99_9": 820,
+          "p99_99": 1558
+        },
+        "cpu_percent": 54.56
+      }
+    },
+    {
+      "target": "storage-node-02.dell.lab",
+      "results": {
+        "iops": 82900,
+        "read_iops": 58029.99999999999,
+        "write_iops": 24870,
+        "throughput_mbps": 323.1,
+        "ops_per_sec": 82900,
+        "latency_us": {
+          "min": 39.199999999999996,
+          "max": 2816,
+          "mean": 125.44000000000001,
+          "p50": 112,
+          "p75": 155,
+          "p90": 205,
+          "p95": 248,
+          "p99": 395,
+          "p99_9": 880,
+          "p99_99": 1672
+        },
+        "cpu_percent": 46.29
+      }
+    }
+  ],
+  "topology": "distributed"
+}

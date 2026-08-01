@@ -3,11 +3,9 @@ package agentloop
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/pratham-vishk/stratabench/internal/analyst"
 	"github.com/pratham-vishk/stratabench/internal/discovery"
-	"github.com/pratham-vishk/stratabench/internal/export"
 	"github.com/pratham-vishk/stratabench/internal/llm"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
@@ -37,6 +35,7 @@ type Options struct {
 	OllamaURL     string
 	OllamaModel   string
 	DataDir       string
+	OpenReport    bool
 }
 
 type Result struct {
@@ -46,6 +45,7 @@ type Result struct {
 	Run        *schema.RunResult
 	Insights   []analyst.Insight
 	ReportPath string
+	ExcelPath  string
 	JSONPath   string
 	Summary    string
 }
@@ -160,9 +160,6 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	insights := analyst.Analyze(run, regression)
 	analyst.PrintInsights(insights)
 
-	reportPath := filepath.Join(paths.ReportsDir(), run.RunID+".html")
-	jsonPath := filepath.Join(paths.ReportsDir(), run.RunID+".json")
-
 	fmt.Println("→ Reporting...")
 	summary := reporter.Summarize(ctx, run, insights, reporter.SummaryOptions{
 		UseLLM:      opts.UseLLM || opts.UseOllama,
@@ -171,13 +168,17 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		OllamaURL:   opts.OllamaURL,
 		OllamaModel: opts.OllamaModel,
 	})
-	if err := report.WriteHTMLWithInsights(run, insights, summary, reportPath); err != nil {
+	arts, err := report.WriteRunArtifacts(run, report.OptionsFromAnalysis(insights, summary, regression))
+	if err != nil {
 		return nil, err
 	}
-	_ = export.WriteJSON(run, jsonPath)
 
 	fmt.Printf("\n%s\n", summary)
-	fmt.Printf("Report: %s\n", reportPath)
+	fmt.Printf("Report: %s\n", arts.HTML)
+	fmt.Printf("Excel:  %s\n", arts.Excel)
+	if opts.OpenReport {
+		_ = report.OpenInBrowser(arts.HTML)
+	}
 
 	return &Result{
 		Plan:       plan,
@@ -185,8 +186,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		Validation: validation,
 		Run:        run,
 		Insights:   insights,
-		ReportPath: reportPath,
-		JSONPath:   jsonPath,
+		ReportPath: arts.HTML,
+		ExcelPath:  arts.Excel,
+		JSONPath:   arts.JSON,
 		Summary:    summary,
 	}, nil
 }

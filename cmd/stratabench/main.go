@@ -50,6 +50,7 @@ var (
 	ollamaURL     string
 	ollamaModel   string
 	assumeDefaults bool
+	openReport     bool
 )
 
 func main() {
@@ -66,6 +67,9 @@ func main() {
 		exportCmd(),
 		runsCmd(),
 		compareCmd(),
+		initCmd(),
+		sampleCmd(),
+		sampleCompareCmd(),
 		crossLayerCmd(),
 		importCmd(),
 		baselineCmd(),
@@ -75,6 +79,7 @@ func main() {
 		agentCmd(),
 		planCmd(),
 		guideCmd(),
+		labCmd(),
 		profilesCmd(),
 		versionCmd(),
 	)
@@ -193,20 +198,27 @@ func runCmd() *cobra.Command {
 				CheckHardware: checkHardware,
 				CacheBytes:    cacheBytes,
 				DataDir:       paths.DataDir(),
+				GitRepo:       compare.DefaultRepo(""),
 			})
 			if err != nil {
 				return err
 			}
 
-			out := filepath.Join(paths.ReportsDir(), run.RunID+".html")
-			if err := report.WriteHTML(run, out); err != nil {
+			alerts := []baseline.Alert{}
+			if checkBaseline {
+				alerts = svc.CheckRegression(run)
+				baseline.PrintAlerts(alerts)
+			}
+			arts, err := report.WriteRunArtifacts(run, report.Options{Alerts: alerts})
+			if err != nil {
 				return err
 			}
-			_ = export.WriteJSON(run, filepath.Join(paths.ReportsDir(), run.RunID+".json"))
 
 			printRunSummary(run)
-			if checkBaseline {
-				baseline.PrintAlerts(svc.CheckRegression(run))
+			fmt.Printf("Report:  %s\n", arts.HTML)
+			fmt.Printf("Excel:   %s\n", arts.Excel)
+			if openReport {
+				_ = report.OpenInBrowser(arts.HTML)
 			}
 			return nil
 		},
@@ -220,15 +232,17 @@ func runCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", false, "Compare results against stored baseline after run")
 	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
+	cmd.Flags().BoolVar(&openReport, "open-report", false, "Open HTML report in browser after run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	_ = cmd.MarkFlagRequired("profile")
 	return cmd
 }
 
 func reportCmd() *cobra.Command {
+	var withExcel bool
 	cmd := &cobra.Command{
 		Use:   "report",
-		Short: "Generate HTML report for a completed run",
+		Short: "Generate visual report card for a completed run",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runID == "" {
 				return fmt.Errorf("--run-id is required")
@@ -242,35 +256,101 @@ func reportCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return report.WriteHTML(run, filepath.Join(paths.ReportsDir(), run.RunID+".html"))
+			alerts := svc.CheckRegression(run)
+			insights := analyst.Analyze(run, alerts)
+			arts, err := report.WriteRunArtifacts(run, report.OptionsFromAnalysis(insights, "", alerts))
+			if err != nil {
+				return err
+			}
+			if withExcel {
+				fmt.Printf("Excel: %s\n", arts.Excel)
+			}
+			if openReport {
+				return report.OpenInBrowser(arts.HTML)
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringVar(&runID, "run-id", "", "Run UUID")
+	cmd.Flags().BoolVar(&withExcel, "excel", true, "Also write Excel workbook")
+	cmd.Flags().BoolVar(&openReport, "open", false, "Open report in browser")
 	return cmd
 }
 
 func exportCmd() *cobra.Command {
+	var profileFilter string
+	var lastN int
 	cmd := &cobra.Command{
 		Use:   "export",
-		Short: "Export run result as JSON",
+		Short: "Export run results (JSON or Excel)",
+	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "json",
+		Short: "Export single run as JSON",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if runID == "" {
-				return fmt.Errorf("--run-id is required")
-			}
-			svc, err := newService()
-			if err != nil {
-				return err
-			}
-			defer svc.Close()
-			run, err := svc.Store.Get(runID)
+			run, err := loadRunForExport()
 			if err != nil {
 				return err
 			}
 			return export.WriteJSON(run, filepath.Join(paths.ReportsDir(), run.RunID+".json"))
 		},
-	}
-	cmd.Flags().StringVar(&runID, "run-id", "", "Run UUID")
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "excel",
+		Short: "Export run(s) as styled Excel workbook",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			svc, err := newService()
+			if err != nil {
+				return err
+			}
+			defer svc.Close()
+			if profileFilter != "" && lastN > 0 {
+				runs, err := svc.Store.List(lastN * 3)
+				if err != nil {
+					return err
+				}
+				var filtered []*schema.RunResult
+				for i := range runs {
+					if runs[i].Profile == profileFilter {
+						filtered = append(filtered, &runs[i])
+					}
+					if len(filtered) >= lastN {
+						break
+					}
+				}
+				if len(filtered) == 0 {
+					return fmt.Errorf("no runs for profile %q", profileFilter)
+				}
+				out := filepath.Join(paths.ReportsDir(), profileFilter+"-history.xlsx")
+				if err := export.WriteExcelRuns(filtered, out); err != nil {
+					return err
+				}
+				fmt.Printf("excel history: %s\n", out)
+				return nil
+			}
+			run, err := loadRunForExport()
+			if err != nil {
+				return err
+			}
+			return export.WriteExcel(run, filepath.Join(paths.ReportsDir(), run.RunID+".xlsx"))
+		},
+	})
+	cmd.PersistentFlags().StringVar(&runID, "run-id", "", "Run UUID (single export)")
+	cmd.PersistentFlags().StringVar(&profileFilter, "profile", "", "Profile name for history export")
+	cmd.PersistentFlags().IntVar(&lastN, "last", 0, "Export last N runs of --profile")
 	return cmd
+}
+
+func loadRunForExport() (*schema.RunResult, error) {
+	if runID == "" {
+		return nil, fmt.Errorf("--run-id is required")
+	}
+	svc, err := newService()
+	if err != nil {
+		return nil, err
+	}
+	defer svc.Close()
+	return svc.Store.Get(runID)
 }
 
 func runsCmd() *cobra.Command {
@@ -301,9 +381,16 @@ func runsCmd() *cobra.Command {
 }
 
 func compareCmd() *cobra.Command {
+	var writeReport bool
 	cmd := &cobra.Command{
 		Use:   "compare",
-		Short: "Compare two completed runs",
+		Short: "Compare two completed runs or git branches",
+	}
+	cmd.AddCommand(compareBranchesCmd())
+
+	runCompare := &cobra.Command{
+		Use:   "runs",
+		Short: "Compare two completed runs by ID",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runID == "" || runIDB == "" {
 				return fmt.Errorf("--run-id and --run-id-b are required")
@@ -321,12 +408,25 @@ func compareCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			diff := compare.Diff(a, b)
 			compare.Print(a, b)
+			if writeReport {
+				path, err := report.WriteCompareArtifacts(a, b, diff)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Compare report: %s\n", path)
+				if openReport {
+					_ = report.OpenInBrowser(path)
+				}
+			}
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&runID, "run-id", "", "First run UUID")
-	cmd.Flags().StringVar(&runIDB, "run-id-b", "", "Second run UUID")
+	runCompare.Flags().StringVar(&runID, "run-id", "", "Base run UUID")
+	runCompare.Flags().StringVar(&runIDB, "run-id-b", "", "Head run UUID")
+	runCompare.Flags().BoolVar(&writeReport, "report", true, "Write HTML compare report")
+	cmd.AddCommand(runCompare)
 	return cmd
 }
 
@@ -363,7 +463,8 @@ func crossLayerCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("%s: %w", name, err)
 				}
-				_ = report.WriteHTML(run, filepath.Join(paths.ReportsDir(), run.RunID+".html"))
+				arts, _ := report.WriteRunArtifacts(run, report.OptionsFromRun(run))
+				_ = arts
 				runs = append(runs, run)
 				fmt.Printf("  %s (%s): IOPS=%.0f p99=%.0fµs\n", name, p.Layer, run.Results.IOPS, run.Results.LatencyUS.P99)
 			}
@@ -402,7 +503,11 @@ func importCmd() *cobra.Command {
 				if err := svc.Store.Save(run); err != nil {
 					return err
 				}
-				fmt.Printf("imported run %s profile=%s IOPS=%.0f\n", run.RunID, run.Profile, run.Results.IOPS)
+				xlsx := filepath.Join(paths.ReportsDir(), run.RunID+".xlsx")
+				if err := export.WriteExcel(run, xlsx); err != nil {
+					return err
+				}
+				fmt.Printf("imported run %s profile=%s IOPS=%.0f excel=%s\n", run.RunID, run.Profile, run.Results.IOPS, xlsx)
 			}
 			return nil
 		},
@@ -732,6 +837,7 @@ func agentCmd() *cobra.Command {
 				LLM:           llm.FromEnv(),
 				OllamaURL:     ollamaURL,
 				OllamaModel:   ollamaModel,
+				OpenReport:    openReport,
 			})
 			return err
 		},
@@ -745,6 +851,7 @@ func agentCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&checkBaseline, "check-baseline", true, "Compare against stored baseline")
 	cmd.Flags().BoolVar(&checkHardware, "check-hardware", true, "Validate host tools and devices before run")
 	cmd.Flags().BoolVar(&assumeDefaults, "yes", false, "Proceed with recommendations despite open questions")
+	cmd.Flags().BoolVar(&openReport, "open-report", true, "Open HTML report in browser after run")
 	cmd.Flags().Int64Var(&cacheBytes, "cache-bytes", 0, "Assumed cache bytes for validation")
 	cmd.Flags().BoolVar(&useLLM, "llm", false, "Use LLM planner and reporter")
 	cmd.Flags().BoolVar(&useOllama, "ollama", false, "Alias for --llm")

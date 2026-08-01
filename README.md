@@ -81,6 +81,7 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 - **MCP server** — `stratabench-mcp` exposes 7 tools for Cursor, Claude, and other CLI models
 - **LLM planner** — Ollama or OpenAI-compatible APIs; keyword fallback
 - **Regression tracking** — explicit baselines + 30-day rolling comparison
+- **Branch compare** — benchmark two git branches, HTML impact report (`compare branches`)
 - **Hardware inventory** — NVMe model, firmware, block devices, SMART history
 - **REST API** + **Prometheus metrics** + **Grafana dashboard**
 - **Kubernetes** — CRD, in-cluster operator, DaemonSet agents, CronJobs
@@ -97,6 +98,7 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 git clone https://github.com/pratham-vishk/StrataBench.git
 cd StrataBench
 make build
+stratabench init
 ```
 
 Or pull the container:
@@ -114,6 +116,10 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 
 # Mock run — works on Windows, macOS, Linux
 ./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock
+
+# Sample benchmark — same flow, copies HTML/Excel/JSON to examples/sample-report/output/
+./bin/stratabench sample --open-report
+# or: make sample
 
 # Full agentic loop
 ./bin/stratabench agent "ssd random 4k workload" --target /tmp/test --mock
@@ -261,7 +267,8 @@ kubectl get benchmarks -n stratabench -w
 | `analyze` | Tail latency, variance, regression insights |
 | `cross-layer` | Multi-profile bottleneck analysis |
 | `import sbk` | Import SBK CSV results |
-| `compare` | Compare two runs |
+| `compare` | Compare runs (`compare runs`) or git branches (`compare branches`) |
+| `init` | Create `.stratabench` data directories |
 | `report` | Generate HTML report |
 
 Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` · `--mock` · `--check-baseline` · `--ollama`
@@ -275,6 +282,7 @@ Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` �
 | [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) | Every engine × physical/virtual matrix |
 | [TOPOLOGY.md](docs/TOPOLOGY.md) | Multi-client / multi-server patterns |
 | [DEV.md](docs/DEV.md) | Build, test, full CLI reference |
+| [BRANCH-COMPARE.md](docs/BRANCH-COMPARE.md) | Compare two code branches with benchmarks |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
 | [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM cluster setup |
 | [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Hardware sign-off checklist |

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pratham-vishk/stratabench/internal/metrics"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
@@ -45,6 +46,7 @@ func (f *FioRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sch
 	if err != nil {
 		return nil, nil, err
 	}
+	attachFioIntervals(res, in.WorkDir, fioLogPrefixBase(in.WorkDir))
 	return res, &schema.RawEngineOutput{Path: outPath, Format: "fio-json"}, nil
 }
 
@@ -76,14 +78,14 @@ group_reporting=1
 filename=%s
 ramp_time=%d
 percentile_list=%s
-
+%s
 [job]
 rw=%s
 bs=%s
 iodepth=%d
 numjobs=%d
 size=%s
-`, ioengine, direct, runtime, filename, ramp, plist, pattern, bs, iodepth, numjobs, size)
+`, ioengine, direct, runtime, filename, ramp, plist, fioJobLogSection(in.WorkDir, runtime), pattern, bs, iodepth, numjobs, size)
 
 	if strings.Contains(pattern, "rw") {
 		job += fmt.Sprintf("rwmixread=%d\n", rwmix)
@@ -141,11 +143,21 @@ func parseFioJSON(raw []byte) (*schema.Results, error) {
 		clat = job.Write.ClatNS
 	}
 
+	percentiles := map[string]float64{}
+	for k, v := range clat.Percentile {
+		key := metrics.NormalizePercentileKey(k)
+		if key == "" {
+			continue
+		}
+		percentiles[key] = v / 1000
+	}
+
 	res := &schema.Results{
 		IOPS:           totalIOPS,
 		ReadIOPS:       readIOPS,
 		WriteIOPS:      writeIOPS,
 		ThroughputMBps: bw,
+		Percentiles:    percentiles,
 		LatencyUS: schema.LatencyUS{
 			Min:  clat.Min / 1000,
 			Max:  clat.Max / 1000,
@@ -156,5 +168,6 @@ func parseFioJSON(raw []byte) (*schema.Results, error) {
 			P999: clat.Percentile["99.900000"] / 1000,
 		},
 	}
+	metrics.PopulateLatencyUS(&res.LatencyUS, percentiles)
 	return res, nil
 }

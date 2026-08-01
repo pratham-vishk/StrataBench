@@ -46,7 +46,13 @@ curl -X POST http://localhost:8080/api/v1/runs \
 curl http://localhost:8080/metrics
 ```
 
-Grafana dashboard: `deploy/grafana/stratabench-dashboard.json`
+# After a run, open the visual report card
+./bin/stratabench report --run-id <uuid> --open
+./bin/stratabench export excel --run-id <uuid>
+./bin/stratabench export excel --profile nvme-random-oltp --last 10
+
+Reports live in `.stratabench/reports/` as `.html`, `.xlsx`, and `.json`.
+See [LAB-BOOTSTRAP.md](LAB-BOOTSTRAP.md) for cluster workflows.
 
 ## Distributed mode (Phase 2)
 

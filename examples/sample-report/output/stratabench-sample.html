@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StrataBench — nvme-random-oltp</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14; --card: #141a22; --border: #243044;
+      --text: #e8eef7; --muted: #8b9cb3; --accent: #2dd4bf;
+      --good: #4ade80; --bad: #f87171; --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      margin: 0; padding: 2rem;
+      background: radial-gradient(ellipse at top, #121820 0%, var(--bg) 55%);
+      color: var(--text); line-height: 1.5;
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; }
+    header { margin-bottom: 1.5rem; }
+    h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .badge {
+      padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border); background: var(--card);
+    }
+    .badge.pass { border-color: #166534; color: var(--good); background: #052e1620; }
+    .badge.fail { border-color: #7f1d1d; color: var(--bad); }
+    .badge.mock { border-color: #713f12; color: var(--warn); }
+    .badge.engine { color: var(--accent); }
+  .badge.role-client { color: #60a5fa; }
+  .badge.role-target { color: #f472b6; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .stat {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+    .stat-label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-value { font-size: 2rem; font-weight: 700; margin: 0.25rem 0; font-variant-numeric: tabular-nums; }
+    .stat-delta { font-size: 0.85rem; }
+    .stat-delta.good { color: var(--good); }
+    .stat-delta.bad { color: var(--bad); }
+    .stat-delta.neutral { color: var(--muted); }
+    .panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .panel h2 {
+      font-size: 0.85rem; margin: 0 0 1rem; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .section-title {
+      font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+    }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .charts.single { grid-template-columns: 1fr; }
+    @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+    .chart-box { position: relative; height: 300px; }
+    .chart-box.tall { height: 360px; }
+    .summary {
+      background: linear-gradient(135deg, #1a2332 0%, #141a22 100%);
+      border-left: 3px solid var(--accent); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0;
+      margin-bottom: 1rem; font-size: 0.95rem;
+    }
+    .insight { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .insight:last-child { border: none; }
+    .insight.info { color: var(--muted); }
+    .insight.warning { color: var(--warn); }
+    .insight.critical { color: var(--bad); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td { padding: 0.45rem 0.6rem; text-align: right; border-bottom: 1px solid var(--border); }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-weight: 500; white-space: nowrap; }
+    td { font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; }
+    footer { margin-top: 2rem; color: var(--muted); font-size: 0.75rem; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>nvme-random-oltp</h1>
+    <p class="subtitle">
+      block · fio
+       · /dev/nvme0n1
+      · 600s run
+    </p>
+    <div class="badges">
+      <span class="badge pass">Validation passed</span>
+      
+      <span class="badge mock">Mock data</span>
+      <span class="badge engine">fio</span>
+      <span class="badge">distributed topology</span>
+    </div>
+  </header>
+
+  <div class="summary">Sample distributed NVMe OLTP run — 3 clients, 2 storage nodes. Tail latency stays under 1ms p99 on aggregate; client-03 shows slightly higher p99.9 on node-02.</div>
+
+  <div class="grid">
+    <div class="stat">
+      <div class="stat-label">IOPS</div>
+      <div class="stat-value">248500</div>
+      <div class="stat-delta neutral">vs baseline —</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Throughput</div>
+      <div class="stat-value">969.10<span style="font-size:1rem;color:var(--muted)"> MB/s</span></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Latency p99</div>
+      <div class="stat-value">412<span style="font-size:1rem;color:var(--muted)"> µs</span></div>
+      <div class="stat-delta neutral">vs baseline —</div>
+    </div>
+  </div>
+
+  <h3 class="section-title">Latency — all percentiles (aggregate)</h3>
+  <div class="charts">
+    <div class="panel">
+      <h2>Percentile curve (µs)</h2>
+      <div class="chart-box"><canvas id="aggLineChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Percentile histogram (µs)</h2>
+      <div class="chart-box"><canvas id="aggBarChart"></canvas></div>
+    </div>
+  </div>
+
+  
+  <h3 class="section-title">All nodes — latency comparison</h3>
+  <div class="charts single">
+    <div class="panel">
+      <h2>Latency by node (full percentile curve)</h2>
+      <div class="chart-box tall"><canvas id="nodesLineChart"></canvas></div>
+    </div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <h2>IOPS by node</h2>
+      <div class="chart-box"><canvas id="nodeIopsChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Throughput by node (MB/s)</h2>
+      <div class="chart-box"><canvas id="nodeMbpsChart"></canvas></div>
+    </div>
+  </div>
+  <div class="charts single">
+    <div class="panel">
+      <h2>Tail latency by node (p90 → p99.99)</h2>
+      <div class="chart-box"><canvas id="tailChart"></canvas></div>
+    </div>
+  </div>
+  
+
+  <h3 class="section-title">Full latency matrix (all nodes)</h3>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>Node</th><th>Role</th><th>IOPS</th><th>MB/s</th>
+          <th>min</th><th>mean</th><th>p50</th><th>p75</th><th>p90</th>
+          <th>p95</th><th>p99</th><th>p99.9</th><th>p99.99</th><th>max</th>
+        </tr>
+        
+        <tr>
+          <td>Aggregate</td>
+          <td><span class="badge role-aggregate">aggregate</span></td>
+          <td>248500</td><td>969.10</td>
+          <td>18.20</td><td>142.50</td><td>118.00</td><td>165.40</td>
+          <td>210.80</td><td>285.60</td><td>412.30</td>
+          <td>890.10</td><td>1840.0</td><td>3200.0</td>
+        </tr>
+        
+        <tr>
+          <td>client-01.dell.lab</td>
+          <td><span class="badge role-client">client</span></td>
+          <td>83500</td><td>325.20</td>
+          <td>44.80</td><td>143.36</td><td>128.00</td><td>175.00</td>
+          <td>245.00</td><td>285.00</td><td>445.00</td>
+          <td>980.00</td><td>1862.0</td><td>3136.0</td>
+        </tr>
+        
+        <tr>
+          <td>client-02.dell.lab</td>
+          <td><span class="badge role-client">client</span></td>
+          <td>82100</td><td>319.80</td>
+          <td>42.70</td><td>136.64</td><td>122.00</td><td>168.00</td>
+          <td>238.00</td><td>275.00</td><td>428.00</td>
+          <td>920.00</td><td>1748.0</td><td>2944.0</td>
+        </tr>
+        
+        <tr>
+          <td>client-03.dell.lab</td>
+          <td><span class="badge role-client">client</span></td>
+          <td>82900</td><td>323.10</td>
+          <td>43.75</td><td>140.00</td><td>125.00</td><td>172.00</td>
+          <td>252.00</td><td>290.00</td><td>438.00</td>
+          <td>950.00</td><td>1805.0</td><td>3040.0</td>
+        </tr>
+        
+        <tr>
+          <td>storage-node-01.dell.lab</td>
+          <td><span class="badge role-target">target</span></td>
+          <td>165600</td><td>646.90</td>
+          <td>37.80</td><td>120.96</td><td>108.00</td><td>148.00</td>
+          <td>198.00</td><td>240.00</td><td>380.00</td>
+          <td>820.00</td><td>1558.0</td><td>2624.0</td>
+        </tr>
+        
+        <tr>
+          <td>storage-node-02.dell.lab</td>
+          <td><span class="badge role-target">target</span></td>
+          <td>82900</td><td>323.10</td>
+          <td>39.20</td><td>125.44</td><td>112.00</td><td>155.00</td>
+          <td>205.00</td><td>248.00</td><td>395.00</td>
+          <td>880.00</td><td>1672.0</td><td>2816.0</td>
+        </tr>
+        
+      </table>
+    </div>
+  </div>
+
+  
+  <div class="panel">
+    <h2>Analyst insights</h2>
+    <div class="insight info">Aggregate IOPS 248.5K within expected range for 4K random 70/30 mix.</div><div class="insight warning">client-03 p99.9 (950 µs) is 7% above cluster median — check path to storage-node-02.</div><div class="insight info">Validation passed — steady state reached after 60s ramp.</div>
+  </div>
+  
+
+  <footer>StrataBench report card · 2026-08-01T08:51:42Z · run sample-multi-node-001</footer>
+</div>
+<script>
+const CH = {"percentileLabels":["p5","p10","p15","p20","p25","p30","p35","p40","p45","p50","p55","p60","p65","p70","p75","p80","p85","p90","p92.5","p95","p97.5","p99","p99.25","p99.5","p99.75","p99.9","p99.95","p99.99"],"aggregate":{"id":"aggregate","label":"Aggregate","role":"aggregate","iops":248500,"mbps":969.1,"values":[106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,118,106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,106.2,587.4659999999999,640.872,623.0699999999999,640.872,623.0699999999999,640.872,640.872]},"nodes":[{"id":"client-0","label":"client-01.dell.lab → storage-node-01.dell.lab","role":"client","iops":83500,"mbps":325.2,"values":[0,0,0,0,0,0,0,0,0,128,0,0,0,0,175,0,0,245,0,285,0,445,0,0,0,980,0,1862]},{"id":"client-1","label":"client-02.dell.lab → storage-node-01.dell.lab","role":"client","iops":82100,"mbps":319.8,"values":[0,0,0,0,0,0,0,0,0,122,0,0,0,0,168,0,0,238,0,275,0,428,0,0,0,920,0,1748]},{"id":"client-2","label":"client-03.dell.lab → storage-node-02.dell.lab","role":"client","iops":82900,"mbps":323.1,"values":[0,0,0,0,0,0,0,0,0,125,0,0,0,0,172,0,0,252,0,290,0,438,0,0,0,950,0,1805]},{"id":"target-0","label":"target storage-node-01.dell.lab","role":"target","iops":165600,"mbps":646.9,"values":[0,0,0,0,0,0,0,0,0,108,0,0,0,0,148,0,0,198,0,240,0,380,0,0,0,820,0,1558]},{"id":"target-1","label":"target storage-node-02.dell.lab","role":"target","iops":82900,"mbps":323.1,"values":[0,0,0,0,0,0,0,0,0,112,0,0,0,0,155,0,0,205,0,248,0,395,0,0,0,880,0,1672]}],"hasNodes":true,"tailLabels":["p90","p92.5","p95","p97.5","p99","p99.25","p99.5","p99.75","p99.9","p99.95","p99.99"]};
+const palette = ['#2dd4bf','#60a5fa','#fbbf24','#f472b6','#a78bfa','#34d399','#fb923c','#38bdf8','#e879f9','#4ade80'];
+const gridColor = '#243044';
+const tickColor = '#8b9cb3';
+const baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
+  scales: {
+    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+    x: { grid: { display: false }, ticks: { color: tickColor } }
+  }
+};
+
+function lineDataset(series, idx, dashed) {
+  return {
+    label: series.label,
+    data: series.values,
+    borderColor: palette[idx % palette.length],
+    backgroundColor: palette[idx % palette.length] + '22',
+    borderWidth: series.role === 'aggregate' ? 3 : 2,
+    borderDash: dashed ? [6, 4] : [],
+    pointRadius: 3,
+    tension: 0.25,
+    fill: false
+  };
+}
+
+
+new Chart(document.getElementById('aggLineChart'), {
+  type: 'line',
+  data: {
+    labels: CH.percentileLabels,
+    datasets: [lineDataset(CH.aggregate, 0, false)]
+  },
+  options: { ...baseOpts, plugins: { legend: { display: false } } }
+});
+
+
+new Chart(document.getElementById('aggBarChart'), {
+  type: 'bar',
+  data: {
+    labels: CH.percentileLabels,
+    datasets: [{
+      label: 'Latency (µs)',
+      data: CH.aggregate.values,
+      backgroundColor: 'rgba(45, 212, 191, 0.65)',
+      borderColor: '#2dd4bf',
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: { ...baseOpts, plugins: { legend: { display: false } } }
+});
+
+if (CH.hasNodes) {
+  const allSeries = [CH.aggregate, ...CH.nodes];
+  new Chart(document.getElementById('nodesLineChart'), {
+    type: 'line',
+    data: {
+      labels: CH.percentileLabels,
+      datasets: allSeries.map((s, i) => lineDataset(s, i, s.role === 'target'))
+    },
+    options: baseOpts
+  });
+
+  const nodeLabels = CH.nodes.map(n => n.label);
+  new Chart(document.getElementById('nodeIopsChart'), {
+    type: 'bar',
+    data: {
+      labels: nodeLabels,
+      datasets: [{
+        label: 'IOPS',
+        data: CH.nodes.map(n => n.iops),
+        backgroundColor: CH.nodes.map((_, i) => palette[(i+1) % palette.length] + 'bb'),
+        borderRadius: 6
+      }]
+    },
+    options: { ...baseOpts, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('nodeMbpsChart'), {
+    type: 'bar',
+    data: {
+      labels: nodeLabels,
+      datasets: [{
+        label: 'MB/s',
+        data: CH.nodes.map(n => n.mbps),
+        backgroundColor: CH.nodes.map((_, i) => palette[(i+3) % palette.length] + 'bb'),
+        borderRadius: 6
+      }]
+    },
+    options: { ...baseOpts, plugins: { legend: { display: false } } }
+  });
+
+  function tailValues(series) {
+    return CH.tailLabels.map(tl => {
+      const idx = CH.percentileLabels.indexOf(tl);
+      return idx >= 0 ? series.values[idx] : 0;
+    });
+  }
+  new Chart(document.getElementById('tailChart'), {
+    type: 'bar',
+    data: {
+      labels: CH.tailLabels,
+      datasets: allSeries.map((s, i) => ({
+        label: s.label,
+        data: tailValues(s),
+        backgroundColor: palette[i % palette.length] + 'aa',
+        borderRadius: 4
+      }))
+    },
+    options: baseOpts
+  });
+}
+</script>
+</body>
+</html>

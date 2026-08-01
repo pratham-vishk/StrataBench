@@ -1,0 +1,186 @@
+{
+  "schema_version": "",
+  "run_id": "bench-mock-001",
+  "profile": "nvme-random-oltp",
+  "layer": "block",
+  "engine": "fio",
+  "status": "",
+  "mock": true,
+  "provenance": {},
+  "validation": {
+    "passed": true,
+    "rules_checked": null,
+    "warnings": null
+  },
+  "target": {
+    "type": "block",
+    "device": "/dev/nvme0n1",
+    "vm": null
+  },
+  "workload": {
+    "pattern": "randread",
+    "block_size": "4k",
+    "queue_depth": 32,
+    "duration_sec": 60
+  },
+  "results": {
+    "iops": 1094282,
+    "read_iops": 765998,
+    "write_iops": 328284,
+    "throughput_mbps": 17098,
+    "latency_us": {
+      "min": 45,
+      "max": 2800,
+      "mean": 142,
+      "p50": 120,
+      "p75": 165,
+      "p90": 210,
+      "p95": 285,
+      "p99": 310
+    },
+    "intervals": [
+      {
+        "seq": 1,
+        "timestamp": "2026-08-01T09:30:06.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 2,
+        "timestamp": "2026-08-01T09:30:11.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 3,
+        "timestamp": "2026-08-01T09:30:16.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 4,
+        "timestamp": "2026-08-01T09:30:21.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 5,
+        "timestamp": "2026-08-01T09:30:26.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 6,
+        "timestamp": "2026-08-01T09:30:31.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 7,
+        "timestamp": "2026-08-01T09:30:36.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 8,
+        "timestamp": "2026-08-01T09:30:41.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 9,
+        "timestamp": "2026-08-01T09:30:46.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 10,
+        "timestamp": "2026-08-01T09:30:51.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 11,
+        "timestamp": "2026-08-01T09:30:56.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      },
+      {
+        "seq": 12,
+        "timestamp": "2026-08-01T09:31:01.1034Z",
+        "iops": 1094282,
+        "read_iops": 765998,
+        "write_iops": 328284,
+        "throughput_mbps": 17098,
+        "avg_latency_us": 142,
+        "min_latency_us": 45,
+        "max_latency_us": 2800
+      }
+    ],
+    "totals": {
+      "total_mb": 1025880,
+      "total_records": 65656920
+    }
+  },
+  "hardware_snapshot": {},
+  "timestamps": {
+    "started_at": "2026-08-01T09:29:06.1034Z",
+    "completed_at": "2026-08-01T09:30:06.1034Z"
+  },
+  "topology": "single"
+}

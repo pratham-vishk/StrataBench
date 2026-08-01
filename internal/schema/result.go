@@ -52,16 +52,41 @@ type LatencyUS struct {
 }
 
 type Results struct {
-	IOPS             float64   `json:"iops,omitempty"`
-	ReadIOPS         float64   `json:"read_iops,omitempty"`
-	WriteIOPS        float64   `json:"write_iops,omitempty"`
-	ThroughputMBps   float64   `json:"throughput_mbps,omitempty"`
-	OpsPerSec        float64   `json:"ops_per_sec,omitempty"`
-	LatencyUS        LatencyUS `json:"latency_us"`
-	CPUPercent       float64   `json:"cpu_percent,omitempty"`
-	TotalBytesRead   int64     `json:"total_bytes_read,omitempty"`
-	TotalBytesWritten int64    `json:"total_bytes_written,omitempty"`
-	TotalOperations  int64     `json:"total_operations,omitempty"`
+	IOPS              float64            `json:"iops,omitempty"`
+	ReadIOPS          float64            `json:"read_iops,omitempty"`
+	WriteIOPS         float64            `json:"write_iops,omitempty"`
+	ThroughputMBps    float64            `json:"throughput_mbps,omitempty"`
+	OpsPerSec         float64            `json:"ops_per_sec,omitempty"`
+	LatencyUS         LatencyUS          `json:"latency_us"`
+	Percentiles       map[string]float64 `json:"percentiles,omitempty"`
+	PercentileCounts  map[string]int64   `json:"percentile_counts,omitempty"`
+	Intervals         []IntervalSample   `json:"intervals,omitempty"`
+	CPUPercent        float64            `json:"cpu_percent,omitempty"`
+	TotalBytesRead    int64              `json:"total_bytes_read,omitempty"`
+	TotalBytesWritten int64              `json:"total_bytes_written,omitempty"`
+	TotalOperations   int64              `json:"total_operations,omitempty"`
+	Totals            TotalStats         `json:"totals,omitempty"`
+}
+
+// TotalStats holds SBK Total-row volume, pending, and reliability counters.
+type TotalStats struct {
+	TotalMB             float64 `json:"total_mb,omitempty"`
+	TotalRecords        int64   `json:"total_records,omitempty"`
+	WriteRequestMB      float64 `json:"write_request_mb,omitempty"`
+	WriteRequestRecords int64   `json:"write_request_records,omitempty"`
+	ReadRequestMB       float64 `json:"read_request_mb,omitempty"`
+	ReadRequestRecords  int64   `json:"read_request_records,omitempty"`
+	WritePendingMB      float64 `json:"write_pending_mb,omitempty"`
+	WritePendingRecords int64   `json:"write_pending_records,omitempty"`
+	ReadPendingMB       float64 `json:"read_pending_mb,omitempty"`
+	ReadPendingRecords  int64   `json:"read_pending_records,omitempty"`
+	WriteTimeoutEvents  int64   `json:"write_timeout_events,omitempty"`
+	ReadTimeoutEvents   int64   `json:"read_timeout_events,omitempty"`
+	InvalidLatencies    int64   `json:"invalid_latencies,omitempty"`
+	LowerDiscard        int64   `json:"lower_discard,omitempty"`
+	HigherDiscard       int64   `json:"higher_discard,omitempty"`
+	SLC1                int64   `json:"slc1,omitempty"`
+	SLC2                int64   `json:"slc2,omitempty"`
 }
 
 type HardwareSnapshot struct {
@@ -122,6 +147,7 @@ type RunResult struct {
 	Engine        string            `json:"engine"`
 	Status        string            `json:"status"`
 	Mock          bool              `json:"mock,omitempty"`
+	Provenance    Provenance        `json:"provenance,omitempty"`
 	Validation    ValidationResult    `json:"validation"`
 	Target        Target            `json:"target"`
 	Workload      Workload          `json:"workload"`
@@ -143,4 +169,15 @@ type ClientResult struct {
 type TargetResult struct {
 	Target  string  `json:"target"`
 	Results Results `json:"results"`
+}
+
+// Provenance records git/build context for reproducible branch comparisons.
+type Provenance struct {
+	GitRepo     string `json:"git_repo,omitempty"`
+	GitBranch   string `json:"git_branch,omitempty"`
+	GitSHA      string `json:"git_sha,omitempty"`
+	GitDirty    bool   `json:"git_dirty,omitempty"`
+	BuildCmd    string `json:"build_cmd,omitempty"`
+	ToolVersion string `json:"tool_version,omitempty"`
+	CompareRole string `json:"compare_role,omitempty"` // base | head
 }
