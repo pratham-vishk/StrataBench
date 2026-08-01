@@ -48,11 +48,28 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 				return err
 			}
 			smoke, _ := cmd.Flags().GetBool("smoke")
-			rep, err := lab.Validate(cmd.Context(), cfg, paths.ProfilesDir(), smoke)
+			smokeAll, _ := cmd.Flags().GetBool("smoke-all")
+			output, _ := cmd.Flags().GetString("output")
+			rep, err := lab.Validate(cmd.Context(), cfg, lab.ValidateOptions{
+				ProfilesDir: paths.ProfilesDir(),
+				Smoke:       smoke,
+				SmokeAll:    smokeAll,
+			})
 			if err != nil {
 				return err
 			}
 			lab.PrintValidationReport(rep)
+			if output != "" {
+				if err := lab.WriteValidationReportJSON(output, rep); err != nil {
+					return err
+				}
+				fmt.Printf("Wrote validation report: %s\n", output)
+			} else if smoke || smokeAll {
+				out := lab.DefaultValidationOutput(configPath)
+				if err := lab.WriteValidationReportJSON(out, rep); err == nil {
+					fmt.Printf("Wrote validation report: %s\n", out)
+				}
+			}
 			if rep.Check != nil && !rep.Check.Ready {
 				return fmt.Errorf("lab not ready")
 			}
@@ -63,6 +80,8 @@ and optional profile smoke validation (mock). Execute the printed commands on la
 		},
 	}
 	validateCmd.Flags().Bool("smoke", false, "run mock profile validation smoke tests")
+	validateCmd.Flags().Bool("smoke-all", false, "smoke-validate every profile (mock)")
+	validateCmd.Flags().String("output", "", "write validation report JSON (default: <lab>-validation.json with --smoke)")
 
 	cmd.AddCommand(
 		&cobra.Command{

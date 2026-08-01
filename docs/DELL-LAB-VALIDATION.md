@@ -10,10 +10,12 @@ See [ENGINE-COVERAGE.md](ENGINE-COVERAGE.md) for the full matrix (33 profiles).
 stratabench lab bootstrap -f lab.yaml
 stratabench lab check -f lab.yaml
 stratabench lab validate -f lab.yaml          # print sign-off matrix + readiness
-stratabench lab validate -f lab.yaml --smoke  # + mock profile smoke tests
+stratabench lab validate -f lab.yaml --smoke  # + mock smoke (5 profiles)
+stratabench lab validate -f lab.yaml --smoke-all  # mock-validate all 33 profiles
+stratabench lab validate -f lab.yaml --output lab-signoff.json
 ```
 
-Set `LAB_BLOCK_TARGET=/dev/nvme0n1` to override the block device in the validation matrix.
+Override targets with env vars: `LAB_BLOCK_TARGET`, `LAB_AFA_LUNS`, `LAB_FILE_TARGET`, `LAB_POSTGRES_DSN`, `LAB_KAFKA_TARGET`, `LAB_SPDK_PCI`.
 
 ## Prerequisites
 

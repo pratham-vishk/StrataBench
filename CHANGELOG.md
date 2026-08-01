@@ -2,6 +2,16 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc18] - 2026-08-01
+
+### Added
+- **Full lab validation matrix** — `lab validate` generates all 33 profiles from `profiles/` with resolved targets
+- **`--smoke-all`** — mock-validate every profile; **`--output`** JSON sign-off report
+
+### Changed
+- Lab target resolution via env: `LAB_AFA_LUNS`, `LAB_FILE_TARGET`, `LAB_POSTGRES_DSN`, `LAB_KAFKA_TARGET`, `LAB_SPDK_PCI`
+- `docs/DELL-LAB-VALIDATION.md` — updated quick start for smoke-all and JSON export
+
 ## [0.8.0-rc17] - 2026-08-01
 
 ### Added

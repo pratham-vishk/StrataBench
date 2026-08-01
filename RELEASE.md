@@ -1,6 +1,25 @@
 # Release Guide
 
-## v0.8.0-rc17 (current)
+## v0.8.0-rc18 (current)
+
+Full 33-profile lab validation matrix generated from `profiles/`; `--smoke-all` and JSON sign-off report.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc18
+git push origin v0.8.0-rc18
+gh release create v0.8.0-rc18 --title "v0.8.0-rc18" --notes "Full lab validate matrix; smoke-all; JSON report."
+```
+
+### Smoke test
+
+```bash
+stratabench lab validate -f lab.yaml --smoke-all
+cat lab-validation.json
+```
+
+## v0.8.0-rc17
 
 Docker ships Rust `stratabench-engine`; `s3-gosbench-read` profile; doc sync to 33 profiles; `cargo test` in CI.
 
