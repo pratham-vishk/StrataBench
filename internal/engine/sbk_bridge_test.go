@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/pratham-vishk/stratabench/internal/engine"
+	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 )
 
@@ -24,8 +25,7 @@ func TestSBKBridgePythonScript(t *testing.T) {
 		t.Skipf("%s not runnable: %v", python, err)
 	}
 
-	root := filepath.Join("..", "..")
-	script := filepath.Join(root, "examples", "sbk-bridge", "sbk_bridge.py")
+	script := filepath.Join(paths.RepoRoot(), "examples", "sbk-bridge", "sbk_bridge.py")
 	if _, err := os.Stat(script); err != nil {
 		t.Skip(script)
 	}

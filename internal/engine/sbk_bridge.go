@@ -19,6 +19,11 @@ func runSBKBridge(ctx context.Context, in RunInput) (*schema.Results, *schema.Ra
 	if bin == "" {
 		return nil, nil, fmt.Errorf("STRATABENCH_SBK_BRIDGE not set")
 	}
+	if strings.HasSuffix(strings.ToLower(bin), ".py") && !filepath.IsAbs(bin) {
+		if abs, err := filepath.Abs(bin); err == nil {
+			bin = abs
+		}
+	}
 
 	driver := in.Profile.ParamString("driver", "generic")
 	cfg := map[string]any{
