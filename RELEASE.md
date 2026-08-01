@@ -2,7 +2,7 @@
 
 ## v0.7.0-rc1 (current)
 
-Full platform release: 30+ profiles, all topologies, physical + virtual engines, public OSS.
+Full platform release: 29 profiles, all topologies, physical + virtual engines, public OSS.
 
 ### Tag and publish
 
@@ -29,7 +29,7 @@ kubectl apply -k deploy/k8s/
 - [x] Published container image (GHCR)
 - [x] Docs site live — https://pratham-vishk.github.io/StrataBench/
 - [x] Full Kubernetes operator
-- [x] 30+ profiles, all engines, all topologies
+- [x] 29 profiles, all engines, all topologies
 - [x] Physical + virtual coverage (HDD, NVMe, AFA, S3 RDMA)
 - [ ] Dell lab validation on real hardware
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench, kafka)

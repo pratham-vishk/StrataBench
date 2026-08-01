@@ -36,9 +36,17 @@ func ForProfile(p *profile.Profile, mock bool) Runner {
 		return &VdbenchRunner{}
 	case "sbk":
 		return &SBKRunner{}
+	case "gosbench":
+		return unsupportedEngine("gosbench")
 	case "stratabench":
-		return &MockRunner{} // native Rust engine lands in a later phase
+		if mock {
+			return &MockRunner{}
+		}
+		return nativeEnginePending("stratabench")
 	default:
-		return &MockRunner{}
+		if mock {
+			return &MockRunner{}
+		}
+		return unsupportedEngine(p.Engine)
 	}
 }

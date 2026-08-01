@@ -89,6 +89,7 @@ func buildAllCharts(run *schema.RunResult) builtCharts {
 	lbl := workloadLabels(run)
 	addGrafanaDashboard(b, run, lbl)
 	addObjectCharts(b, run, compare, lbl)
+	addNodeIntervalCharts(b, run, lbl)
 
 	// Aggregate latency
 	b.add("Latency percentiles", false, ChartPanel{ID: "aggLineChart", Title: "Percentile curve"},
@@ -364,7 +365,7 @@ func buildAllCharts(run *schema.RunResult) builtCharts {
 
 	for i := range b.groups {
 		switch b.groups[i].Title {
-		case "Node comparison — every percentile", "Over time — percentile drift", "Multi-node latency — per node":
+		case "Node comparison — every percentile", "Over time — percentile drift", "Multi-node latency — per node", "Per-node operations — detail":
 			b.groups[i].Collapsed = true
 			b.groups[i].Single = true
 		}

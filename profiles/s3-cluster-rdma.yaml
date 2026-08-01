@@ -19,6 +19,7 @@ params:
   bucket: stratabench-rdma
   host: "127.0.0.1:9000"
   rdma: cpu
+  # Distributed S3: use --clients + --topology pool (agent per node runs warp locally).
   warp_clients: []
 
 metrics:

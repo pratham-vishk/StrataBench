@@ -62,6 +62,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/analyze/", s.handleAnalyze)
 	mux.HandleFunc("/api/v1/plan", s.handlePlan)
 	mux.HandleFunc("/api/v1/agent", s.handleAgent)
+	mux.HandleFunc("/api/v1/validate", s.handleValidate)
+	mux.HandleFunc("/api/v1/compare", s.handleCompare)
+	mux.HandleFunc("/api/v1/report/", s.handleReport)
 	mux.Handle("/metrics", metrics.Handler())
 	return mux
 }

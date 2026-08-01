@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StrataBench — nvme-random-oltp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#080c10; --surface:#0f1419; --card:#151b24; --card2:#1a2230;
+      --border:#2a3548; --border2:#1e2836; --text:#f0f4f8; --muted:#8b9cb3;
+      --accent:#14b8a6; --accent2:#0d9488; --good:#4ade80; --bad:#f87171; --warn:#fbbf24;
+      --sidebar-w:240px; --radius:12px; --gap:1.25rem; --section-gap:3.5rem;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:14px;overflow-x:hidden}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border2);display:flex;flex-direction:column;z-index:50}
+    .sidebar-brand{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border2);flex-shrink:0}
+    .sidebar-brand .logo{font-weight:700;font-size:1rem;color:var(--accent)}
+    .sidebar-brand .sub{font-size:.72rem;color:var(--muted);margin-top:.25rem}
+    .nav{flex:1;overflow-y:auto;padding:.75rem .65rem 1.5rem}
+    .nav .nav-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.5rem .75rem .35rem;font-weight:600}
+    .nav a{display:block;padding:.5rem .85rem;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.8rem;font-weight:500;line-height:1.35;margin-bottom:2px;transition:background .12s,color .12s}
+    .nav a:hover{background:var(--card);color:var(--text)}
+    .nav a.active{background:#14b8a618;color:var(--accent);border-left:2px solid var(--accent);padding-left:calc(.85rem - 2px)}
+    main{margin-left:var(--sidebar-w);min-height:100vh;padding:2rem 2.5rem 4rem;max-width:1400px}
+    .hero{margin-bottom:2rem}
+    .hero h1{font-size:clamp(1.4rem,2.2vw,1.9rem);font-weight:700;letter-spacing:-.03em}
+    .hero-meta{color:var(--muted);font-size:.9rem;margin-top:.5rem}
+    .badges{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.25rem}
+    .badge{padding:.35rem .75rem;border-radius:999px;font-size:.72rem;font-weight:600;border:1px solid var(--border);background:var(--card)}
+    .badge.pass{border-color:#166534;color:var(--good)} .badge.fail{border-color:#7f1d1d;color:var(--bad)}
+    .badge.mock{border-color:#713f12;color:var(--warn)} .badge.engine{color:var(--accent);border-color:var(--accent2)}
+    .badge.role-client{color:#60a5fa} .badge.role-target{color:#f472b6}
+    .summary{background:linear-gradient(135deg,#0f1a24,#151b24);border:1px solid var(--border);border-left:3px solid var(--accent);padding:1.15rem 1.5rem;border-radius:var(--radius);margin:1.5rem 0;font-size:.9rem;color:#c8d5e3}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:var(--gap);margin:2rem 0}
+    .kpi{background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:1.15rem 1.25rem}
+    .kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+    .kpi-value{font-size:1.5rem;font-weight:700;margin:.35rem 0;font-variant-numeric:tabular-nums}
+    .kpi-unit{font-size:.82rem;color:var(--muted);font-weight:500}
+    .kpi-hint{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+    .section{margin-top:var(--section-gap);scroll-margin-top:1.5rem}
+    .section-head{display:flex;align-items:baseline;gap:.75rem;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border2)}
+    .section-head h2{font-size:1.05rem;font-weight:600}
+    .section-head .count{font-size:.72rem;color:var(--muted);background:var(--card);padding:.2rem .55rem;border-radius:4px;border:1px solid var(--border2)}
+    .panel{background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:1.35rem;margin-bottom:var(--gap)}
+    #operations-dashboard .panel{border-left:3px solid var(--accent);background:linear-gradient(135deg,#0f1419 0%,#151b24 100%)}
+    .panel h3{font-size:.72rem;margin:0 0 1rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+    .charts-grid{display:flex;flex-direction:column;gap:var(--gap)}
+    .chart-box{position:relative;height:340px;width:100%}
+    .chart-box.tall{height:400px}
+    .chart-box canvas{width:100%!important;height:100%!important}
+    table{width:100%;border-collapse:collapse;font-size:.8rem}
+    th,td{padding:.55rem .75rem;text-align:right;border-bottom:1px solid var(--border2)}
+    th:first-child,td:first-child{text-align:left}
+    th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;background:var(--card2)}
+    td{font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:.78rem}
+    .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border2)}
+    .kv td:first-child{color:var(--muted);width:38%;font-family:'Inter',sans-serif;font-weight:500}
+    details.chart-section{border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:var(--gap);background:var(--card)}
+    details.chart-section>summary{cursor:pointer;padding:1rem 1.25rem;font-weight:600;font-size:.9rem;color:var(--text);list-style:none;display:flex;align-items:center;justify-content:space-between}
+    details.chart-section>summary::-webkit-details-marker{display:none}
+    details.chart-section>summary::after{content:'▾';color:var(--muted);font-size:.75rem}
+    details.chart-section:not([open])>summary::after{content:'▸'}
+    details.chart-section .charts-grid{padding:0 1.25rem 1.25rem}
+    details.data-section{border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:var(--gap);background:var(--card)}
+    details.data-section>summary{cursor:pointer;padding:1rem 1.25rem;font-weight:600;color:var(--muted);list-style:none}
+    details.data-section>summary::-webkit-details-marker{display:none}
+    details.data-section .inner{padding:0 1.25rem 1.25rem}
+    .insight{padding:.65rem 0;border-bottom:1px solid var(--border2);font-size:.88rem}
+    .delta{font-size:.8rem;margin:.5rem 0 1rem}
+    .delta.good{color:var(--good)} .delta.bad{color:var(--bad)} .delta.neutral{color:var(--muted)}
+    footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border2);color:var(--muted);font-size:.72rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+    .mono{font-family:'JetBrains Mono',monospace;font-size:.75rem}
+    .sidebar-toggle{display:none}
+  @media(max-width:900px){
+    .sidebar{transform:translateX(-100%);transition:transform .2s}
+    .sidebar.open{transform:translateX(0)}
+    main{margin-left:0;padding:1.25rem 1rem 3rem}
+    .sidebar-toggle{display:block;position:fixed;top:.75rem;left:.75rem;z-index:60;background:var(--card);border:1px solid var(--border);color:var(--text);padding:.45rem .7rem;border-radius:8px;cursor:pointer}
+  }
+  </style>
+</head>
+<body>
+<button class="sidebar-toggle" type="button" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">StrataBench</div>
+    <div class="sub">Performance Report</div>
+  </div>
+  <nav class="nav" id="sideNav">
+    <div class="nav-label">Jump to</div>
+    <a href="#overview" data-section="overview">Overview</a><a href="#totals" data-section="totals">Totals</a><a href="#percentiles" data-section="percentiles">Percentiles</a><a href="#totals-throughput" data-section="totals-throughput">Totals — throughput</a><a href="#totals-latency" data-section="totals-latency">Totals — latency</a><a href="#totals-data-volume" data-section="totals-data-volume">Totals — data volume</a><a href="#operations-dashboard" data-section="operations-dashboard">Operations dashboard</a><a href="#per-node-operations-overlay" data-section="per-node-operations-overlay">Per-node operations — overlay</a><a href="#per-node-operations-detail" data-section="per-node-operations-detail">Per-node operations — detail (12)</a><a href="#latency-percentiles" data-section="latency-percentiles">Latency percentiles</a><a href="#detailed-percentiles" data-section="detailed-percentiles">Detailed percentiles</a><a href="#node-comparison-throughput" data-section="node-comparison-throughput">Node comparison — throughput</a><a href="#node-comparison-latency" data-section="node-comparison-latency">Node comparison — latency</a><a href="#node-comparison-every-percentile" data-section="node-comparison-every-percentile">Node comparison — every percentile (3)</a><a href="#multi-node-latency" data-section="multi-node-latency">Multi-node latency</a><a href="#multi-node-latency-per-node" data-section="multi-node-latency-per-node">Multi-node latency — per node (4)</a><a href="#multi-node-balance" data-section="multi-node-balance">Multi-node balance</a><a href="#role-comparison" data-section="role-comparison">Role comparison</a><a href="#multi-node-latency-bands" data-section="multi-node-latency-bands">Multi-node latency bands</a><a href="#over-time-throughput" data-section="over-time-throughput">Over time — throughput</a><a href="#over-time-latency" data-section="over-time-latency">Over time — latency</a><a href="#over-time-latency-bands" data-section="over-time-latency-bands">Over time — latency bands</a><a href="#nodes" data-section="nodes">Node matrix</a><a href="#intervals" data-section="intervals">Interval data</a><a href="#node-intervals" data-section="node-intervals">Per-node intervals</a>
+  </nav>
+</aside>
+<main>
+  <header class="hero" id="overview">
+    <h1>nvme-random-oltp</h1>
+    <p class="hero-meta">Block / FIO · 60s · 68 charts · StrataBench 0.8.0-rc4</p>
+    <div class="badges">
+      <span class="badge pass">Validation passed</span>
+      <span class="badge mock">Mock data</span>
+      <span class="badge engine">FIO</span>
+      <span class="badge">pool</span>
+    </div>
+  </header>
+  <div class="summary">Multi-node pool — 3 clients → 1 NVMe target. Per-node overlays, Grafana dashboards, interval tables, and node matrix.</div>
+
+  <div class="kpi-grid">
+    
+    <div class="kpi">
+      <div class="kpi-label">IOPS</div>
+      <div class="kpi-value">2410000 <span class="kpi-unit">rec/s</span></div>
+      <div class="kpi-hint">Operation throughput</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">Throughput</div>
+      <div class="kpi-value">24100.00 <span class="kpi-unit">MB/s</span></div>
+      <div class="kpi-hint">Data rate</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">Total data</div>
+      <div class="kpi-value">1446000.0 <span class="kpi-unit">MB</span></div>
+      <div class="kpi-hint">Volume transferred</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">Total records</div>
+      <div class="kpi-value">144.60M</div>
+      <div class="kpi-hint">Completed operations</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">p50 latency</div>
+      <div class="kpi-value">100 <span class="kpi-unit">µs</span></div>
+      <div class="kpi-hint">Median</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">p95 latency</div>
+      <div class="kpi-value">0 <span class="kpi-unit">µs</span></div>
+      <div class="kpi-hint">Tail start</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">p99 latency</div>
+      <div class="kpi-value">380 <span class="kpi-unit">µs</span></div>
+      <div class="kpi-hint">SLA critical</div>
+    </div>
+    
+    <div class="kpi">
+      <div class="kpi-label">Duration</div>
+      <div class="kpi-value">60 <span class="kpi-unit">sec</span></div>
+      <div class="kpi-hint">Test window</div>
+    </div>
+    
+  </div>
+  <div class="delta neutral">IOPS vs baseline: — · p99: <span class="neutral">—</span></div>
+
+  <section class="section" id="overview-tables">
+    <div class="section-head"><h2>Run summary</h2></div>
+    <details class="data-section"><summary>Configuration &amp; metadata</summary><div class="inner table-wrap"><table class="kv"><tr><td>Version</td><td>0.8.0-rc4</td></tr><tr><td>Run ID</td><td>multi-node-sample</td></tr><tr><td>Profile</td><td>nvme-random-oltp</td></tr><tr><td>Benchmark</td><td>Block / FIO</td></tr><tr><td>Topology</td><td>pool</td></tr><tr><td>Target</td><td>/dev/nvme0n1</td></tr><tr><td>Workload</td><td>randrw 4k qd=32 threads=0</td></tr><tr><td>Duration</td><td>60s (ramp 0s)</td></tr><tr><td>Time unit</td><td>microseconds (µs)</td></tr><tr><td>Nodes</td><td>Aggregate, 10.0.1.1, 10.0.1.2, 10.0.1.3, /dev/nvme0n1</td></tr><tr><td>Validation</td><td>PASSED</td></tr><tr><td>Mock</td><td>true</td></tr></table></div></details>
+    <details class="data-section"><summary>Run timeline</summary><div class="inner table-wrap"><table>
+      <tr><th>Node</th><th>Role</th><th>Target</th><th>Profile</th><th>Start</th><th>End</th><th>Duration</th></tr>
+      <tr><td>Aggregate</td><td>aggregate</td><td>/dev/nvme0n1</td><td>nvme-random-oltp</td><td>2026-08-01T10:04:18Z</td><td>2026-08-01T10:05:18Z</td><td>60s</td></tr><tr><td>10.0.1.1</td><td>client</td><td>/dev/nvme0n1</td><td>nvme-random-oltp</td><td>2026-08-01T10:04:18Z</td><td>2026-08-01T10:05:18Z</td><td>60s</td></tr><tr><td>10.0.1.2</td><td>client</td><td>/dev/nvme0n1</td><td>nvme-random-oltp</td><td>2026-08-01T10:04:18Z</td><td>2026-08-01T10:05:18Z</td><td>60s</td></tr><tr><td>10.0.1.3</td><td>client</td><td>/dev/nvme0n1</td><td>nvme-random-oltp</td><td>2026-08-01T10:04:18Z</td><td>2026-08-01T10:05:18Z</td><td>60s</td></tr><tr><td>/dev/nvme0n1</td><td>target</td><td>/dev/nvme0n1</td><td>nvme-random-oltp</td><td>2026-08-01T10:04:18Z</td><td>2026-08-01T10:05:18Z</td><td>60s</td></tr>
+    </table></div></details>
+    <details class="data-section"><summary>Aggregate metrics</summary><div class="inner table-wrap"><table class="kv"><tr><td>IOPS</td><td>2410000</td></tr><tr><td>Read IOPS</td><td>1687000</td></tr><tr><td>Write IOPS</td><td>723000</td></tr><tr><td>Throughput (MB/s)</td><td>24100.00</td></tr><tr><td>Ops/sec</td><td>0</td></tr><tr><td>Latency min (µs)</td><td>40.00</td></tr><tr><td>Latency mean (µs)</td><td>112.00</td></tr><tr><td>Latency p50 (µs)</td><td>100.00</td></tr><tr><td>Latency p75 (µs)</td><td>—</td></tr><tr><td>Latency p90 (µs)</td><td>—</td></tr><tr><td>Latency p95 (µs)</td><td>—</td></tr><tr><td>Latency p99 (µs)</td><td>380.00</td></tr><tr><td>Latency p99.9 (µs)</td><td>—</td></tr><tr><td>Latency p99.99 (µs)</td><td>—</td></tr><tr><td>Latency max (µs)</td><td>900.00</td></tr><tr><td>CPU %</td><td>0.0</td></tr></table></div></details>
+  </section>
+
+  
+  <section class="section" id="totals">
+    <div class="section-head"><h2>Totals</h2><span class="count">volume &amp; records</span></div>
+    <div class="panel table-wrap"><table class="kv"><tr><td>Total MB</td><td>1446000.00</td></tr><tr><td>Total records</td><td>144600000</td></tr><tr><td>Write request MB</td><td>433800.00</td></tr><tr><td>Write request records</td><td>43380000</td></tr><tr><td>Read request MB</td><td>1012200.00</td></tr><tr><td>Read request records</td><td>101220000</td></tr></table></div>
+  </section>
+  
+
+  
+  <section class="section" id="percentiles">
+    <div class="section-head"><h2>Percentile matrix</h2><span class="count">3 points</span></div>
+    <div class="panel table-wrap"><table class="perc-table">
+      <tr><th>Percentile</th><th>Latency (µs)</th><th>Count</th></tr>
+      <tr><td>p50</td><td>100.00</td><td>—</td></tr><tr><td>p99</td><td>350.00</td><td>—</td></tr><tr><td>p99.9</td><td>500.00</td><td>—</td></tr>
+    </table></div>
+  </section>
+  
+
+  
+  <section class="section" id="totals-throughput">
+    
+    <div class="section-head"><h2>Totals — throughput</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Total throughput (MB/s)</h3><div class="chart-box"><canvas id="totalThroughputMbps"></canvas></div></div><div class="panel"><h3>Total throughput (records/s)</h3><div class="chart-box"><canvas id="totalThroughputRecords"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="totals-latency">
+    
+    <div class="section-head"><h2>Totals — latency</h2><span class="count">3 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Total min latency</h3><div class="chart-box"><canvas id="totalMinLatency"></canvas></div></div><div class="panel"><h3>Total avg latency</h3><div class="chart-box"><canvas id="totalAvgLatency"></canvas></div></div><div class="panel"><h3>Total max latency</h3><div class="chart-box"><canvas id="totalMaxLatency"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="totals-data-volume">
+    
+    <div class="section-head"><h2>Totals — data volume</h2><span class="count">4 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Total data volume (MB)</h3><div class="chart-box"><canvas id="totalMbBreakdown"></canvas></div></div><div class="panel"><h3>Total MB transferred</h3><div class="chart-box"><canvas id="totalMbTotal"></canvas></div></div><div class="panel"><h3>Total records</h3><div class="chart-box"><canvas id="totalRecordsBreakdown"></canvas></div></div><div class="panel"><h3>Total record count</h3><div class="chart-box"><canvas id="totalRecordsTotal"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="operations-dashboard">
+    
+    <div class="section-head"><h2>Operations dashboard</h2><span class="count">4 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Operations overview — IOPS &amp; throughput</h3><div class="chart-box tall"><canvas id="grafanaOpsOverview"></canvas></div></div><div class="panel"><h3>Read IOPS vs Write IOPS</h3><div class="chart-box tall"><canvas id="grafanaReadWrite"></canvas></div></div><div class="panel"><h3>Latency over time (µs)</h3><div class="chart-box tall"><canvas id="grafanaLatency"></canvas></div></div><div class="panel"><h3>Read vs write throughput (MB/s)</h3><div class="chart-box"><canvas id="grafanaThroughputStack"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="per-node-operations-overlay">
+    
+    <div class="section-head"><h2>Per-node operations — overlay</h2><span class="count">5 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>IOPS over time (all nodes)</h3><div class="chart-box tall"><canvas id="nodeOverlayIops"></canvas></div></div><div class="panel"><h3>Throughput over time (all nodes)</h3><div class="chart-box tall"><canvas id="nodeOverlayMbps"></canvas></div></div><div class="panel"><h3>Avg latency over time (all nodes)</h3><div class="chart-box"><canvas id="nodeOverlayLatency"></canvas></div></div><div class="panel"><h3>Read IOPS over time (all nodes)</h3><div class="chart-box"><canvas id="nodeOverlayRead"></canvas></div></div><div class="panel"><h3>Write IOPS over time (all nodes)</h3><div class="chart-box"><canvas id="nodeOverlayWrite"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="per-node-operations-detail">
+    
+    <details class="chart-section">
+      <summary><span>Per-node operations — detail</span><span class="count" style="font-size:.72rem;color:var(--muted)">12 charts</span></summary>
+      <div class="charts-grid">
+        <div class="panel"><h3>Cluster aggregate — IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaOps_aggregate"></canvas></div></div><div class="panel"><h3>Cluster aggregate — latency</h3><div class="chart-box"><canvas id="nodeGrafanaLat_aggregate"></canvas></div></div><div class="panel"><h3>Cluster aggregate — Read IOPS vs Write IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaRW_aggregate"></canvas></div></div><div class="panel"><h3>10.0.1.1 → /dev/nvme0n1 — IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaOps_client-0"></canvas></div></div><div class="panel"><h3>10.0.1.1 → /dev/nvme0n1 — latency</h3><div class="chart-box"><canvas id="nodeGrafanaLat_client-0"></canvas></div></div><div class="panel"><h3>10.0.1.1 → /dev/nvme0n1 — Read IOPS vs Write IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaRW_client-0"></canvas></div></div><div class="panel"><h3>10.0.1.2 → /dev/nvme0n1 — IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaOps_client-1"></canvas></div></div><div class="panel"><h3>10.0.1.2 → /dev/nvme0n1 — latency</h3><div class="chart-box"><canvas id="nodeGrafanaLat_client-1"></canvas></div></div><div class="panel"><h3>10.0.1.2 → /dev/nvme0n1 — Read IOPS vs Write IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaRW_client-1"></canvas></div></div><div class="panel"><h3>10.0.1.3 → /dev/nvme0n1 — IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaOps_client-2"></canvas></div></div><div class="panel"><h3>10.0.1.3 → /dev/nvme0n1 — latency</h3><div class="chart-box"><canvas id="nodeGrafanaLat_client-2"></canvas></div></div><div class="panel"><h3>10.0.1.3 → /dev/nvme0n1 — Read IOPS vs Write IOPS</h3><div class="chart-box"><canvas id="nodeGrafanaRW_client-2"></canvas></div></div>
+      </div>
+    </details>
+    
+  </section>
+  
+  <section class="section" id="latency-percentiles">
+    
+    <div class="section-head"><h2>Latency percentiles</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Percentile curve</h3><div class="chart-box"><canvas id="aggLineChart"></canvas></div></div><div class="panel"><h3>Percentile bars</h3><div class="chart-box"><canvas id="aggBarChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="detailed-percentiles">
+    
+    <div class="section-head"><h2>Detailed percentiles</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>p5 → p50</h3><div class="chart-box"><canvas id="percGroup0"></canvas></div></div><div class="panel"><h3>p50 → p99.99</h3><div class="chart-box"><canvas id="percGroup1"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="node-comparison-throughput">
+    
+    <div class="section-head"><h2>Node comparison — throughput</h2><span class="count">5 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Throughput (MB/s)</h3><div class="chart-box"><canvas id="compareMbpsChart"></canvas></div></div><div class="panel"><h3>Throughput (IOPS)</h3><div class="chart-box"><canvas id="compareIopsChart"></canvas></div></div><div class="panel"><h3>Read vs write IOPS</h3><div class="chart-box"><canvas id="writeReadChart"></canvas></div></div><div class="panel"><h3>Read throughput (MB/s)</h3><div class="chart-box"><canvas id="compareReadMbpsChart"></canvas></div></div><div class="panel"><h3>Write throughput (MB/s)</h3><div class="chart-box"><canvas id="compareWriteMbpsChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="node-comparison-latency">
+    
+    <div class="section-head"><h2>Node comparison — latency</h2><span class="count">4 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Min latency</h3><div class="chart-box"><canvas id="compareMinLatChart"></canvas></div></div><div class="panel"><h3>Avg latency</h3><div class="chart-box"><canvas id="compareAvgLatChart"></canvas></div></div><div class="panel"><h3>Max latency</h3><div class="chart-box"><canvas id="compareMaxLatChart"></canvas></div></div><div class="panel"><h3>Key percentiles by node</h3><div class="chart-box"><canvas id="compareKeyPercChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="node-comparison-every-percentile">
+    
+    <details class="chart-section">
+      <summary><span>Node comparison — every percentile</span><span class="count" style="font-size:.72rem;color:var(--muted)">3 charts</span></summary>
+      <div class="charts-grid">
+        <div class="panel"><h3>p50 by node</h3><div class="chart-box"><canvas id="nodePerc_p50"></canvas></div></div><div class="panel"><h3>p99 by node</h3><div class="chart-box"><canvas id="nodePerc_p99"></canvas></div></div><div class="panel"><h3>p99.9 by node</h3><div class="chart-box"><canvas id="nodePerc_p99_9"></canvas></div></div>
+      </div>
+    </details>
+    
+  </section>
+  
+  <section class="section" id="multi-node-latency">
+    
+    <div class="section-head"><h2>Multi-node latency</h2><span class="count">4 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Latency curve by node</h3><div class="chart-box tall"><canvas id="nodesLineChart"></canvas></div></div><div class="panel"><h3>IOPS by node</h3><div class="chart-box"><canvas id="nodeIopsChart"></canvas></div></div><div class="panel"><h3>MB/s by node</h3><div class="chart-box"><canvas id="nodeMbpsChart"></canvas></div></div><div class="panel"><h3>Tail latency (p90→p99.99)</h3><div class="chart-box"><canvas id="tailChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="multi-node-latency-per-node">
+    
+    <details class="chart-section">
+      <summary><span>Multi-node latency — per node</span><span class="count" style="font-size:.72rem;color:var(--muted)">4 charts</span></summary>
+      <div class="charts-grid">
+        <div class="panel"><h3>10.0.1.1 → /dev/nvme0n1 percentiles</h3><div class="chart-box"><canvas id="nodeCurve_client-0"></canvas></div></div><div class="panel"><h3>10.0.1.2 → /dev/nvme0n1 percentiles</h3><div class="chart-box"><canvas id="nodeCurve_client-1"></canvas></div></div><div class="panel"><h3>10.0.1.3 → /dev/nvme0n1 percentiles</h3><div class="chart-box"><canvas id="nodeCurve_client-2"></canvas></div></div><div class="panel"><h3>target /dev/nvme0n1 percentiles</h3><div class="chart-box"><canvas id="nodeCurve_target-0"></canvas></div></div>
+      </div>
+    </details>
+    
+  </section>
+  
+  <section class="section" id="multi-node-balance">
+    
+    <div class="section-head"><h2>Multi-node balance</h2><span class="count">1 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>IOPS share (%)</h3><div class="chart-box"><canvas id="nodeShareChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="role-comparison">
+    
+    <div class="section-head"><h2>Role comparison</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Avg IOPS — clients vs targets</h3><div class="chart-box"><canvas id="roleIopsChart"></canvas></div></div><div class="panel"><h3>Avg p99 — clients vs targets</h3><div class="chart-box"><canvas id="roleP99Chart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="multi-node-latency-bands">
+    
+    <div class="section-head"><h2>Multi-node latency bands</h2><span class="count">4 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Band 2 — p5, p10, p15, p20, p25, p30, p35, p40, p45, p50</h3><div class="chart-box"><canvas id="nodeBand2"></canvas></div></div><div class="panel"><h3>Band 3 — p50, mean</h3><div class="chart-box"><canvas id="nodeBand3"></canvas></div></div><div class="panel"><h3>Band 4 — p50, p55, p60, p65, p70, p75, p80, p85, p90</h3><div class="chart-box"><canvas id="nodeBand4"></canvas></div></div><div class="panel"><h3>Band 5 — p92.5, p95, p97.5, p99, p99.25, p99.5, p99.75, p99.9, p99.95, p99.99</h3><div class="chart-box"><canvas id="nodeBand5"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="over-time-throughput">
+    
+    <div class="section-head"><h2>Over time — throughput</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Throughput (MB/s)</h3><div class="chart-box"><canvas id="intervalMbpsChart"></canvas></div></div><div class="panel"><h3>IOPS</h3><div class="chart-box"><canvas id="intervalIopsChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="over-time-latency">
+    
+    <div class="section-head"><h2>Over time — latency</h2><span class="count">3 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Avg latency</h3><div class="chart-box"><canvas id="intervalAvgLatChart"></canvas></div></div><div class="panel"><h3>Min latency</h3><div class="chart-box"><canvas id="intervalMinLatChart"></canvas></div></div><div class="panel"><h3>Max latency</h3><div class="chart-box"><canvas id="intervalMaxLatChart"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+  <section class="section" id="over-time-latency-bands">
+    
+    <div class="section-head"><h2>Over time — latency bands</h2><span class="count">2 charts</span></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Band 1</h3><div class="chart-box"><canvas id="ivBand1"></canvas></div></div><div class="panel"><h3>Band 3</h3><div class="chart-box"><canvas id="ivBand3"></canvas></div></div>
+    </div>
+    
+  </section>
+  
+
+  <section class="section" id="nodes">
+    <div class="section-head"><h2>Node matrix</h2><span class="count">5 nodes</span></div>
+    <div class="panel table-wrap"><table>
+      <tr><th>Node</th><th>Role</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th>
+      <th>min</th><th>mean</th><th>p50</th><th>p75</th><th>p90</th><th>p95</th><th>p99</th><th>p99.9</th><th>p99.99</th><th>max</th></tr>
+      <tr>
+        <td>Aggregate</td><td><span class="badge role-aggregate">aggregate</span></td>
+        <td>2410000</td><td>1687000</td><td>723000</td><td>24100.00</td>
+        <td>40.00</td><td>112.00</td><td>100.00</td><td>226.00</td><td>296.00</td><td>338.00</td>
+        <td>380.00</td><td>836.00</td><td>1504.8</td><td>900.00</td>
+      </tr><tr>
+        <td>10.0.1.1</td><td><span class="badge role-client">client</span></td>
+        <td>800000</td><td>560000</td><td>240000</td><td>8000.00</td>
+        <td>40.00</td><td>110.00</td><td>100.00</td><td>212.50</td><td>275.00</td><td>312.50</td>
+        <td>350.00</td><td>770.00</td><td>1386.0</td><td>800.00</td>
+      </tr><tr>
+        <td>10.0.1.2</td><td><span class="badge role-client">client</span></td>
+        <td>820000</td><td>574000</td><td>246000</td><td>8200.00</td>
+        <td>40.00</td><td>110.00</td><td>100.00</td><td>212.50</td><td>275.00</td><td>312.50</td>
+        <td>350.00</td><td>770.00</td><td>1386.0</td><td>800.00</td>
+      </tr><tr>
+        <td>10.0.1.3</td><td><span class="badge role-client">client</span></td>
+        <td>790000</td><td>553000</td><td>237000</td><td>7900.00</td>
+        <td>40.00</td><td>110.00</td><td>100.00</td><td>212.50</td><td>275.00</td><td>312.50</td>
+        <td>350.00</td><td>770.00</td><td>1386.0</td><td>800.00</td>
+      </tr><tr>
+        <td>/dev/nvme0n1</td><td><span class="badge role-target">target</span></td>
+        <td>2410000</td><td>0</td><td>0</td><td>24100.00</td>
+        <td>39.20</td><td>102.90</td><td>98.00</td><td>220.40</td><td>288.40</td><td>329.20</td>
+        <td>370.00</td><td>814.00</td><td>1465.2</td><td>976.80</td>
+      </tr>
+    </table></div>
+  </section>
+
+  
+  <section class="section" id="intervals">
+    <div class="section-head"><h2>Interval data</h2><span class="count">12 buckets · cluster aggregate</span></div>
+    <div class="panel table-wrap"><table>
+      <tr><th>#</th><th>Time</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+      <tr>
+        <td>1</td><td>2026-08-01T10:04:18Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+        <td>24100.00</td><td>95.00</td><td>40.00</td><td>400.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>2</td><td>2026-08-01T10:04:23Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+        <td>24582.00</td><td>96.00</td><td>40.00</td><td>410.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>3</td><td>2026-08-01T10:04:28Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+        <td>25064.00</td><td>97.00</td><td>40.00</td><td>420.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>4</td><td>2026-08-01T10:04:33Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+        <td>24100.00</td><td>98.00</td><td>40.00</td><td>430.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>5</td><td>2026-08-01T10:04:38Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+        <td>24582.00</td><td>99.00</td><td>40.00</td><td>440.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>6</td><td>2026-08-01T10:04:43Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+        <td>25064.00</td><td>100.00</td><td>40.00</td><td>450.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>7</td><td>2026-08-01T10:04:48Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+        <td>24100.00</td><td>101.00</td><td>40.00</td><td>460.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>8</td><td>2026-08-01T10:04:53Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+        <td>24582.00</td><td>102.00</td><td>40.00</td><td>470.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>9</td><td>2026-08-01T10:04:58Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+        <td>25064.00</td><td>103.00</td><td>40.00</td><td>480.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>10</td><td>2026-08-01T10:05:03Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+        <td>24100.00</td><td>104.00</td><td>40.00</td><td>490.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>11</td><td>2026-08-01T10:05:08Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+        <td>24582.00</td><td>105.00</td><td>40.00</td><td>500.00</td><td>0</td><td>0</td>
+      </tr><tr>
+        <td>12</td><td>2026-08-01T10:05:13Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+        <td>25064.00</td><td>106.00</td><td>40.00</td><td>510.00</td><td>0</td><td>0</td>
+      </tr>
+    </table></div>
+  </section>
+  
+
+  
+  <section class="section" id="node-intervals">
+    <div class="section-head"><h2>Per-node intervals</h2><span class="count">4 series</span></div>
+    
+    <details class="data-section">
+      <summary><span>Aggregate</span> <span class="badge role-aggregate">aggregate</span> <span class="count" style="margin-left:.5rem">12 buckets</span></summary>
+      <div class="inner table-wrap"><table>
+        <tr><th>#</th><th>Time</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+        <tr>
+          <td>1</td><td>2026-08-01T10:04:18Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+          <td>24100.00</td><td>95.00</td><td>40.00</td><td>400.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>2</td><td>2026-08-01T10:04:23Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+          <td>24582.00</td><td>96.00</td><td>40.00</td><td>410.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>3</td><td>2026-08-01T10:04:28Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+          <td>25064.00</td><td>97.00</td><td>40.00</td><td>420.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>4</td><td>2026-08-01T10:04:33Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+          <td>24100.00</td><td>98.00</td><td>40.00</td><td>430.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>5</td><td>2026-08-01T10:04:38Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+          <td>24582.00</td><td>99.00</td><td>40.00</td><td>440.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>6</td><td>2026-08-01T10:04:43Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+          <td>25064.00</td><td>100.00</td><td>40.00</td><td>450.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>7</td><td>2026-08-01T10:04:48Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+          <td>24100.00</td><td>101.00</td><td>40.00</td><td>460.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>8</td><td>2026-08-01T10:04:53Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+          <td>24582.00</td><td>102.00</td><td>40.00</td><td>470.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>9</td><td>2026-08-01T10:04:58Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+          <td>25064.00</td><td>103.00</td><td>40.00</td><td>480.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>10</td><td>2026-08-01T10:05:03Z</td><td>2410000</td><td>1687000</td><td>723000</td>
+          <td>24100.00</td><td>104.00</td><td>40.00</td><td>490.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>11</td><td>2026-08-01T10:05:08Z</td><td>2458200</td><td>1720740</td><td>737460</td>
+          <td>24582.00</td><td>105.00</td><td>40.00</td><td>500.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>12</td><td>2026-08-01T10:05:13Z</td><td>2506400</td><td>1754480</td><td>751920</td>
+          <td>25064.00</td><td>106.00</td><td>40.00</td><td>510.00</td><td>0</td><td>0</td>
+        </tr>
+      </table></div>
+    </details>
+    
+    <details class="data-section">
+      <summary><span>10.0.1.1 → /dev/nvme0n1</span> <span class="badge role-client">client</span> <span class="count" style="margin-left:.5rem">12 buckets</span></summary>
+      <div class="inner table-wrap"><table>
+        <tr><th>#</th><th>Time</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+        <tr>
+          <td>1</td><td>2026-08-01T10:04:18Z</td><td>760000</td><td>532000</td><td>228000</td>
+          <td>7600.00</td><td>95.00</td><td>40.00</td><td>400.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>2</td><td>2026-08-01T10:04:23Z</td><td>776000</td><td>543200</td><td>232800</td>
+          <td>7760.00</td><td>96.00</td><td>40.00</td><td>410.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>3</td><td>2026-08-01T10:04:28Z</td><td>792000</td><td>554400</td><td>237600</td>
+          <td>7920.00</td><td>97.00</td><td>40.00</td><td>420.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>4</td><td>2026-08-01T10:04:33Z</td><td>760000</td><td>532000</td><td>228000</td>
+          <td>7600.00</td><td>98.00</td><td>40.00</td><td>430.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>5</td><td>2026-08-01T10:04:38Z</td><td>776000</td><td>543200</td><td>232800</td>
+          <td>7760.00</td><td>99.00</td><td>40.00</td><td>440.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>6</td><td>2026-08-01T10:04:43Z</td><td>792000</td><td>554400</td><td>237600</td>
+          <td>7920.00</td><td>100.00</td><td>40.00</td><td>450.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>7</td><td>2026-08-01T10:04:48Z</td><td>760000</td><td>532000</td><td>228000</td>
+          <td>7600.00</td><td>101.00</td><td>40.00</td><td>460.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>8</td><td>2026-08-01T10:04:53Z</td><td>776000</td><td>543200</td><td>232800</td>
+          <td>7760.00</td><td>102.00</td><td>40.00</td><td>470.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>9</td><td>2026-08-01T10:04:58Z</td><td>792000</td><td>554400</td><td>237600</td>
+          <td>7920.00</td><td>103.00</td><td>40.00</td><td>480.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>10</td><td>2026-08-01T10:05:03Z</td><td>760000</td><td>532000</td><td>228000</td>
+          <td>7600.00</td><td>104.00</td><td>40.00</td><td>490.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>11</td><td>2026-08-01T10:05:08Z</td><td>776000</td><td>543200</td><td>232800</td>
+          <td>7760.00</td><td>105.00</td><td>40.00</td><td>500.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>12</td><td>2026-08-01T10:05:13Z</td><td>792000</td><td>554400</td><td>237600</td>
+          <td>7920.00</td><td>106.00</td><td>40.00</td><td>510.00</td><td>0</td><td>0</td>
+        </tr>
+      </table></div>
+    </details>
+    
+    <details class="data-section">
+      <summary><span>10.0.1.2 → /dev/nvme0n1</span> <span class="badge role-client">client</span> <span class="count" style="margin-left:.5rem">12 buckets</span></summary>
+      <div class="inner table-wrap"><table>
+        <tr><th>#</th><th>Time</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+        <tr>
+          <td>1</td><td>2026-08-01T10:04:18Z</td><td>779000</td><td>545300</td><td>233700</td>
+          <td>7790.00</td><td>95.00</td><td>40.00</td><td>400.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>2</td><td>2026-08-01T10:04:23Z</td><td>795400</td><td>556780</td><td>238620</td>
+          <td>7954.00</td><td>96.00</td><td>40.00</td><td>410.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>3</td><td>2026-08-01T10:04:28Z</td><td>811800</td><td>568260</td><td>243540</td>
+          <td>8118.00</td><td>97.00</td><td>40.00</td><td>420.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>4</td><td>2026-08-01T10:04:33Z</td><td>779000</td><td>545300</td><td>233700</td>
+          <td>7790.00</td><td>98.00</td><td>40.00</td><td>430.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>5</td><td>2026-08-01T10:04:38Z</td><td>795400</td><td>556780</td><td>238620</td>
+          <td>7954.00</td><td>99.00</td><td>40.00</td><td>440.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>6</td><td>2026-08-01T10:04:43Z</td><td>811800</td><td>568260</td><td>243540</td>
+          <td>8118.00</td><td>100.00</td><td>40.00</td><td>450.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>7</td><td>2026-08-01T10:04:48Z</td><td>779000</td><td>545300</td><td>233700</td>
+          <td>7790.00</td><td>101.00</td><td>40.00</td><td>460.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>8</td><td>2026-08-01T10:04:53Z</td><td>795400</td><td>556780</td><td>238620</td>
+          <td>7954.00</td><td>102.00</td><td>40.00</td><td>470.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>9</td><td>2026-08-01T10:04:58Z</td><td>811800</td><td>568260</td><td>243540</td>
+          <td>8118.00</td><td>103.00</td><td>40.00</td><td>480.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>10</td><td>2026-08-01T10:05:03Z</td><td>779000</td><td>545300</td><td>233700</td>
+          <td>7790.00</td><td>104.00</td><td>40.00</td><td>490.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>11</td><td>2026-08-01T10:05:08Z</td><td>795400</td><td>556780</td><td>238620</td>
+          <td>7954.00</td><td>105.00</td><td>40.00</td><td>500.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>12</td><td>2026-08-01T10:05:13Z</td><td>811800</td><td>568260</td><td>243540</td>
+          <td>8118.00</td><td>106.00</td><td>40.00</td><td>510.00</td><td>0</td><td>0</td>
+        </tr>
+      </table></div>
+    </details>
+    
+    <details class="data-section">
+      <summary><span>10.0.1.3 → /dev/nvme0n1</span> <span class="badge role-client">client</span> <span class="count" style="margin-left:.5rem">12 buckets</span></summary>
+      <div class="inner table-wrap"><table>
+        <tr><th>#</th><th>Time</th><th>IOPS</th><th>Read IOPS</th><th>Write IOPS</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+        <tr>
+          <td>1</td><td>2026-08-01T10:04:18Z</td><td>750500</td><td>525350</td><td>225150</td>
+          <td>7505.00</td><td>95.00</td><td>40.00</td><td>400.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>2</td><td>2026-08-01T10:04:23Z</td><td>766300</td><td>536410</td><td>229890</td>
+          <td>7663.00</td><td>96.00</td><td>40.00</td><td>410.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>3</td><td>2026-08-01T10:04:28Z</td><td>782100</td><td>547470</td><td>234630</td>
+          <td>7821.00</td><td>97.00</td><td>40.00</td><td>420.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>4</td><td>2026-08-01T10:04:33Z</td><td>750500</td><td>525350</td><td>225150</td>
+          <td>7505.00</td><td>98.00</td><td>40.00</td><td>430.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>5</td><td>2026-08-01T10:04:38Z</td><td>766300</td><td>536410</td><td>229890</td>
+          <td>7663.00</td><td>99.00</td><td>40.00</td><td>440.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>6</td><td>2026-08-01T10:04:43Z</td><td>782100</td><td>547470</td><td>234630</td>
+          <td>7821.00</td><td>100.00</td><td>40.00</td><td>450.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>7</td><td>2026-08-01T10:04:48Z</td><td>750500</td><td>525350</td><td>225150</td>
+          <td>7505.00</td><td>101.00</td><td>40.00</td><td>460.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>8</td><td>2026-08-01T10:04:53Z</td><td>766300</td><td>536410</td><td>229890</td>
+          <td>7663.00</td><td>102.00</td><td>40.00</td><td>470.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>9</td><td>2026-08-01T10:04:58Z</td><td>782100</td><td>547470</td><td>234630</td>
+          <td>7821.00</td><td>103.00</td><td>40.00</td><td>480.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>10</td><td>2026-08-01T10:05:03Z</td><td>750500</td><td>525350</td><td>225150</td>
+          <td>7505.00</td><td>104.00</td><td>40.00</td><td>490.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>11</td><td>2026-08-01T10:05:08Z</td><td>766300</td><td>536410</td><td>229890</td>
+          <td>7663.00</td><td>105.00</td><td>40.00</td><td>500.00</td><td>0</td><td>0</td>
+        </tr><tr>
+          <td>12</td><td>2026-08-01T10:05:13Z</td><td>782100</td><td>547470</td><td>234630</td>
+          <td>7821.00</td><td>106.00</td><td>40.00</td><td>510.00</td><td>0</td><td>0</td>
+        </tr>
+      </table></div>
+    </details>
+    
+  </section>
+  
+
+  
+  <section class="section" id="insights">
+    <div class="section-head"><h2>Analyst insights</h2></div>
+    <div class="panel"><div class="insight info">Mock engine — results are synthetic, not real storage I/O.</div></div>
+  </section>
+  
+
+  <footer>
+    <span>StrataBench 0.8.0-rc4 · 2026-08-01T10:05:18Z</span>
+    <span class="mono">run multi-node-sample</span>
+  </footer>
+</main>
+<script>
+
+const CH = {"charts":{"aggBarChart":{"kind":"bar","labels":["p50","p99","p99.9"],"datasets":[{"label":"Latency µs","data":[100,350,500]}]},"aggLineChart":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"Aggregate","data":[100,350,500]}],"hideLegend":true},"compareAvgLatChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Mean µs","data":[112,110,110,110,102.9]}]},"compareIopsChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"IOPS","data":[2410000,800000,820000,790000,2410000]}]},"compareKeyPercChart":{"kind":"bar","labels":["Aggregate","10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"p50","data":[100,100,100,100,100]},{"label":"p99","data":[350,350,350,350,350]},{"label":"p99.9","data":[500,500,500,500,500]}]},"compareMaxLatChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Max µs","data":[900,800,800,800,976.8000000000001]}]},"compareMbpsChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"MB/s","data":[24100,8000,8200,7900,24100]}]},"compareMinLatChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Min µs","data":[40,40,40,40,39.2]}]},"compareReadMbpsChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Read MB/s","data":[16870,5600,5740,5530,0]}]},"compareWriteMbpsChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Write MB/s","data":[7230,2400,2460,2370,0]}]},"grafanaLatency":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"Min","data":[40,40,40,40,40,40,40,40,40,40,40,40],"dashed":true},{"label":"Max","data":[400,410,420,430,440,450,460,470,480,490,500,510],"dashed":true}]},"grafanaOpsOverview":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"IOPS","data":[2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400],"yAxisID":"y"},{"label":"MB/s","data":[24100,24582,25064,24100,24582,25064,24100,24582,25064,24100,24582,25064],"dashed":true,"yAxisID":"y1"}],"dualAxis":true},"grafanaReadWrite":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Write IOPS","data":[723000,737460,751920,723000,737460,751920,723000,737460,751920,723000,737460,751920],"fill":true},{"label":"Read IOPS","data":[1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480],"fill":true}],"area":true},"grafanaThroughputStack":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Read MB/s","data":[16870,17207.4,17544.8,16870,17207.4,17544.8,16870,17207.4,17544.8,16870,17207.4,17544.8],"fill":true},{"label":"Write MB/s","data":[7230,7374.6,7519.2,7230,7374.6,7519.2,7230,7374.6,7519.2,7230,7374.6,7519.2],"fill":true},{"label":"Total MB/s","data":[24100,24582,25064,24100,24582,25064,24100,24582,25064,24100,24582,25064]}],"area":true},"intervalAvgLatChart":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg µs","data":[95,96,97,98,99,100,101,102,103,104,105,106]}]},"intervalIopsChart":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Total IOPS","data":[2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400]},{"label":"Read IOPS","data":[1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480]},{"label":"Write IOPS","data":[723000,737460,751920,723000,737460,751920,723000,737460,751920,723000,737460,751920]}]},"intervalMaxLatChart":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Max µs","data":[400,410,420,430,440,450,460,470,480,490,500,510]}]},"intervalMbpsChart":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Total MB/s","data":[24100,24582,25064,24100,24582,25064,24100,24582,25064,24100,24582,25064]},{"label":"Read MB/s","data":[16870,17207.4,17544.8,16870,17207.4,17544.8,16870,17207.4,17544.8,16870,17207.4,17544.8]},{"label":"Write MB/s","data":[7230,7374.6,7519.2,7230,7374.6,7519.2,7230,7374.6,7519.2,7230,7374.6,7519.2]}]},"intervalMinLatChart":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Min µs","data":[40,40,40,40,40,40,40,40,40,40,40,40]}]},"ivBand1":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"min µs","data":[40,40,40,40,40,40,40,40,40,40,40,40]}]},"ivBand3":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Mean µs","data":[95,96,97,98,99,100,101,102,103,104,105,106]}]},"nodeBand2":{"kind":"line","labels":["p5","p10","p15","p20","p25","p30","p35","p40","p45","p50"],"datasets":[{"label":"Aggregate","data":[0,0,0,0,0,0,0,0,0,100]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[0,0,0,0,0,0,0,0,0,100]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[0,0,0,0,0,0,0,0,0,100]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[0,0,0,0,0,0,0,0,0,100]},{"label":"target /dev/nvme0n1","data":[0,0,0,0,0,0,0,0,0,100]}]},"nodeBand3":{"kind":"line","labels":["p50","mean"],"datasets":[{"label":"Aggregate","data":[100,105]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,105]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,105]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,105]},{"label":"target /dev/nvme0n1","data":[100,105]}]},"nodeBand4":{"kind":"line","labels":["p50","p55","p60","p65","p70","p75","p80","p85","p90"],"datasets":[{"label":"Aggregate","data":[100,0,0,0,0,0,0,0,0]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,0,0,0,0,0,0,0,0]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,0,0,0,0,0,0,0,0]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,0,0,0,0,0,0,0,0]},{"label":"target /dev/nvme0n1","data":[100,0,0,0,0,0,0,0,0]}]},"nodeBand5":{"kind":"line","labels":["p92.5","p95","p97.5","p99","p99.25","p99.5","p99.75","p99.9","p99.95","p99.99"],"datasets":[{"label":"Aggregate","data":[0,0,0,350,0,0,0,500,0,0]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[0,0,0,350,0,0,0,500,0,0]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[0,0,0,350,0,0,0,500,0,0]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[0,0,0,350,0,0,0,500,0,0]},{"label":"target /dev/nvme0n1","data":[0,0,0,350,0,0,0,500,0,0]}]},"nodeCurve_client-0":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,350,500]}],"hideLegend":true},"nodeCurve_client-1":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,350,500]}],"hideLegend":true},"nodeCurve_client-2":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,350,500]}],"hideLegend":true},"nodeCurve_target-0":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"target /dev/nvme0n1","data":[100,350,500]}],"hideLegend":true},"nodeGrafanaLat_aggregate":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"Min","data":[40,40,40,40,40,40,40,40,40,40,40,40],"dashed":true},{"label":"Max","data":[400,410,420,430,440,450,460,470,480,490,500,510],"dashed":true}]},"nodeGrafanaLat_client-0":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"Min","data":[40,40,40,40,40,40,40,40,40,40,40,40],"dashed":true},{"label":"Max","data":[400,410,420,430,440,450,460,470,480,490,500,510],"dashed":true}]},"nodeGrafanaLat_client-1":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"Min","data":[40,40,40,40,40,40,40,40,40,40,40,40],"dashed":true},{"label":"Max","data":[400,410,420,430,440,450,460,470,480,490,500,510],"dashed":true}]},"nodeGrafanaLat_client-2":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Avg","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"Min","data":[40,40,40,40,40,40,40,40,40,40,40,40],"dashed":true},{"label":"Max","data":[400,410,420,430,440,450,460,470,480,490,500,510],"dashed":true}]},"nodeGrafanaOps_aggregate":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"IOPS","data":[2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400],"yAxisID":"y"},{"label":"MB/s","data":[24100,24582,25064,24100,24582,25064,24100,24582,25064,24100,24582,25064],"dashed":true,"yAxisID":"y1"}],"dualAxis":true},"nodeGrafanaOps_client-0":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"IOPS","data":[760000,776000,792000,760000,776000,792000,760000,776000,792000,760000,776000,792000],"yAxisID":"y"},{"label":"MB/s","data":[7600,7760,7920,7600,7760,7920,7600,7760,7920,7600,7760,7920],"dashed":true,"yAxisID":"y1"}],"dualAxis":true},"nodeGrafanaOps_client-1":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"IOPS","data":[779000,795400,811800,779000,795400,811800,779000,795400,811800,779000,795400,811800],"yAxisID":"y"},{"label":"MB/s","data":[7790,7954,8118,7790,7954,8118,7790,7954,8118,7790,7954,8118],"dashed":true,"yAxisID":"y1"}],"dualAxis":true},"nodeGrafanaOps_client-2":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"IOPS","data":[750500,766300,782100,750500,766300,782100,750500,766300,782100,750500,766300,782100],"yAxisID":"y"},{"label":"MB/s","data":[7505,7663,7821,7505,7663,7821,7505,7663,7821,7505,7663,7821],"dashed":true,"yAxisID":"y1"}],"dualAxis":true},"nodeGrafanaRW_aggregate":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Write IOPS","data":[723000,737460,751920,723000,737460,751920,723000,737460,751920,723000,737460,751920],"fill":true},{"label":"Read IOPS","data":[1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480],"fill":true}],"area":true},"nodeGrafanaRW_client-0":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Write IOPS","data":[228000,232800,237600,228000,232800,237600,228000,232800,237600,228000,232800,237600],"fill":true},{"label":"Read IOPS","data":[532000,543200,554400,532000,543200,554400,532000,543200,554400,532000,543200,554400],"fill":true}],"area":true},"nodeGrafanaRW_client-1":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Write IOPS","data":[233700,238620,243540,233700,238620,243540,233700,238620,243540,233700,238620,243540],"fill":true},{"label":"Read IOPS","data":[545300,556780,568260,545300,556780,568260,545300,556780,568260,545300,556780,568260],"fill":true}],"area":true},"nodeGrafanaRW_client-2":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Write IOPS","data":[225150,229890,234630,225150,229890,234630,225150,229890,234630,225150,229890,234630],"fill":true},{"label":"Read IOPS","data":[525350,536410,547470,525350,536410,547470,525350,536410,547470,525350,536410,547470],"fill":true}],"area":true},"nodeIopsChart":{"kind":"bar","labels":["10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"IOPS","data":[800000,820000,790000,2410000]}]},"nodeMbpsChart":{"kind":"bar","labels":["10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"MB/s","data":[8000,8200,7900,24100]}]},"nodeOverlayIops":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Aggregate","data":[2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400,2410000,2458200,2506400]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[760000,776000,792000,760000,776000,792000,760000,776000,792000,760000,776000,792000]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[779000,795400,811800,779000,795400,811800,779000,795400,811800,779000,795400,811800]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[750500,766300,782100,750500,766300,782100,750500,766300,782100,750500,766300,782100]}]},"nodeOverlayLatency":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Aggregate","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[95,96,97,98,99,100,101,102,103,104,105,106]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[95,96,97,98,99,100,101,102,103,104,105,106]}]},"nodeOverlayMbps":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Aggregate","data":[24100,24582,25064,24100,24582,25064,24100,24582,25064,24100,24582,25064]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[7600,7760,7920,7600,7760,7920,7600,7760,7920,7600,7760,7920]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[7790,7954,8118,7790,7954,8118,7790,7954,8118,7790,7954,8118]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[7505,7663,7821,7505,7663,7821,7505,7663,7821,7505,7663,7821]}]},"nodeOverlayRead":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Aggregate","data":[1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480,1687000,1720740,1754480]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[532000,543200,554400,532000,543200,554400,532000,543200,554400,532000,543200,554400]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[545300,556780,568260,545300,556780,568260,545300,556780,568260,545300,556780,568260]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[525350,536410,547470,525350,536410,547470,525350,536410,547470,525350,536410,547470]}]},"nodeOverlayWrite":{"kind":"line","labels":["10:04:18","10:04:23","10:04:28","10:04:33","10:04:38","10:04:43","10:04:48","10:04:53","10:04:58","10:05:03","10:05:08","10:05:13"],"datasets":[{"label":"Aggregate","data":[723000,737460,751920,723000,737460,751920,723000,737460,751920,723000,737460,751920],"dashed":true},{"label":"10.0.1.1 → /dev/nvme0n1","data":[228000,232800,237600,228000,232800,237600,228000,232800,237600,228000,232800,237600],"dashed":true},{"label":"10.0.1.2 → /dev/nvme0n1","data":[233700,238620,243540,233700,238620,243540,233700,238620,243540,233700,238620,243540],"dashed":true},{"label":"10.0.1.3 → /dev/nvme0n1","data":[225150,229890,234630,225150,229890,234630,225150,229890,234630,225150,229890,234630],"dashed":true}]},"nodePerc_p50":{"kind":"bar","labels":["Aggregate","10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"p50 µs","data":[100,100,100,100,100]}]},"nodePerc_p99":{"kind":"bar","labels":["Aggregate","10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"p99 µs","data":[350,350,350,350,350]}]},"nodePerc_p99_9":{"kind":"bar","labels":["Aggregate","10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"p99.9 µs","data":[500,500,500,500,500]}]},"nodeShareChart":{"kind":"bar","labels":["10.0.1.1 → /dev/nvme0n1","10.0.1.2 → /dev/nvme0n1","10.0.1.3 → /dev/nvme0n1","target /dev/nvme0n1"],"datasets":[{"label":"% of cluster IOPS","data":[16.59751037344398,17.012448132780083,16.390041493775932,50]}]},"nodesLineChart":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"Aggregate","data":[100,350,500]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,350,500]},{"label":"target /dev/nvme0n1","data":[100,350,500],"dashed":true}]},"percGroup0":{"kind":"line","labels":["p50"],"datasets":[{"label":"Aggregate","data":[100]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100]},{"label":"target /dev/nvme0n1","data":[100]}]},"percGroup1":{"kind":"line","labels":["p50","p99","p99.9"],"datasets":[{"label":"Aggregate","data":[100,350,500]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,350,500]},{"label":"target /dev/nvme0n1","data":[100,350,500]}]},"roleIopsChart":{"kind":"bar","labels":["Clients","Targets"],"datasets":[{"label":"IOPS","data":[803333.3333333334,2410000]}]},"roleP99Chart":{"kind":"bar","labels":["Clients","Targets"],"datasets":[{"label":"p99 µs","data":[350,370]}]},"tailChart":{"kind":"bar","labels":["p50","p99","p99.9"],"datasets":[{"label":"Aggregate","data":[100,350,500]},{"label":"10.0.1.1 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.2 → /dev/nvme0n1","data":[100,350,500]},{"label":"10.0.1.3 → /dev/nvme0n1","data":[100,350,500]},{"label":"target /dev/nvme0n1","data":[100,350,500]}]},"totalAvgLatency":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Mean µs","data":[112,110,110,110,102.9]}]},"totalMaxLatency":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Max µs","data":[900,800,800,800,976.8000000000001]}]},"totalMbBreakdown":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Write request MB","data":[433800,144000,147600,142200,0]},{"label":"Read request MB","data":[1012200,336000,344400,331800,0]},{"label":"Write pending MB","data":[0,0,0,0,0]},{"label":"Read pending MB","data":[0,0,0,0,0]}],"stacked":true},"totalMbTotal":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Total MB","data":[1446000,480000,492000,474000,1446000]}]},"totalMinLatency":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Min µs","data":[40,40,40,40,39.2]}]},"totalRecordsBreakdown":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Write records","data":[43380000,14400000,14760000,14220000,0]},{"label":"Read records","data":[101220000,33600000,34440000,33180000,0]}],"stacked":true},"totalRecordsTotal":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Records","data":[144600000,48000000,49200000,47400000,144600000]}]},"totalThroughputMbps":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"MB/s","data":[24100,8000,8200,7900,24100]}]},"totalThroughputRecords":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Records/s","data":[2410000,800000,820000,790000,2410000]}]},"writeReadChart":{"kind":"bar","labels":["Aggregate","10.0.1.1","10.0.1.2","10.0.1.3","/dev/nvme0n1"],"datasets":[{"label":"Read IOPS","data":[1687000,560000,574000,553000,0]},{"label":"Write IOPS","data":[723000,240000,246000,237000,0]}]}}};
+const palette = ['#14b8a6','#38bdf8','#fbbf24','#f472b6','#a78bfa','#4ade80','#fb923c','#818cf8','#e879f9','#34d399'];
+const gridColor = '#1e2836', tickColor = '#8b9cb3';
+const chartInstances = [];
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: tickColor, boxWidth: 12 } } },
+  scales: {
+    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+    x: { grid: { display: false }, ticks: { color: tickColor, maxRotation: 45, autoSkip: true, maxTicksLimit: 18 } }
+  }
+};
+function lineDS(d, idx) {
+  const c = palette[idx % palette.length];
+  return {
+    label: d.label, data: d.data, yAxisID: d.yAxisID || 'y',
+    borderColor: c, backgroundColor: d.fill ? c + '33' : c + '18',
+    borderWidth: 2, borderDash: d.dashed ? [6,4] : [],
+    pointRadius: d.fill ? 0 : 2, tension: 0.3,
+    fill: d.fill ? 'origin' : false
+  };
+}
+function mkLine(id, labels, datasets, hideLegend, dualAxis) {
+  const el = document.getElementById(id); if (!el) return;
+  const ds = datasets.map((d,i) => lineDS(d,i));
+  const scales = { x: baseOpts.scales.x, y: { ...baseOpts.scales.y, position: 'left' } };
+  if (dualAxis) scales.y1 = { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: tickColor } };
+  chartInstances.push(new Chart(el, { type: 'line', data: { labels, datasets: ds },
+    options: { ...baseOpts, plugins: { legend: { display: !hideLegend, labels: { color: tickColor } } }, scales } }));
+}
+function mkBar(id, labels, datasets, stacked) {
+  const el = document.getElementById(id); if (!el) return;
+  chartInstances.push(new Chart(el, { type: 'bar', data: { labels, datasets: datasets.map((d,i) => ({
+    ...d, backgroundColor: palette[i % palette.length] + 'bb', borderRadius: 4
+  })) }, options: { ...baseOpts, scales: {
+    x: { ...baseOpts.scales.x, stacked }, y: { ...baseOpts.scales.y, stacked } } } }));
+}
+Object.entries(CH.charts || {}).forEach(([id, spec]) => {
+  if (spec.kind === 'bar') {
+    mkBar(id, spec.labels, spec.datasets, spec.stacked);
+  } else {
+    mkLine(id, spec.labels, spec.datasets, spec.hideLegend, spec.dualAxis);
+  }
+});
+window.addEventListener('resize', () => chartInstances.forEach(c => c.resize()));
+(function(){
+  const links = document.querySelectorAll('#sideNav a[data-section]');
+  const sections = [...links].map(a => document.getElementById(a.dataset.section)).filter(Boolean);
+  const onScroll = () => {
+    let cur = sections[0]?.id || '';
+    for (const s of sections) {
+      if (s.getBoundingClientRect().top <= 120) cur = s.id;
+    }
+    links.forEach(a => a.classList.toggle('active', a.dataset.section === cur));
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+
+</script>
+</body>
+</html>

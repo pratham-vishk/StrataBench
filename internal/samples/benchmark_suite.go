@@ -131,6 +131,9 @@ func GenerateAll(ctx context.Context, svc *orchestrator.Service, outDir string) 
 	if err := WriteS3Sample(ctx, svc, outDir); err != nil {
 		return err
 	}
+	if err := WriteMultiNodeSample(outDir); err != nil {
+		return fmt.Errorf("multi-node sample: %w", err)
+	}
 	return nil
 }
 

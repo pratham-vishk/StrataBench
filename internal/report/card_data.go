@@ -61,9 +61,10 @@ type CardData struct {
 	DurationRows   []DurationRow
 	MetricRows     []KVRow
 	TotalRows      []KVRow
-	NodeRows       []NodeRow
-	IntervalRows   []IntervalRow
-	PercentileRows []PercentileRow
+	NodeRows            []NodeRow
+	IntervalRows        []IntervalRow
+	NodeIntervalSections []NodeIntervalSection
+	PercentileRows      []PercentileRow
 	PercLabels     []string
 }
 
@@ -89,6 +90,12 @@ type IntervalRow struct {
 	Seq, Timestamp, IOPS, ReadIOPS, WriteIOPS, MBps, Avg, Min, Max, WTimeout, RTimeout string
 }
 
+// NodeIntervalSection is per-node interval bucket table (multi-node runs).
+type NodeIntervalSection struct {
+	Label, Role string
+	Rows        []IntervalRow
+}
+
 // NodeRow is one row in the all-nodes percentile table.
 type NodeRow struct {
 	Label, Role, IOPS, ReadIOPS, WriteIOPS, MBps string
@@ -109,10 +116,10 @@ func buildCardData(run *schema.RunResult, opts Options) (CardData, error) {
 		P99:          fmt.Sprintf("%.0f", run.Results.LatencyUS.P99),
 		P50:          fmt.Sprintf("%.0f", run.Results.LatencyUS.P50),
 		P95:          fmt.Sprintf("%.0f", run.Results.LatencyUS.P95),
-		HasIntervals: len(run.Results.Intervals) > 0,
+		HasIntervals: runHasAnyIntervals(run),
 		HasHistogram: len(run.Results.PercentileCounts) > 0,
 		HasReadWrite: hasReadWrite(run),
-		HasTimeouts:    intervalHasTimeouts(run.Results.Intervals),
+		HasTimeouts:    runHasAnyTimeouts(run),
 		BenchmarkLabel: benchmarkLabel(run),
 		EngineLabel:    displayEngine(run.Engine),
 	}
@@ -174,6 +181,7 @@ func buildCardData(run *schema.RunResult, opts Options) (CardData, error) {
 	cd.HasTotals = len(cd.TotalRows) > 0 && !isObjectLayer(run)
 	cd.PercentileRows = buildPercentileRows(run)
 	cd.IntervalRows = buildIntervalRows(run)
+	cd.NodeIntervalSections = buildNodeIntervalSections(run)
 	cd.KPIs = buildKPIs(run, cd)
 	cd.NavSections = buildNavSections(cd)
 
@@ -342,6 +350,15 @@ func buildKPIs(run *schema.RunResult, cd CardData) []KPI {
 	}
 }
 
+func runHasAnyTimeouts(run *schema.RunResult) bool {
+	for _, s := range collectIntervalSources(run) {
+		if intervalHasTimeouts(s.IVs) {
+			return true
+		}
+	}
+	return false
+}
+
 func buildNavSections(cd CardData) []NavSection {
 	sections := []NavSection{
 		{ID: "overview", Title: "Overview"},
@@ -372,6 +389,9 @@ func buildNavSections(cd CardData) []NavSection {
 	if cd.HasIntervals {
 		sections = append(sections, NavSection{ID: "intervals", Title: "Interval data"})
 	}
+	if len(cd.NodeIntervalSections) > 1 {
+		sections = append(sections, NavSection{ID: "node-intervals", Title: "Per-node intervals"})
+	}
 	return sections
 }
 
@@ -391,19 +411,23 @@ func formatCompactInt(n int64) string {
 func buildIntervalRows(run *schema.RunResult) []IntervalRow {
 	var rows []IntervalRow
 	for _, iv := range run.Results.Intervals {
-		ts := "—"
-		if !iv.Timestamp.IsZero() {
-			ts = iv.Timestamp.Format(time.RFC3339)
-		}
-		rows = append(rows, IntervalRow{
-			Seq: fmt.Sprintf("%d", iv.Seq), Timestamp: ts,
-			IOPS: fmt.Sprintf("%.0f", iv.IOPS), ReadIOPS: fmt.Sprintf("%.0f", iv.ReadIOPS),
-			WriteIOPS: fmt.Sprintf("%.0f", iv.WriteIOPS), MBps: fmt.Sprintf("%.2f", iv.ThroughputMBps),
-			Avg: fµs(iv.AvgLatencyUS), Min: fµs(iv.MinLatencyUS), Max: fµs(iv.MaxLatencyUS),
-			WTimeout: fmt.Sprintf("%d", iv.WriteTimeoutEvents), RTimeout: fmt.Sprintf("%d", iv.ReadTimeoutEvents),
-		})
+		rows = append(rows, intervalSampleToRow(iv))
 	}
 	return rows
+}
+
+func intervalSampleToRow(iv schema.IntervalSample) IntervalRow {
+	ts := "—"
+	if !iv.Timestamp.IsZero() {
+		ts = iv.Timestamp.Format(time.RFC3339)
+	}
+	return IntervalRow{
+		Seq: fmt.Sprintf("%d", iv.Seq), Timestamp: ts,
+		IOPS: fmt.Sprintf("%.0f", iv.IOPS), ReadIOPS: fmt.Sprintf("%.0f", iv.ReadIOPS),
+		WriteIOPS: fmt.Sprintf("%.0f", iv.WriteIOPS), MBps: fmt.Sprintf("%.2f", iv.ThroughputMBps),
+		Avg: fµs(iv.AvgLatencyUS), Min: fµs(iv.MinLatencyUS), Max: fµs(iv.MaxLatencyUS),
+		WTimeout: fmt.Sprintf("%d", iv.WriteTimeoutEvents), RTimeout: fmt.Sprintf("%d", iv.ReadTimeoutEvents),
+	}
 }
 
 func fµs(v float64) string {

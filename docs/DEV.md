@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.25+
 - Linux or WSL2 for real `fio` benchmarks
 - `fio` (optional): `sudo apt install fio`
 - `warp` (optional): MinIO Warp for S3 profiles
@@ -22,7 +22,7 @@ make build
 ./bin/stratabench validate --profile nvme-random-oltp --cache-bytes 10737418240
 ./bin/stratabench run --profile ssd-random-4k --target /tmp/test --mock
 ./bin/stratabench runs
-./bin/stratabench compare --run-id <a> --run-id-b <b>
+./bin/stratabench compare runs --run-id <a> --run-id-b <b>
 ./bin/stratabench plan "nvme oltp" --ollama
 ./bin/stratabench agent "s3 cluster read heavy" --target 10.0.1.10:9000 --mock
 ./bin/stratabench cross-layer --profiles nvme-random-oltp,s3-put-throughput --target /tmp/test --mock
@@ -43,6 +43,13 @@ curl http://localhost:8080/api/v1/profiles
 curl -X POST http://localhost:8080/api/v1/runs \
   -H 'Content-Type: application/json' \
   -d '{"profile":"ssd-random-4k","target":"/tmp/test","mock":true}'
+curl -X POST http://localhost:8080/api/v1/validate \
+  -H 'Content-Type: application/json' \
+  -d '{"profile":"ssd-random-4k","target":"/tmp/test","mock":true}'
+curl http://localhost:8080/api/v1/report/<run-id>
+curl -X POST http://localhost:8080/api/v1/compare \
+  -H 'Content-Type: application/json' \
+  -d '{"run_id":"<a>","run_id_b":"<b>"}'
 curl http://localhost:8080/metrics
 ```
 
@@ -59,15 +66,25 @@ See [LAB-BOOTSTRAP.md](LAB-BOOTSTRAP.md) for cluster workflows.
 On each client VM:
 
 ```bash
+export STRATABENCH_AGENT_TOKEN="your-secret"   # optional but recommended
 ./bin/stratabench-agent
 # listens on :7777 (STRATABENCH_AGENT_LISTEN to override)
 ```
+
+Set the same `STRATABENCH_AGENT_TOKEN` on the coordinator when using `--clients`.
 
 From coordinator:
 
 ```bash
 ./bin/stratabench run --profile ssd-random-4k --target /dev/nvme0n1 --mock \
-  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777 --topology pool
+```
+
+Native Warp coordinator mode (port **7761**, not agent 7777):
+
+```bash
+./bin/stratabench run --profile s3-cluster-put-get --target 10.0.1.10:9000 \
+  --warp-clients 10.0.1.1:7761,10.0.1.2:7761
 ```
 
 Aggregates sum IOPS/throughput; tail latency uses max across clients.
@@ -100,6 +117,7 @@ Use `--mock` on Windows or when hardware is unavailable.
 | `STRATABENCH_ROOT` | Repo root (auto-detected) |
 | `STRATABENCH_MOCK_CACHE_BYTES` | Override cache size for validation |
 | `STRATABENCH_AGENT_LISTEN` | Agent bind address (default `:7777`) |
+| `STRATABENCH_AGENT_TOKEN` | Shared bearer token for agent HTTP API |
 | `WARP_ACCESS_KEY` / `WARP_SECRET_KEY` | S3 credentials for Warp |
 | `OLLAMA_URL` | Ollama API base URL (default `http://localhost:11434`) |
 | `OLLAMA_MODEL` | Model for planner (default `llama3.2`) |

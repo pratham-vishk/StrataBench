@@ -31,6 +31,7 @@ type RunOptions struct {
 	Target        string
 	Targets       []string
 	Clients       []string
+	WarpClients   []string // native warp --warp-client hosts (port 7761), not stratabench agents
 	Topology      string
 	Mock          bool
 	SkipValidate  bool
@@ -80,6 +81,7 @@ func (s *Service) Validate(opts RunOptions) schema.ValidationResult {
 }
 
 func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, error) {
+	opts.Profile = applyWarpClients(opts.Profile, opts.WarpClients)
 	targets := topology.MergeTargets(opts.Target, opts.Targets)
 	plan, err := topology.Build(opts.Topology, opts.Clients, targets)
 	if err != nil {
@@ -141,6 +143,16 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 				Target:  it.assignment.Target,
 				Results: it.results,
 			})
+		} else if len(plan.Assignments) > 1 {
+			host := hw.Hostname
+			if host == "" {
+				host = "coordinator"
+			}
+			clientRuns = append(clientRuns, schema.ClientResult{
+				Host:    host,
+				Target:  it.assignment.Target,
+				Results: it.results,
+			})
 		}
 	}
 	if len(resultSet) == 0 {
@@ -199,7 +211,7 @@ func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology
 	if _, err := client.Health(ctx); err != nil {
 		return schema.Results{}, fmt.Errorf("health check: %w", err)
 	}
-	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, true, opts.CheckHardware, opts.CacheBytes)
+	run, err := client.Run(ctx, opts.Profile, a.Target, opts.Mock, opts.SkipValidate, opts.CheckHardware, opts.CacheBytes)
 	if err != nil {
 		return schema.Results{}, err
 	}

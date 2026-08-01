@@ -4,7 +4,7 @@
 [![Docker](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml/badge.svg)](https://github.com/pratham-vishk/StrataBench/actions/workflows/docker.yml)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Go](https://img.shields.io/badge/go-1.25+-00ADD8)
-![Profiles](https://img.shields.io/badge/profiles-30+-brightgreen)
+![Profiles](https://img.shields.io/badge/profiles-29-brightgreen)
 
 **Agentic, honest storage benchmarking for every layer — HDD, NVMe, AFA, S3, VM, and application workloads.**
 
@@ -76,7 +76,7 @@ StrataBench is an open-source platform that **orchestrates** industry-standard e
 ### Platform features
 
 - **Validator** — cache size, steady state, tail latency rules before every run
-- **30+ workload profiles** — declarative YAML, extensible
+- **29 workload profiles** — declarative YAML, extensible
 - **Agentic loop** — `stratabench agent "nvme oltp database"` → plan → validate → run → analyze → report
 - **MCP server** — `stratabench-mcp` exposes 7 tools for Cursor, Claude, and other CLI models
 - **LLM planner** — Ollama or OpenAI-compatible APIs; keyword fallback
@@ -111,7 +111,7 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:latest version
 ### Run (no hardware required)
 
 ```bash
-# List 30+ built-in profiles
+# List 29 built-in profiles
 ./bin/stratabench profiles
 
 # Mock run — works on Windows, macOS, Linux
@@ -214,7 +214,7 @@ Natural language / CLI / API / Kubernetes CRD
          ┌──────────────────────┐
          │  Orchestrator        │
          │  Topology engine     │
-         │  30+ YAML profiles   │
+         │  29 YAML profiles    │
          └──────────┬───────────┘
                     ▼
     ┌───────────────┼───────────────┐
@@ -288,7 +288,7 @@ Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` �
 | [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Hardware sign-off checklist |
 | [VISION.md](docs/VISION.md) | Project goals |
 | [ROADMAP.md](docs/ROADMAP.md) | What's shipped vs planned |
-| [profiles/](profiles/) | 30+ workload YAML definitions |
+| [profiles/](profiles/) | 29 workload YAML definitions |
 
 ---
 

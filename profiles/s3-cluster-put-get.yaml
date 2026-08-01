@@ -18,6 +18,8 @@ params:
   object_size: 4MiB
   bucket: stratabench-cluster
   host: "127.0.0.1:9000"
+  # Distributed S3: use --clients + --topology pool (agent per node runs warp locally).
+  # Native Warp coordinator mode: set warp_clients to host:7761 entries instead.
   warp_clients: []
 
 metrics:

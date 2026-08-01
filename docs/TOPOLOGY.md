@@ -79,6 +79,17 @@ stratabench run --profile s3-cluster-rdma \
 
 Use `--topology matrix` explicitly for full cartesian fan-out.
 
+### Native Warp coordinator mode
+
+For cluster profiles (`s3-cluster-*`), use `--warp-clients` (Warp port **7761**) on a single coordinator run — distinct from `--clients` (StrataBench agents on port **7777**):
+
+```bash
+stratabench run --profile s3-cluster-put-get --target 10.0.1.10:9000 \
+  --warp-clients 10.0.1.1:7761,10.0.1.2:7761,10.0.1.3:7761
+```
+
+For agent-based distribution (recommended), use `--clients` + `--topology pool` instead.
+
 ## Results
 
 Each run stores:

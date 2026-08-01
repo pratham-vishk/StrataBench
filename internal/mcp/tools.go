@@ -144,24 +144,7 @@ func (t *Tools) Validate(ctx context.Context, args map[string]any) (any, error) 
 }
 
 func (t *Tools) Run(ctx context.Context, args map[string]any) (any, error) {
-	name, _ := args["profile"].(string)
-	target, _ := args["target"].(string)
-	mock := true
-	if v, ok := args["mock"].(bool); ok {
-		mock = v
-	}
-	skipValidate, _ := args["skip_validate"].(bool)
-	checkHW := true
-	if v, ok := args["check_hardware"].(bool); ok {
-		checkHW = v
-	}
-	if name == "" {
-		return nil, fmt.Errorf("profile is required")
-	}
-	if target == "" {
-		return nil, fmt.Errorf("target is required")
-	}
-	p, err := profile.LoadByName(paths.ProfilesDir(), name)
+	opts, err := runOptionsFromArgs(t, args)
 	if err != nil {
 		return nil, err
 	}
@@ -170,24 +153,20 @@ func (t *Tools) Run(ctx context.Context, args map[string]any) (any, error) {
 		return nil, err
 	}
 	defer svc.Close()
-	run, err := svc.Run(ctx, orchestrator.RunOptions{
-		Profile:       p,
-		Target:        target,
-		Mock:          mock,
-		SkipValidate:  skipValidate,
-		CheckHardware: checkHW,
-		DataDir:       t.dataDir(),
-	})
+	run, err := svc.Run(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"run_id":  run.RunID,
-		"profile": run.Profile,
-		"status":  run.Status,
-		"iops":    run.Results.IOPS,
-		"p99_us":  run.Results.LatencyUS.P99,
-		"mock":    run.Mock,
+		"run_id":   run.RunID,
+		"profile":  run.Profile,
+		"status":   run.Status,
+		"iops":     run.Results.IOPS,
+		"p99_us":   run.Results.LatencyUS.P99,
+		"mock":     run.Mock,
+		"topology": run.Topology,
+		"clients":  len(run.Clients),
+		"targets":  len(run.Targets),
 	}, nil
 }
 
@@ -313,7 +292,7 @@ func (t *Tools) ListRuns(ctx context.Context, args map[string]any) (any, error) 
 
 // ToolCatalog returns MCP tool definitions.
 func ToolCatalog() []ToolDef {
-	return []ToolDef{
+	catalog := []ToolDef{
 		{
 			Name:        "stratabench_list_profiles",
 			Description: "List all StrataBench workload profiles (HDD, NVMe, AFA, S3, VM, app).",
@@ -368,6 +347,10 @@ func ToolCatalog() []ToolDef {
 				"properties": map[string]any{
 					"profile":         map[string]any{"type": "string"},
 					"target":          map[string]any{"type": "string"},
+					"targets":         map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"clients":         map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "StrataBench agent hosts (port 7777)"},
+					"warp_clients":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Native Warp client hosts (port 7761)"},
+					"topology":        map[string]any{"type": "string"},
 					"mock":            map[string]any{"type": "boolean"},
 					"skip_validate":   map[string]any{"type": "boolean"},
 					"check_hardware":  map[string]any{"type": "boolean"},
@@ -411,6 +394,7 @@ func ToolCatalog() []ToolDef {
 			},
 		},
 	}
+	return append(catalog, extendedToolCatalog()...)
 }
 
 type ToolDef struct {
@@ -437,6 +421,14 @@ func (t *Tools) Call(ctx context.Context, name string, args map[string]any) (any
 		return t.Analyze(ctx, args)
 	case "stratabench_list_runs":
 		return t.ListRuns(ctx, args)
+	case "stratabench_compare_runs":
+		return t.CompareRuns(ctx, args)
+	case "stratabench_report":
+		return t.Report(ctx, args)
+	case "stratabench_baseline_check":
+		return t.BaselineCheck(ctx, args)
+	case "stratabench_export_json":
+		return t.ExportJSON(ctx, args)
 	default:
 		return nil, fmt.Errorf("unknown tool %q", name)
 	}

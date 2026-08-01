@@ -64,10 +64,14 @@ func (w *WarpRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 
 	res, parseErr := parseWarpOutput(string(out), duration)
 	if parseErr != nil {
-		res = &schema.Results{
-			OpsPerSec:      float64(concurrent) * 10,
-			ThroughputMBps: float64(concurrent) * 2.5,
-			LatencyUS:      schema.LatencyUS{P50: 5000, P99: 15000},
+		if in.Mock {
+			res = &schema.Results{
+				OpsPerSec:      float64(concurrent) * 10,
+				ThroughputMBps: float64(concurrent) * 2.5,
+				LatencyUS:      schema.LatencyUS{P50: 5000, P99: 15000},
+			}
+		} else {
+			return nil, nil, fmt.Errorf("parse warp output: %w (see %s)", parseErr, logPath)
 		}
 	}
 	return res, &schema.RawEngineOutput{Path: logPath, Format: "warp-text"}, nil

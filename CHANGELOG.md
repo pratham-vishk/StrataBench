@@ -13,7 +13,7 @@ All notable changes to StrataBench are documented in this file.
 
 ### Changed
 - Repository is **public**; GitHub Pages live
-- 30+ workload profiles across physical and virtual layers
+- 29 workload profiles across physical and virtual layers
 
 ## [0.6.0-rc1] - 2026-08-01
 

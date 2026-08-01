@@ -14,22 +14,38 @@ import (
 )
 
 func (s *SBKRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+	if in.Mock {
+		return s.runSynthetic(in)
+	}
+
 	driver := in.Profile.ParamString("driver", "generic")
+	var errs []string
 	switch driver {
 	case "postgresql":
 		if res, raw, err := runPgBench(ctx, in); err == nil {
 			return res, raw, nil
+		} else {
+			errs = append(errs, "postgresql: "+err.Error())
 		}
 	case "rocksdb":
 		if res, raw, err := runDBBench(ctx, in); err == nil {
 			return res, raw, nil
+		} else {
+			errs = append(errs, "rocksdb: "+err.Error())
 		}
 	case "kafka":
 		if res, raw, err := runKafkaPerf(ctx, in); err == nil {
 			return res, raw, nil
+		} else {
+			errs = append(errs, "kafka: "+err.Error())
 		}
+	default:
+		return nil, nil, fmt.Errorf("sbk driver %q not supported (use postgresql, rocksdb, or kafka)", driver)
 	}
-	return s.runSynthetic(in)
+	if len(errs) == 0 {
+		return nil, nil, fmt.Errorf("sbk driver %q failed", driver)
+	}
+	return nil, nil, fmt.Errorf("sbk benchmark failed: %s", strings.Join(errs, "; "))
 }
 
 func (s *SBKRunner) runSynthetic(in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {

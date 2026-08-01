@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/pratham-vishk/stratabench/internal/agentapi"
+	"github.com/pratham-vishk/stratabench/internal/agentauth"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
@@ -73,7 +74,12 @@ func main() {
 	})
 
 	log.Printf("stratabench-agent listening on %s", listen)
-	log.Fatal(http.ListenAndServe(listen, mux))
+	if agentauth.Token() != "" {
+		log.Print("agent auth: STRATABENCH_AGENT_TOKEN is set (requests must include Bearer token)")
+	} else {
+		log.Print("agent auth: disabled (set STRATABENCH_AGENT_TOKEN in production)")
+	}
+	log.Fatal(http.ListenAndServe(listen, agentauth.Middleware(mux)))
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

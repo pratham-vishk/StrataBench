@@ -42,5 +42,22 @@ func Results(runs []schema.Results) schema.Results {
 	n := float64(len(runs))
 	out.LatencyUS.Mean /= n
 	out.CPUPercent /= n
+	out.Intervals = Intervals(runs)
+	out.Totals = mergeTotals(runs)
 	return out
+}
+
+func mergeTotals(runs []schema.Results) schema.TotalStats {
+	var t schema.TotalStats
+	for _, r := range runs {
+		t.TotalMB += r.Totals.TotalMB
+		t.TotalRecords += r.Totals.TotalRecords
+		t.WriteRequestMB += r.Totals.WriteRequestMB
+		t.WriteRequestRecords += r.Totals.WriteRequestRecords
+		t.ReadRequestMB += r.Totals.ReadRequestMB
+		t.ReadRequestRecords += r.Totals.ReadRequestRecords
+		t.WriteTimeoutEvents += r.Totals.WriteTimeoutEvents
+		t.ReadTimeoutEvents += r.Totals.ReadTimeoutEvents
+	}
+	return t
 }

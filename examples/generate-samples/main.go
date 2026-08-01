@@ -39,4 +39,5 @@ func main() {
 	fmt.Println("  compare-sample.html      — Grafana overlay compare")
 	fmt.Println("  sample-result.html       — SBK import (if CSV present)")
 	fmt.Println("  s3-put-sample.html       — S3 PUT operations")
+	fmt.Println("  multi-node-sample.html   — multi-node pool (3 clients → 1 target)")
 }

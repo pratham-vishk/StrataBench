@@ -42,6 +42,17 @@ StrataBench follows a **layered architecture**: agent intelligence on top, orche
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Implementation status (2026)
+
+| Component | Shipped | Notes |
+|-----------|---------|-------|
+| Orchestration + agents | Go HTTP (`:7777`) | Optional `STRATABENCH_AGENT_TOKEN`; not gRPC/mTLS yet |
+| Native StrataBench engine | Planned | `engine: stratabench` profiles use `--mock` or external engines |
+| Result store | SQLite | PostgreSQL deferred |
+| Engines | fio, warp, vdbench, spdk, elbencho, sbk drivers | GOSBench not integrated |
+| Mid-run monitoring | Partial | Post-run Prometheus metrics; no live thermal watcher |
+| Reports | HTML + Excel | PDF not implemented |
+
 ---
 
 ## Components

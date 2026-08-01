@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/pratham-vishk/stratabench/internal/agentapi"
+	"github.com/pratham-vishk/stratabench/internal/agentauth"
 	"github.com/pratham-vishk/stratabench/internal/profile"
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
@@ -39,6 +40,7 @@ func (c *Client) Health(ctx context.Context) (*agentapi.HealthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	agentauth.SetAuthHeader(req)
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -76,6 +78,7 @@ func (c *Client) Run(ctx context.Context, p *profile.Profile, target string, moc
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	agentauth.SetAuthHeader(req)
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err

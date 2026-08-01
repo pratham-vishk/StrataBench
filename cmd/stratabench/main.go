@@ -36,6 +36,7 @@ var (
 	target       string
 	targetsCSV   string
 	clientsCSV   string
+	warpClientsCSV string
 	topologyMode string
 	mock         bool
 	runID        string
@@ -191,6 +192,7 @@ func runCmd() *cobra.Command {
 				Target:        target,
 				Targets:       targets,
 				Clients:       clients,
+				WarpClients:   remote.ParseHosts(warpClientsCSV),
 				Topology:      topologyMode,
 				Mock:          mock,
 				SkipValidate:  skipValidate,
@@ -227,6 +229,7 @@ func runCmd() *cobra.Command {
 	cmd.Flags().StringVar(&target, "target", "", "Single block device, path, or S3 endpoint")
 	cmd.Flags().StringVar(&targetsCSV, "targets", "", "Comma-separated server targets (multi-server)")
 	cmd.Flags().StringVar(&clientsCSV, "clients", "", "Comma-separated agent URLs (host:7777)")
+	cmd.Flags().StringVar(&warpClientsCSV, "warp-clients", "", "Comma-separated native Warp client hosts (host:7761)")
 	cmd.Flags().StringVar(&topologyMode, "topology", "auto", "Topology: auto, single, pool, sweep, shard, matrix")
 	cmd.Flags().BoolVar(&mock, "mock", false, "Use mock engine (no real I/O)")
 	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip pre-run validation")

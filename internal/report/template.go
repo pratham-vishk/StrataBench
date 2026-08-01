@@ -184,14 +184,32 @@ const cardHTMLTemplate = `<!DOCTYPE html>
 
   {{if .HasIntervals}}
   <section class="section" id="intervals">
-    <div class="section-head"><h2>Interval data</h2><span class="count">{{len .IntervalRows}} buckets</span></div>
+    <div class="section-head"><h2>Interval data</h2><span class="count">{{len .IntervalRows}} buckets · cluster aggregate</span></div>
     <div class="panel table-wrap"><table>
-      <tr><th>#</th><th>Time</th><th>{{.Labels.OpsRate}}</th><th>{{.Labels.ReadOp}}</th><th>{{.Labels.WriteOp}}</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th></tr>
+      <tr><th>#</th><th>Time</th><th>{{.Labels.OpsRate}}</th><th>{{.Labels.ReadOp}}</th><th>{{.Labels.WriteOp}}</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
       {{range .IntervalRows}}<tr>
         <td>{{.Seq}}</td><td>{{.Timestamp}}</td><td>{{.IOPS}}</td><td>{{.ReadIOPS}}</td><td>{{.WriteIOPS}}</td>
-        <td>{{.MBps}}</td><td>{{.Avg}}</td><td>{{.Min}}</td><td>{{.Max}}</td>
+        <td>{{.MBps}}</td><td>{{.Avg}}</td><td>{{.Min}}</td><td>{{.Max}}</td><td>{{.WTimeout}}</td><td>{{.RTimeout}}</td>
       </tr>{{end}}
     </table></div>
+  </section>
+  {{end}}
+
+  {{if .NodeIntervalSections}}
+  <section class="section" id="node-intervals">
+    <div class="section-head"><h2>Per-node intervals</h2><span class="count">{{len .NodeIntervalSections}} series</span></div>
+    {{range .NodeIntervalSections}}
+    <details class="data-section">
+      <summary><span>{{.Label}}</span> <span class="badge role-{{.Role}}">{{.Role}}</span> <span class="count" style="margin-left:.5rem">{{len .Rows}} buckets</span></summary>
+      <div class="inner table-wrap"><table>
+        <tr><th>#</th><th>Time</th><th>{{$.Labels.OpsRate}}</th><th>{{$.Labels.ReadOp}}</th><th>{{$.Labels.WriteOp}}</th><th>MB/s</th><th>Avg µs</th><th>Min µs</th><th>Max µs</th><th>W timeout</th><th>R timeout</th></tr>
+        {{range .Rows}}<tr>
+          <td>{{.Seq}}</td><td>{{.Timestamp}}</td><td>{{.IOPS}}</td><td>{{.ReadIOPS}}</td><td>{{.WriteIOPS}}</td>
+          <td>{{.MBps}}</td><td>{{.Avg}}</td><td>{{.Min}}</td><td>{{.Max}}</td><td>{{.WTimeout}}</td><td>{{.RTimeout}}</td>
+        </tr>{{end}}
+      </table></div>
+    </details>
+    {{end}}
   </section>
   {{end}}
 

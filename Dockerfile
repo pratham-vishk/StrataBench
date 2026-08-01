@@ -15,7 +15,9 @@ RUN CGO_ENABLED=0 go build -ldflags "-X github.com/pratham-vishk/stratabench/int
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fio smartmontools nvme-cli openssh-client ca-certificates && \
+    fio smartmontools nvme-cli openssh-client ca-certificates curl && \
+    curl -fsSL https://github.com/minio/warp/releases/download/v1.1.0/warp_Linux_x86_64.tar.gz \
+    | tar -xz -C /usr/local/bin warp && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=build /stratabench /usr/local/bin/stratabench
 COPY --from=build /stratabench-agent /usr/local/bin/stratabench-agent

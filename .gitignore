@@ -28,6 +28,7 @@ Thumbs.db
 
 # Benchmark run data (local only)
 .stratabench/
+.tmp/
 /runs/
 *.db
 *.sqlite

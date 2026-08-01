@@ -56,7 +56,7 @@
   <p class="subtitle">nvme-random-oltp · /dev/null · IOPS · sequential base → candidate</p>
   <p class="note">Base benchmark ran first; candidate ran after (not parallel). Compare relies on the completed base run.</p>
   <div class="verdict improved">
-    <strong>Improved</strong> — Head branch looks faster: IOPS &#43;30.4%, p99 -10.6%
+    <strong>Improved</strong> — Head branch looks faster: IOPS &#43;14.9%, p99 -27.3%
   </div>
   
   <div class="report-links">
@@ -68,14 +68,14 @@
   <section id="runs" style="margin-bottom:var(--section-gap)">
     <div class="grid-2">
       <div class="panel"><h3>Base (baseline)</h3>
-        <p><strong>master@5e8900a (dirty)</strong></p>
-        <p style="margin:.5rem 0;color:var(--muted)">Run <code>00d39789-b60d-476a-8839-4d813436dc32</code></p>
-        <p>IOPS <strong>988842</strong> · p99 <strong>305 µs</strong></p>
+        <p><strong>master@818ef08 (dirty)</strong></p>
+        <p style="margin:.5rem 0;color:var(--muted)">Run <code>45e7ce82-b69f-4bef-80ab-39970e74446f</code></p>
+        <p>IOPS <strong>989585</strong> · p99 <strong>345 µs</strong></p>
       </div>
       <div class="panel"><h3>Candidate (after base)</h3>
-        <p><strong>master@5e8900a (dirty)</strong></p>
-        <p style="margin:.5rem 0;color:var(--muted)">Run <code>25993d98-0dd1-44ef-925d-ab0c0aa229c2</code></p>
-        <p>IOPS <strong>1289466</strong> · p99 <strong>273 µs</strong></p>
+        <p><strong>master@818ef08 (dirty)</strong></p>
+        <p style="margin:.5rem 0;color:var(--muted)">Run <code>2b59f185-6bf7-4048-ba53-d06fb6677c82</code></p>
+        <p>IOPS <strong>1136550</strong> · p99 <strong>251 µs</strong></p>
       </div>
     </div>
   </section>
@@ -102,23 +102,23 @@
         <tr><th>Metric</th><th>Base</th><th>Candidate</th><th>Δ%</th><th></th></tr>
         
         <tr>
-          <td>IOPS</td><td>988842.37</td><td>1289466.39</td>
-          <td>&#43;30.4%</td>
+          <td>IOPS</td><td>989585.48</td><td>1136550.30</td>
+          <td>&#43;14.9%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>Throughput (MB/s)</td><td>15450.66</td><td>20147.91</td>
-          <td>&#43;30.4%</td>
+          <td>Throughput (MB/s)</td><td>15462.27</td><td>17758.60</td>
+          <td>&#43;14.9%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>Read IOPS</td><td>692189.66</td><td>902626.47</td>
-          <td>&#43;30.4%</td>
+          <td>Read IOPS</td><td>692709.84</td><td>795585.21</td>
+          <td>&#43;14.9%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>Write IOPS</td><td>296652.71</td><td>386839.92</td>
-          <td>&#43;30.4%</td>
+          <td>Write IOPS</td><td>296875.65</td><td>340965.09</td>
+          <td>&#43;14.9%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
@@ -132,14 +132,14 @@
           <td class="neutral">neutral</td>
         </tr>
         <tr>
-          <td>Latency p99 (µs)</td><td>305.48</td><td>272.98</td>
-          <td>-10.6%</td>
+          <td>Latency p99 (µs)</td><td>345.24</td><td>251.08</td>
+          <td>-27.3%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>Latency p99.9 (µs)</td><td>359.68</td><td>338.22</td>
-          <td>-6.0%</td>
-          <td class="improved">improved</td>
+          <td>Latency p99.9 (µs)</td><td>278.02</td><td>374.15</td>
+          <td>&#43;34.6%</td>
+          <td class="regressed">regressed</td>
         </tr>
         <tr>
           <td>Latency max (µs)</td><td>1200.00</td><td>1200.00</td>
@@ -147,49 +147,49 @@
           <td class="neutral">neutral</td>
         </tr>
         <tr>
-          <td>p5 (µs)</td><td>91.52</td><td>85.14</td>
-          <td>-7.0%</td>
+          <td>p5 (µs)</td><td>99.96</td><td>95.65</td>
+          <td>-4.3%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p10 (µs)</td><td>75.16</td><td>77.83</td>
-          <td>&#43;3.6%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p15 (µs)</td><td>97.67</td><td>71.11</td>
-          <td>-27.2%</td>
+          <td>p10 (µs)</td><td>85.81</td><td>67.89</td>
+          <td>-20.9%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p20 (µs)</td><td>97.38</td><td>85.05</td>
-          <td>-12.7%</td>
+          <td>p15 (µs)</td><td>91.12</td><td>87.17</td>
+          <td>-4.3%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p25 (µs)</td><td>87.68</td><td>102.20</td>
-          <td>&#43;16.6%</td>
+          <td>p20 (µs)</td><td>67.19</td><td>85.41</td>
+          <td>&#43;27.1%</td>
           <td class="regressed">regressed</td>
         </tr>
         <tr>
-          <td>p30 (µs)</td><td>76.60</td><td>99.06</td>
-          <td>&#43;29.3%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p35 (µs)</td><td>93.12</td><td>94.07</td>
-          <td>&#43;1.0%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p40 (µs)</td><td>65.19</td><td>77.09</td>
-          <td>&#43;18.3%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p45 (µs)</td><td>78.49</td><td>66.22</td>
-          <td>-15.6%</td>
+          <td>p25 (µs)</td><td>75.99</td><td>65.06</td>
+          <td>-14.4%</td>
           <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p30 (µs)</td><td>80.12</td><td>95.73</td>
+          <td>&#43;19.5%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p35 (µs)</td><td>79.78</td><td>68.09</td>
+          <td>-14.6%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p40 (µs)</td><td>68.19</td><td>94.04</td>
+          <td>&#43;37.9%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p45 (µs)</td><td>85.23</td><td>87.83</td>
+          <td>&#43;3.0%</td>
+          <td class="regressed">regressed</td>
         </tr>
         <tr>
           <td>p50 (µs)</td><td>80.00</td><td>80.00</td>
@@ -197,102 +197,102 @@
           <td class="neutral">neutral</td>
         </tr>
         <tr>
-          <td>p55 (µs)</td><td>64.40</td><td>82.51</td>
-          <td>&#43;28.1%</td>
+          <td>p55 (µs)</td><td>101.38</td><td>81.17</td>
+          <td>-19.9%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p60 (µs)</td><td>79.97</td><td>64.72</td>
+          <td>-19.1%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p65 (µs)</td><td>76.78</td><td>69.75</td>
+          <td>-9.2%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p70 (µs)</td><td>71.01</td><td>83.60</td>
+          <td>&#43;17.7%</td>
           <td class="regressed">regressed</td>
         </tr>
         <tr>
-          <td>p60 (µs)</td><td>92.23</td><td>65.94</td>
-          <td>-28.5%</td>
+          <td>p75 (µs)</td><td>99.88</td><td>98.05</td>
+          <td>-1.8%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p65 (µs)</td><td>86.38</td><td>85.30</td>
-          <td>-1.2%</td>
+          <td>p80 (µs)</td><td>84.98</td><td>71.70</td>
+          <td>-15.6%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p70 (µs)</td><td>98.94</td><td>81.63</td>
-          <td>-17.5%</td>
+          <td>p85 (µs)</td><td>96.87</td><td>74.45</td>
+          <td>-23.1%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p75 (µs)</td><td>77.74</td><td>71.09</td>
-          <td>-8.6%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p80 (µs)</td><td>102.37</td><td>76.38</td>
-          <td>-25.4%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p85 (µs)</td><td>91.62</td><td>75.86</td>
-          <td>-17.2%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p90 (µs)</td><td>214.07</td><td>191.88</td>
-          <td>-10.4%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p92.5 (µs)</td><td>171.07</td><td>180.84</td>
-          <td>&#43;5.7%</td>
+          <td>p90 (µs)</td><td>196.04</td><td>205.24</td>
+          <td>&#43;4.7%</td>
           <td class="regressed">regressed</td>
         </tr>
         <tr>
-          <td>p95 (µs)</td><td>161.02</td><td>214.64</td>
-          <td>&#43;33.3%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p97.5 (µs)</td><td>171.60</td><td>224.53</td>
-          <td>&#43;30.8%</td>
-          <td class="regressed">regressed</td>
-        </tr>
-        <tr>
-          <td>p99 (µs)</td><td>305.48</td><td>272.98</td>
-          <td>-10.6%</td>
+          <td>p92.5 (µs)</td><td>234.49</td><td>195.17</td>
+          <td>-16.8%</td>
           <td class="improved">improved</td>
         </tr>
         <tr>
-          <td>p99.25 (µs)</td><td>337.58</td><td>363.84</td>
-          <td>&#43;7.8%</td>
+          <td>p95 (µs)</td><td>233.28</td><td>237.41</td>
+          <td>&#43;1.8%</td>
           <td class="regressed">regressed</td>
         </tr>
         <tr>
-          <td>p99.5 (µs)</td><td>348.42</td><td>268.20</td>
-          <td>-23.0%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p99.75 (µs)</td><td>322.16</td><td>256.02</td>
-          <td>-20.5%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p99.9 (µs)</td><td>359.68</td><td>338.22</td>
-          <td>-6.0%</td>
-          <td class="improved">improved</td>
-        </tr>
-        <tr>
-          <td>p99.95 (µs)</td><td>259.83</td><td>308.70</td>
-          <td>&#43;18.8%</td>
+          <td>p97.5 (µs)</td><td>206.77</td><td>234.90</td>
+          <td>&#43;13.6%</td>
           <td class="regressed">regressed</td>
         </tr>
         <tr>
-          <td>p99.99 (µs)</td><td>346.85</td><td>387.62</td>
-          <td>&#43;11.8%</td>
+          <td>p99 (µs)</td><td>345.24</td><td>251.08</td>
+          <td>-27.3%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.25 (µs)</td><td>379.25</td><td>384.60</td>
+          <td>&#43;1.4%</td>
           <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.5 (µs)</td><td>389.52</td><td>325.47</td>
+          <td>-16.4%</td>
+          <td class="improved">improved</td>
+        </tr>
+        <tr>
+          <td>p99.75 (µs)</td><td>321.74</td><td>332.58</td>
+          <td>&#43;3.4%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.9 (µs)</td><td>278.02</td><td>374.15</td>
+          <td>&#43;34.6%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.95 (µs)</td><td>386.20</td><td>399.94</td>
+          <td>&#43;3.6%</td>
+          <td class="regressed">regressed</td>
+        </tr>
+        <tr>
+          <td>p99.99 (µs)</td><td>330.88</td><td>250.94</td>
+          <td>-24.2%</td>
+          <td class="improved">improved</td>
         </tr>
       </table>
     </div>
   </section>
-  <footer>StrataBench · 2026-08-01T09:35:30Z · compare report (sequential benchmarks)</footer>
+  <footer>StrataBench · 2026-08-01T10:05:15Z · compare report (sequential benchmarks)</footer>
 </main>
 <script>
-const cmp = {"opsLabel":"IOPS","baseIOPS":988842.3714202272,"headIOPS":1289466.388136121,"baseMBps":15450.66205344105,"headMBps":20147.91231462689,"baseP50":80,"baseP99":305.47661486891036,"baseMax":1200,"headP50":80,"headP99":272.9829527018565,"headMax":1200,"deltaLabels":["IOPS","Throughput (MB/s)","Latency p50 (µs)","Latency p99 (µs)","Latency p99.9 (µs)"],"deltaPcts":[30.401611561620463,30.401611561620463,0,-10.637037529369609,-5.967198265732758],"hasIntervals":true,"intervalLabels":["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"],"baseIOPSOver":[1119511.900872181,1182354.1054971418,1136444.1105205913,1102744.2002061803,1206100.9379277413,1036687.9890405941,1196609.7250567356,1163340.1886726513,1099433.6691304955,1167188.85490665,1107807.1014860906,1101887.0708826205],"headIOPSOver":[1047926.9568601567,1181793.8719159972,1202910.4158422076,1229486.233606658,1069603.0000074552,1080588.8760282367,1101933.9851778154,1025334.1470973872,1189381.958814689,1092814.8694031355,1058620.0264020374,1154287.3060282923],"baseMbpsOver":[15288.709309360087,16146.919211480677,15519.945467794854,15059.719781808724,16471.21984443212,14157.617526529833,16341.602290152427,15887.254042280143,15014.509233143439,15939.813679417108,15128.861722926304,15048.014322440025],"headMbpsOver":[18661.9095240494,21045.866001818566,21421.918005855467,21895.190979130053,19047.925317808826,19243.566266827384,19623.68865333791,18259.56757747885,21180.997739996485,19461.291730143654,18852.336056183714,20556.017887354847],"baseLatOver":[84.89673930436655,80.15196203387214,84.2446470463365,83.93474084767658,72.2173171320353,95.47012310101525,75.10161925823711,75.8136751194286,85.74491269381835,83.64607033675993,88.49314117845276,73.72578181356475],"headLatOver":[81.40835419160155,90.94832580510592,80.32773591118043,78.28398675731565,81.59803911045634,72.18496671328248,81.2454276979779,87.664545545529,90.30151668521547,72.15712542419935,75.45865537156853,95.93294168654758]};
+const cmp = {"opsLabel":"IOPS","baseIOPS":989585.4849950033,"headIOPS":1136550.2962919953,"baseMBps":15462.273203046927,"headMBps":17758.598379562427,"baseP50":80,"baseP99":345.243690359879,"baseMax":1200,"headP50":80,"headP99":251.07559043729938,"headMax":1200,"deltaLabels":["IOPS","Throughput (MB/s)","Latency p50 (µs)","Latency p99 (µs)","Latency p99.9 (µs)"],"deltaPcts":[14.851148640052465,14.851148640052465,0,-27.275835171504397,34.57388412433441],"hasIntervals":true,"intervalLabels":["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"],"baseIOPSOver":[1210330.8734436994,1100382.1503034537,1068315.8038504692,1212514.5407589157,1138278.9083413298,1078681.6050894468,1132286.6607546564,1124362.581188318,1226037.183885347,1077405.2589135056,1112725.0984675384,1192386.6436330562],"headIOPSOver":[1030642.1222043204,1021484.8071008726,1025512.5664600353,1051048.0278862342,1187109.4474945122,1244308.1376121626,1115719.6689837591,1021580.3313774324,1173477.6947661566,1066993.411322336,1216822.657547362,1120002.9998256508],"baseMbpsOver":[16541.4078265745,15038.755362377457,14600.509486125567,16571.2516754022,15556.684586330846,14742.1773139116,15474.789450625558,15366.492261292458,16756.06358077076,14724.73368499378,15207.444556253406,16296.166768989073],"headMbpsOver":[16177.506714910347,16033.768628347641,16096.990480700752,16497.808659766764,18633.501042148146,19531.322093245188,17512.929122611647,16035.268028180222,18419.529803686335,16748.095875912797,19099.895384855037,17580.162560838176],"baseLatOver":[85.35601602451457,75.89505201299241,92.91349237785107,73.80682716720233,95.8140722002755,88.00442196841186,84.8727696302676,84.19735312789699,77.1195981172877,89.51311991504745,79.52824194966867,90.78784195793924],"headLatOver":[80.42316201621816,95.44386743106398,72.12859949275483,84.0751233179522,91.86286430142087,89.72447942703829,95.20168563664639,78.45242320709428,87.79727200217283,81.2728969431144,90.50306305530046,75.51982957054882]};
 const palette = ['#14b8a6','#38bdf8','#fbbf24','#f472b6'];
 const tick = '#8b9cb3', grid = '#1e2836';
 const baseOpts = {responsive:true,maintainAspectRatio:false,

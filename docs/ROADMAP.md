@@ -6,17 +6,17 @@
 
 ### Deliverables
 
-- [ ] Repository scaffolding (`cmd/`, `crates/`, `internal/`, `profiles/`)
-- [ ] Normalized result schema (JSON) + SQLite storage
-- [ ] Rule-based validator (5 core rules)
+- [x] Repository scaffolding (`cmd/`, `internal/`, `profiles/`) — Rust `crates/` engine deferred
+- [x] Normalized result schema (JSON) + SQLite storage
+- [x] Rule-based validator (5 core rules)
 - [x] Hardware discovery module (NVMe, block devices, CPU, memory)
 - [x] Hardware inventory database (SQLite)
-- [ ] fio wrapper (profile → job file → JSON parser)
-- [ ] StrataBench engine v0.1 (Rust): block I/O via `O_DIRECT` + libaio
-- [ ] CLI: `stratabench run`, `stratabench validate`, `stratabench report`
-- [ ] 5 built-in workload profiles
-- [ ] Basic HTML report generator
-- [ ] Planner agent v0.1 (profile selection from keywords, no LLM required)
+- [x] fio wrapper (profile → job file → JSON parser)
+- [ ] StrataBench engine v0.1 (Rust): block I/O via `O_DIRECT` + libaio — **uses mock until native engine lands**
+- [x] CLI: `stratabench run`, `stratabench validate`, `stratabench report`
+- [x] 29 built-in workload profiles
+- [x] HTML report generator (Grafana-style, multi-node, Excel export)
+- [x] Planner agent v0.1 (profile selection from keywords, no LLM required)
 
 ### Profiles (Phase 1)
 
@@ -42,16 +42,16 @@
 
 ### Deliverables
 
-- [ ] Warp wrapper (HTTP + distributed coordinator mode)
+- [x] Warp wrapper (HTTP; native coordinator via `--warp-clients` or profile `warp_clients`)
 - [ ] GOSBench wrapper
-- [ ] elbencho wrapper (file/block)
-- [ ] `stratabench-agent` daemon (Go, gRPC)
-- [ ] SSH-based multi-node deployment
-- [ ] SBK CSV import → normalized schema
-- [ ] Excel report generation
-- [ ] REST API (`/runs`, `/profiles`, `/report/{id}`)
-- [ ] Planner agent v0.2 (Ollama integration for NL → profile)
-- [ ] 10 additional profiles (VM, file, S3 cluster)
+- [x] elbencho wrapper (file/block)
+- [x] `stratabench-agent` daemon (Go, HTTP JSON on :7777; optional `STRATABENCH_AGENT_TOKEN`)
+- [x] SSH-based multi-node deployment (`stratabench lab`, `scripts/lab-*.sh`)
+- [x] SBK CSV import → normalized schema
+- [x] Excel report generation
+- [x] REST API (`/runs`, `/profiles`, `/validate`, `/report/{id}`, `/compare`)
+- [x] Planner agent v0.2 (Ollama integration for NL → profile)
+- [x] 10+ additional profiles (VM, file, S3 cluster)
 
 ### Profiles (Phase 2 additions)
 
@@ -92,7 +92,7 @@
 
 - AFA multi-LUN test via vdbench with unified report
 - SPDK peak vs. fio comparison on same NVMe device
-- Grafana dashboard live during 1-hour stress test
+- Grafana dashboard live during 1-hour stress test — **post-run metrics only; mid-run watcher not yet implemented**
 
 ---
 

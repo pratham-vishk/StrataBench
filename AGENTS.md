@@ -48,7 +48,7 @@ See `examples/mcp-cursor.json`, `examples/mcp-claude-desktop.json`, `examples/mc
 
 | Tool | Purpose |
 |------|---------|
-| `stratabench_list_profiles` | Catalog of 30+ workload profiles |
+| `stratabench_list_profiles` | Catalog of 29 workload profiles |
 | `stratabench_plan` | NL intent → profile name (+ guidance summary) |
 | `stratabench_guide` | Discuss intent before run — questions, warnings, engine params |
 | `stratabench_validate` | Workload + hardware pre-check |
