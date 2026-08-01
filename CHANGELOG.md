@@ -2,6 +2,11 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc26] - 2026-08-01
+
+### Changed
+- **README** — lab cluster workflow, prompt-based agent usage, profile→target table, HTML/Excel/PDF reporting
+
 ## [0.8.0-rc25] - 2026-08-01
 
 ### Added

@@ -189,6 +189,119 @@ stratabench run --profile afa-multi-lun \
   --topology shard
 ```
 
+### Distributed — multi-client, multi-server
+
+```bash
+# Start agents on client nodes
+stratabench-agent   # listens on :7777
+
+# N clients → 1 NVMe server (pool)
+stratabench run --profile ssd-random-4k --target /dev/nvme0n1 \
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777
+
+# 1 client → N S3 servers (sweep)
+stratabench run --profile s3-put-throughput \
+  --targets 10.0.1.10:9000,10.0.1.11:9000,10.0.1.12:9000
+
+# N clients → M servers (shard)
+stratabench run --profile afa-multi-lun \
+  --targets /dev/sdb,/dev/sdc,/dev/sdd \
+  --clients 10.0.1.1:7777,10.0.1.2:7777,10.0.1.3:7777 \
+  --topology shard
+```
+
+### Lab cluster — one config, every engine (HDD, NVMe, AFA, S3 RDMA)
+
+Use a single `lab.yaml` on your Linux jump host. StrataBench installs agents/tools once, then **`lab run <profile>`** picks the right target, topology, and engine automatically. Every run produces **HTML, Excel, and PDF** reports.
+
+```bash
+cp examples/lab.yaml.example lab.yaml
+# Edit: clients, targets.block (/dev/sdb), servers (only for S3), s3.deploy: skip for HDD-only
+
+make build
+stratabench lab bootstrap -f lab.yaml
+stratabench lab check -f lab.yaml
+
+# Block / HDD / NVMe (uses targets.block — no S3 required)
+stratabench lab run -f lab.yaml hdd-sequential-read
+stratabench lab run -f lab.yaml nvme-random-oltp
+
+# AFA multi-LUN (uses targets.afa_luns + vdbench)
+stratabench lab run -f lab.yaml afa-multi-lun
+
+# S3 + RDMA (needs servers: + MinIO; uses s3-cluster-rdma profile)
+stratabench lab run -f lab.yaml s3-cluster-rdma
+
+# Application / SBK (uses targets.postgres_dsn, kafka, etc.)
+stratabench lab run -f lab.yaml app-postgres-tpc-c
+stratabench sbk tools   # preflight: pgbench, db_bench, kafka-producer-perf-test on PATH
+```
+
+Example `lab.yaml` targets section:
+
+```yaml
+clients:
+  - host: 10.0.1.1
+  - host: 10.0.1.2
+
+targets:
+  block: /dev/sdb                    # HDD / NVMe (fio)
+  afa_luns: /dev/sdb,/dev/sdc        # vdbench AFA
+  file: /mnt/nfs/share               # elbencho
+  postgres_dsn: postgres://bench@10.0.1.5/db
+  kafka: 10.0.1.30:9092
+
+servers:                             # only for object/S3 profiles
+  - host: 10.0.1.10
+    port: 9000
+s3:
+  deploy: docker                     # use skip for HDD-only labs
+```
+
+| You run | Layer | Engine | Target from `lab.yaml` |
+|---------|-------|--------|------------------------|
+| `hdd-sequential-read` | block | fio | `targets.block` |
+| `nvme-random-oltp` | block | fio | `targets.block` |
+| `afa-multi-lun` | block | vdbench | `targets.afa_luns` |
+| `s3-put-throughput` | object | warp | `servers:9000` |
+| `s3-cluster-rdma` | object | warp + RDMA | `servers:9000` |
+| `file-parallel-read` | file | elbencho | `targets.file` |
+| `app-postgres-tpc-c` | application | sbk | `targets.postgres_dsn` |
+
+See [LAB-BOOTSTRAP.md](docs/LAB-BOOTSTRAP.md) and [DELL-LAB.md](docs/DELL-LAB.md) for full cluster setup.
+
+### Natural language — plan, guide, agent (prompt → report)
+
+Describe what you want in plain English. StrataBench maps intent to a profile, validates, runs, and writes reports.
+
+```bash
+# Suggest profile + parameters (no run)
+stratabench plan "hdd sequential read on rotational disk"
+stratabench guide "s3 cluster put get over rdma" --target 10.0.1.10:9000
+
+# Full loop: plan → validate → run → analyze → HTML + Excel + PDF
+stratabench agent "nvme random oltp 4k" --target /dev/nvme0n1 --clients 10.0.1.1:7777 --mock false --yes
+stratabench agent "afa multi lun random read" --target /dev/sdb,/dev/sdc --yes
+stratabench agent "s3 rdma cluster benchmark" --target 10.0.1.10:9000 --clients 10.0.1.1:7777 --yes
+
+# Optional LLM planner (Ollama or OpenAI-compatible)
+stratabench agent "postgres tpc-c oltp" --target postgres://localhost/bench --llm --yes
+```
+
+After every `run`, `lab run`, or `agent` completion:
+
+```
+Report:  ~/.stratabench/reports/<run-id>.html   # charts, intervals, node matrix
+Excel:   ~/.stratabench/reports/<run-id>.xlsx
+PDF:     ~/.stratabench/reports/<run-id>.pdf    # executive summary
+```
+
+```bash
+stratabench report --run-id <uuid>              # regenerate all three
+stratabench export pdf --run-id <uuid>
+stratabench lab validate -f lab.yaml --check-sbk-tools
+```
+
 ### Regression & reporting
 
 ```bash
@@ -226,7 +339,7 @@ Natural language / CLI / API / Kubernetes CRD
     └───────────────┴───────────────┘
                     ▼
          Unified result schema
-         SQLite · HTML · JSON · Prometheus
+         SQLite · HTML · Excel · PDF · Prometheus
 ```
 
 We **orchestrate** proven tools — we don't replace fio or Warp. We add validation, topology, aggregation, and honest reporting on top.
@@ -267,7 +380,9 @@ kubectl get benchmarks -n stratabench -w
 | `smart` | SMART health history |
 | `analyze` | Tail latency, variance, regression insights |
 | `cross-layer` | Multi-profile bottleneck analysis |
-| `import sbk` | Import SBK CSV results |
+| `lab` | Bootstrap cluster, profile-aware `lab run`, validation matrix |
+| `sbk tools` | Probe native SBK drivers (pgbench, db_bench, kafka) on PATH |
+| `export` | Export run as JSON, Excel, or PDF |
 | `compare` | Compare runs (`compare runs`) or git branches (`compare branches`) |
 | `init` | Create `.stratabench` data directories |
 | `report` | Generate HTML, Excel, and PDF report |
@@ -285,11 +400,11 @@ Flags: `--profile` · `--target` · `--targets` · `--clients` · `--topology` �
 | [DEV.md](docs/DEV.md) | Build, test, full CLI reference |
 | [BRANCH-COMPARE.md](docs/BRANCH-COMPARE.md) | Compare two code branches with benchmarks |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
-| [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM cluster setup |
+| [LAB-BOOTSTRAP.md](docs/LAB-BOOTSTRAP.md) | One-command lab bootstrap + profile-aware run |
 | [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Hardware sign-off checklist |
 | [VISION.md](docs/VISION.md) | Project goals |
 | [ROADMAP.md](docs/ROADMAP.md) | What's shipped vs planned |
-| [profiles/](profiles/) | 29 workload YAML definitions |
+| [profiles/](profiles/) | 33 workload YAML definitions |
 
 ---
 

@@ -1,23 +1,20 @@
 # Release Guide
 
-## v0.8.0-rc25 (current)
+## v0.8.0-rc26 (current)
 
-Profile-aware lab run — one command per workload; correct target for HDD, S3, SBK, file, AFA, etc.
+README updated with lab workflow, natural-language agent usage, and reporting guide.
 
 ### Tag and publish
 
 ```bash
-git tag v0.8.0-rc25
-git push origin v0.8.0-rc25
-gh release create v0.8.0-rc25 --title "v0.8.0-rc25" --notes "Profile-aware lab run for all engines."
+git tag v0.8.0-rc26
+git push origin v0.8.0-rc26
+gh release create v0.8.0-rc26 --title "v0.8.0-rc26" --notes "README: lab workflow, prompts, HTML/PDF reporting."
 ```
 
-### Smoke test
+## v0.8.0-rc25
 
-```bash
-stratabench lab run -f lab.yaml hdd-sequential-read
-stratabench lab run -f lab.yaml s3-put-throughput
-```
+Profile-aware lab run — one command per workload; correct target for HDD, S3, SBK, file, AFA, etc.
 
 ## v0.8.0-rc24
 

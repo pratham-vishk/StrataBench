@@ -174,8 +174,9 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	}
 
 	fmt.Printf("\n%s\n", summary)
-	fmt.Printf("Report: %s\n", arts.HTML)
-	fmt.Printf("Excel:  %s\n", arts.Excel)
+		fmt.Printf("Report: %s\n", arts.HTML)
+		fmt.Printf("Excel:  %s\n", arts.Excel)
+		fmt.Printf("PDF:    %s\n", arts.PDF)
 	if opts.OpenReport {
 		_ = report.OpenInBrowser(arts.HTML)
 	}
