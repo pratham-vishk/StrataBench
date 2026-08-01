@@ -1,6 +1,26 @@
 # Release Guide
 
-## v0.8.0-rc18 (current)
+## v0.8.0-rc19 (current)
+
+Kubernetes operator runs benchmarks as Jobs; `stratabench apply --status-out`; `lab validate --smoke-sbk`.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc19
+git push origin v0.8.0-rc19
+gh release create v0.8.0-rc19 --title "v0.8.0-rc19" --notes "Operator Job mode; apply status-out; SBK lab smoke."
+```
+
+### Smoke test
+
+```bash
+kubectl apply -k deploy/k8s/
+kubectl apply -f deploy/k8s/example-benchmark.yaml
+stratabench lab validate -f lab.yaml --smoke-sbk
+```
+
+## v0.8.0-rc18
 
 Full 33-profile lab validation matrix generated from `profiles/`; `--smoke-all` and JSON sign-off report.
 

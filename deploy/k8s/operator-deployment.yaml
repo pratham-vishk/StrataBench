@@ -16,6 +16,12 @@ rules:
   - apiGroups: ["stratabench.io"]
     resources: ["benchmarks/status"]
     verbs: ["get", "update", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -58,6 +64,10 @@ spec:
               value: stratabench
             - name: STRATABENCH_ROOT
               value: /etc/stratabench
+            - name: STRATABENCH_DATA_DIR
+              value: /data
+            - name: STRATABENCH_JOB_IMAGE
+              value: ghcr.io/pratham-vishk/stratabench:latest
             - name: STRATABENCH_OPERATOR_INTERVAL
               value: "30s"
           volumeMounts:

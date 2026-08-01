@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,8 +16,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/pratham-vishk/stratabench/internal/manifest"
-	"github.com/pratham-vishk/stratabench/internal/orchestrator"
-	"github.com/pratham-vishk/stratabench/internal/paths"
 )
 
 var benchmarkGVR = schema.GroupVersionResource{
@@ -30,7 +31,6 @@ type Config struct {
 
 type Reconciler struct {
 	client dynamic.Interface
-	svc    *orchestrator.Service
 	cfg    Config
 }
 
@@ -49,17 +49,13 @@ func New(cfg Config) (*Reconciler, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc, err := orchestrator.NewService(paths.DataDir())
-	if err != nil {
-		return nil, err
-	}
-	return &Reconciler{client: client, svc: svc, cfg: cfg}, nil
+	return &Reconciler{client: client, cfg: cfg}, nil
 }
 
-func (r *Reconciler) Close() error { return r.svc.Close() }
+func (r *Reconciler) Close() error { return nil }
 
 func (r *Reconciler) Run(ctx context.Context) error {
-	log.Printf("operator watching benchmarks.%s in namespace %s", benchmarkGVR.Version, r.cfg.Namespace)
+	log.Printf("operator watching benchmarks.%s in namespace %s (Job mode)", benchmarkGVR.Version, r.cfg.Namespace)
 	ticker := time.NewTicker(r.cfg.ResyncEvery)
 	defer ticker.Stop()
 
@@ -89,39 +85,114 @@ func (r *Reconciler) reconcileAll(ctx context.Context) error {
 }
 
 func (r *Reconciler) reconcileOne(ctx context.Context, obj *unstructured.Unstructured) error {
-	phase, _, _ := unstructured.NestedString(obj.Object, "status", "phase")
-	if phase == manifest.PhaseCompleted {
-		return nil
-	}
-
 	name := obj.GetName()
-	if err := r.patchStatus(ctx, name, manifest.BenchmarkStatus{Phase: manifest.PhaseRunning, Message: "starting benchmark"}); err != nil {
-		return err
-	}
-
 	b, err := fromUnstructured(obj)
 	if err != nil {
-		_ = r.patchStatus(ctx, name, manifest.BenchmarkStatus{Phase: manifest.PhaseFailed, Message: err.Error()})
+		_ = r.patchStatus(ctx, name, "", manifest.BenchmarkStatus{Phase: manifest.PhaseFailed, Message: err.Error()})
 		return err
 	}
+	b.Metadata.Namespace = r.cfg.Namespace
+	hash := specHash(b)
 
-	result, err := manifest.Apply(ctx, r.svc, b)
+	phase, _, _ := unstructured.NestedString(obj.Object, "status", "phase")
+	if phase == manifest.PhaseCompleted {
+		if obj.GetAnnotations()["stratabench.io/spec-hash"] == hash {
+			return nil
+		}
+	}
+
+	job, err := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Get(ctx, jobName(name), metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return r.ensureJob(ctx, b, hash)
+	}
 	if err != nil {
-		_ = r.patchStatus(ctx, name, manifest.BenchmarkStatus{Phase: manifest.PhaseFailed, Message: err.Error()})
 		return err
 	}
 
-	return r.patchStatus(ctx, name, manifest.BenchmarkStatus{
-		Phase:   manifest.PhaseCompleted,
-		RunID:   result.RunID,
-		Message: fmt.Sprintf("profile=%s", result.Profile),
+	if jobSucceeded(job) {
+		result, readErr := manifest.ReadApplyResult(filepath.Join(statusDir(), name+".json"))
+		st := manifest.BenchmarkStatus{Phase: manifest.PhaseCompleted, Message: "job succeeded"}
+		if readErr == nil && result != nil {
+			st.RunID = result.RunID
+			st.Message = fmt.Sprintf("profile=%s", result.Profile)
+		} else if readErr != nil {
+			st.Message = "job succeeded (status file pending)"
+		}
+		return r.patchStatus(ctx, name, hash, st)
+	}
+	if jobFailed(job) {
+		return r.patchStatus(ctx, name, hash, manifest.BenchmarkStatus{
+			Phase:   manifest.PhaseFailed,
+			Message: "benchmark job failed",
+		})
+	}
+	if phase != manifest.PhaseRunning {
+		return r.patchStatus(ctx, name, hash, manifest.BenchmarkStatus{
+			Phase:   manifest.PhaseRunning,
+			Message: "job running",
+		})
+	}
+	return nil
+}
+
+func (r *Reconciler) ensureJob(ctx context.Context, b *manifest.Benchmark, hash string) error {
+	cm, err := buildConfigMap(b)
+	if err != nil {
+		return err
+	}
+	cmU, err := toUnstructured(cm)
+	if err != nil {
+		return err
+	}
+	_, err = r.client.Resource(cmGVR).Namespace(r.cfg.Namespace).Create(ctx, cmU, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("create configmap: %w", err)
+	}
+
+	job, err := buildJob(b)
+	if err != nil {
+		return err
+	}
+	jobU, err := toUnstructured(job)
+	if err != nil {
+		return err
+	}
+	if _, err := r.client.Resource(jobGVR).Namespace(r.cfg.Namespace).Create(ctx, jobU, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("create job: %w", err)
+	}
+	return r.patchStatus(ctx, b.Metadata.Name, hash, manifest.BenchmarkStatus{
+		Phase:   manifest.PhaseRunning,
+		Message: "job created",
 	})
 }
 
-func (r *Reconciler) patchStatus(ctx context.Context, name string, status manifest.BenchmarkStatus) error {
+func statusDir() string {
+	base := os.Getenv("STRATABENCH_DATA_DIR")
+	if base == "" {
+		base = "/data"
+	}
+	return filepath.Join(base, "status")
+}
+
+func (r *Reconciler) patchStatus(ctx context.Context, name, specHash string, status manifest.BenchmarkStatus) error {
 	obj, err := r.client.Resource(benchmarkGVR).Namespace(r.cfg.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return err
+	}
+	if specHash != "" {
+		ann := obj.GetAnnotations()
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		ann["stratabench.io/spec-hash"] = specHash
+		obj.SetAnnotations(ann)
+		if _, err := r.client.Resource(benchmarkGVR).Namespace(r.cfg.Namespace).Update(ctx, obj, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+		obj, err = r.client.Resource(benchmarkGVR).Namespace(r.cfg.Namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 	}
 	if err := unstructured.SetNestedField(obj.Object, status.Phase, "status", "phase"); err != nil {
 		return err

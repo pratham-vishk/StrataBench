@@ -145,6 +145,7 @@ func validateCmd() *cobra.Command {
 }
 
 func applyCmd() *cobra.Command {
+	var statusOut string
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Apply a declarative benchmark manifest (YAML)",
@@ -165,10 +166,16 @@ func applyCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if statusOut != "" {
+				if err := manifest.WriteApplyResult(statusOut, result); err != nil {
+					return err
+				}
+			}
 			fmt.Printf("benchmark applied: run_id=%s profile=%s status=%s\n", result.RunID, result.Profile, result.Status)
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&statusOut, "status-out", "", "write apply result JSON (used by operator Jobs)")
 	return cmd
 }
 

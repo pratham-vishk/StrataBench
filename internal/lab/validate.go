@@ -37,7 +37,8 @@ type ValidateReport struct {
 type ValidateOptions struct {
 	ProfilesDir string
 	Smoke       bool
-	SmokeAll    bool // validate every profile (mock); default smoke uses representative set
+	SmokeAll    bool // validate every profile (mock)
+	SmokeSBK    bool // validate SBK app profiles (mock)
 }
 
 // ValidationMatrix returns the full Dell lab sign-off checklist generated from profiles/.
@@ -248,12 +249,22 @@ func Validate(ctx context.Context, cfg Config, opts ValidateOptions) (*ValidateR
 		Items:        items,
 		ProfileCount: len(items) - 1, // exclude monitoring row
 	}
-	if !opts.Smoke {
+	if !opts.Smoke && !opts.SmokeSBK {
 		return rep, nil
 	}
 	profiles, err := profile.List(opts.ProfilesDir)
 	if err != nil {
 		return nil, err
+	}
+	if opts.SmokeSBK {
+		for _, p := range profiles {
+			if p.Engine == "sbk" {
+				runSmokeValidate(rep, p)
+			}
+		}
+	}
+	if !opts.Smoke {
+		return rep, nil
 	}
 	if opts.SmokeAll {
 		for _, p := range profiles {

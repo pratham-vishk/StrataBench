@@ -12,6 +12,7 @@ stratabench lab check -f lab.yaml
 stratabench lab validate -f lab.yaml          # print sign-off matrix + readiness
 stratabench lab validate -f lab.yaml --smoke  # + mock smoke (5 profiles)
 stratabench lab validate -f lab.yaml --smoke-all  # mock-validate all 33 profiles
+stratabench lab validate -f lab.yaml --smoke-sbk  # mock-validate SBK app profiles
 stratabench lab validate -f lab.yaml --output lab-signoff.json
 ```
 

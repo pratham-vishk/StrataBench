@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc19] - 2026-08-01
+
+### Added
+- **Operator Job mode** — reconciler creates ConfigMap + batch Job per Benchmark CR (non-blocking)
+- **`stratabench apply --status-out`** — JSON result file for operator status sync
+- **`lab validate --smoke-sbk`** — mock-validate all SBK application profiles
+
+### Changed
+- Operator RBAC extended for Jobs and ConfigMaps; reads run ID from shared PVC status file
+- Operator no longer runs benchmarks inline in the operator pod
+
 ## [0.8.0-rc18] - 2026-08-01
 
 ### Added
