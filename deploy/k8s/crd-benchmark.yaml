@@ -22,7 +22,7 @@ spec:
           properties:
             spec:
               type: object
-              required: [profile, target]
+              required: [target]
               properties:
                 profile:
                   type: string

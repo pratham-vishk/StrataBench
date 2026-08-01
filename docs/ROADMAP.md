@@ -107,7 +107,7 @@
 - [x] Analyst agent (regression, tail latency, client variance)
 - [x] Regression tracking (baseline per profile + target)
 - [x] Hardware inventory database (NVMe model, firmware, SMART history)
-- [x] Kubernetes deployment manifests (API, agent, CronJob, CRD)
+- [x] Kubernetes deployment manifests (API, agent, CronJob, CRD, operator)
 - [x] Public documentation site (GitHub Pages)
 - [x] Contributor guide + CI/CD (GitHub Actions)
 - [ ] **Public open-source release**

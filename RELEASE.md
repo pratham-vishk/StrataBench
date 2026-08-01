@@ -1,19 +1,33 @@
 # Release Guide
 
-## v0.4.0-rc1 (current)
+## v0.5.0-rc1 (current)
 
-Release candidate for public OSS launch.
+Release candidate with in-cluster Kubernetes operator.
 
 ### Tag and publish
 
 ```bash
-git tag v0.4.0-rc1
-git push origin v0.4.0-rc1
+git tag v0.5.0-rc1
+git push origin v0.5.0-rc1
 ```
 
 This triggers:
-- **Docker** workflow → `ghcr.io/pratham-vishk/stratabench:0.4.0-rc1`
+- **Docker** workflow → `ghcr.io/pratham-vishk/stratabench:0.5.0-rc1`
 - **Pages** workflow → docs site
+
+### Smoke test after release
+
+```bash
+docker pull ghcr.io/pratham-vishk/stratabench:0.5.0-rc1
+docker run --rm ghcr.io/pratham-vishk/stratabench:0.5.0-rc1 version
+kubectl apply -k deploy/k8s/
+kubectl apply -f examples/benchmark-mock.yaml
+kubectl get benchmarks -n stratabench -w
+```
+
+## v0.4.0-rc1
+
+Initial OSS release candidate — K8s manifests, Docker/GHCR CI, GitHub Pages docs.
 
 ### Enable GitHub Pages
 
@@ -26,14 +40,6 @@ When ready for external contributors:
 2. Verify no secrets in git history
 3. Announce with README and docs link
 
-### Smoke test after release
-
-```bash
-docker pull ghcr.io/pratham-vishk/stratabench:0.4.0-rc1
-docker run --rm ghcr.io/pratham-vishk/stratabench:0.4.0-rc1 version
-docker run --rm ghcr.io/pratham-vishk/stratabench:0.4.0-rc1 agent "ssd random 4k" --target test --mock
-```
-
 ### v1.0.0 criteria
 
 - [ ] Public repository
@@ -41,4 +47,4 @@ docker run --rm ghcr.io/pratham-vishk/stratabench:0.4.0-rc1 agent "ssd random 4k
 - [ ] Docs site live
 - [ ] Dell lab validation on real hardware
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench)
-- [ ] Full Kubernetes operator (optional — CRD + apply shipped in rc1)
+- [x] Full Kubernetes operator (`stratabench-operator` reconciles Benchmark CRs)

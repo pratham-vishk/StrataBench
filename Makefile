@@ -1,9 +1,13 @@
-.PHONY: build build-agent build-api test run-mock validate clean
+.PHONY: build build-agent build-api build-operator test run-mock validate clean
 
 build:
 	go build -o bin/stratabench ./cmd/stratabench
 	go build -o bin/stratabench-agent ./cmd/stratabench-agent
 	go build -o bin/stratabench-api ./cmd/stratabench-api
+	go build -o bin/stratabench-operator ./cmd/stratabench-operator
+
+build-operator:
+	go build -o bin/stratabench-operator ./cmd/stratabench-operator
 
 build-agent:
 	go build -o bin/stratabench-agent ./cmd/stratabench-agent

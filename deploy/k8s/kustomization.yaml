@@ -8,4 +8,5 @@ resources:
   - api-deployment.yaml
   - agent-daemonset.yaml
   - cronjob-nvme.yaml
+  - operator-deployment.yaml
   - example-benchmark.yaml

@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/pratham-vishk/stratabench/internal/agentloop"
 	"github.com/pratham-vishk/stratabench/internal/orchestrator"
 	"github.com/pratham-vishk/stratabench/internal/paths"
 	"github.com/pratham-vishk/stratabench/internal/profile"
@@ -18,6 +19,7 @@ type Benchmark struct {
 	Kind       string          `yaml:"kind"`
 	Metadata   Metadata        `yaml:"metadata"`
 	Spec       BenchmarkSpec   `yaml:"spec"`
+	Status     BenchmarkStatus `yaml:"status,omitempty"`
 }
 
 type Metadata struct {
@@ -53,7 +55,27 @@ func Load(path string) (*Benchmark, error) {
 
 func Apply(ctx context.Context, svc *orchestrator.Service, b *Benchmark) (*ApplyResult, error) {
 	if b.Spec.Intent != "" {
-		return nil, fmt.Errorf("intent-based apply: use stratabench agent %q", b.Spec.Intent)
+		result, err := agentloop.Run(ctx, agentloop.Options{
+			Intent:        b.Spec.Intent,
+			Target:        b.Spec.Target,
+			Clients:       b.Spec.Clients,
+			Mock:          b.Spec.Mock,
+			SkipValidate:  b.Spec.SkipValidate,
+			CheckBaseline: b.Spec.CheckBaseline,
+			UseOllama:     b.Spec.UseOllama,
+			DataDir:       paths.DataDir(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &ApplyResult{
+			RunID:   result.Run.RunID,
+			Profile: result.Run.Profile,
+			Status:  result.Run.Status,
+		}, nil
+	}
+	if b.Spec.Profile == "" {
+		return nil, fmt.Errorf("spec.profile or spec.intent is required")
 	}
 	p, err := profile.LoadByName(paths.ProfilesDir(), b.Spec.Profile)
 	if err != nil {

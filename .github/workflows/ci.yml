@@ -21,3 +21,4 @@ jobs:
           go build -o bin/stratabench ./cmd/stratabench
           go build -o bin/stratabench-agent ./cmd/stratabench-agent
           go build -o bin/stratabench-api ./cmd/stratabench-api
+          go build -o bin/stratabench-operator ./cmd/stratabench-operator

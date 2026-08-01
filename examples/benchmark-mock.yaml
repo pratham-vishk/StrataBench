@@ -1,0 +1,11 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: mock-smoke-test
+  namespace: stratabench
+spec:
+  profile: ssd-random-4k
+  target: /tmp/stratabench-smoke
+  mock: true
+  skipValidate: true
+  checkBaseline: false

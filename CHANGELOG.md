@@ -2,6 +2,19 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.5.0-rc1] - 2026-08-01
+
+### Added
+- In-cluster Kubernetes operator (`cmd/stratabench-operator`) — watches `Benchmark` CRs, runs `manifest.Apply`, updates `.status`
+- `deploy/k8s/operator-deployment.yaml` with RBAC
+- `examples/benchmark-mock.yaml` for smoke testing
+- `docs/DELL-LAB-VALIDATION.md` pre-v1.0 hardware checklist
+- Intent-based `manifest.Apply` (agent loop) for CRs with `spec.intent`
+
+### Changed
+- CRD spec requires only `target` (profile or intent)
+- Docker image includes `stratabench-operator` binary
+
 ## [0.4.0-rc1] - 2026-08-01
 
 ### Added

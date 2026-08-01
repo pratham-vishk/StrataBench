@@ -112,10 +112,9 @@ docker build -t stratabench .
 docker compose up api          # REST API on :8080
 
 # Kubernetes
-kubectl apply -f deploy/k8s/namespace.yaml
-kubectl apply -f deploy/k8s/pvc.yaml
-kubectl apply -f deploy/k8s/api-deployment.yaml
-kubectl apply -f deploy/k8s/agent-daemonset.yaml
+kubectl apply -k deploy/k8s/
+kubectl apply -f examples/benchmark-mock.yaml
+kubectl get benchmarks -n stratabench   # operator sets status.runId
 ```
 
 Docs site: enable GitHub Pages from the `docs/` folder (see `.github/workflows/pages.yml`).
@@ -135,7 +134,7 @@ Docs site: enable GitHub Pages from the `docs/` folder (see `.github/workflows/p
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** v0.4.0-rc1 — OSS release candidate with K8s manifests, Docker/GHCR CI, GitHub Pages docs, and full agentic platform.
+> **Status:** v0.5.0-rc1 — K8s operator, agentic platform, Docker/GHCR CI, GitHub Pages docs.
 
 ---
 
@@ -150,6 +149,7 @@ See [docs/DEV.md](docs/DEV.md) for full development guide.
 | [RESULT_SCHEMA.md](docs/RESULT_SCHEMA.md) | Normalized benchmark result format |
 | [DEV.md](docs/DEV.md) | Full development guide |
 | [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM deployment |
+| [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware validation checklist |
 | [profiles/](profiles/) | Example workload profile definitions |
 
 ---
