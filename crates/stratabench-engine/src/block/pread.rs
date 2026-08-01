@@ -1,4 +1,3 @@
-use rand::Rng;
 use std::os::unix::fs::FileExt;
 use std::sync::Arc;
 use std::thread;

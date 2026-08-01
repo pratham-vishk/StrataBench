@@ -1,5 +1,6 @@
 use rand::Rng;
 use std::fs::{File, OpenOptions};
+use std::os::unix::fs::OpenOptionsExt;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -100,7 +101,7 @@ pub fn validate_block_cfg(cfg: &EngineConfig) -> Result<(usize, u64), String> {
         return Err("not a block layer profile".into());
     }
     let bs = align_up(parse_block_bytes(&cfg.block_size) as usize, 4096);
-    let dataset = align_down(parse_size_bytes(&cfg.dataset_size), bs as u64);
+    let dataset = align_down(parse_size_bytes(&cfg.dataset_size), bs);
     if dataset < bs as u64 {
         return Err("dataset smaller than block size".into());
     }

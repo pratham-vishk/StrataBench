@@ -1,5 +1,4 @@
 use io_uring::{opcode, types, IoUring};
-use rand::Rng;
 use std::os::unix::io::AsRawFd;
 use std::sync::Arc;
 use std::thread;
@@ -51,7 +50,7 @@ pub fn run_block_io_uring(
                 }
             };
             let mut buffers: Vec<Vec<u8>> = (0..qd).map(|_| aligned_buffer(bs, 4096)).collect();
-            let mut inflight: Vec<Option<InflightOp>> = vec![None; qd];
+            let mut inflight: Vec<Option<InflightOp>> = (0..qd).map(|_| None).collect();
             let mut rng = rand::thread_rng();
             let mut seq_off = (tid as u64) * bs as u64;
             let mut pending = 0usize;
@@ -66,17 +65,16 @@ pub fn run_block_io_uring(
                     let offset =
                         pick_offset(&pattern, dataset, bs, &mut seq_off, tid, &mut rng);
                     let buf = buffers[slot].as_mut_slice();
-                    let sqe = if write {
-                        opcode::Write::new(worker_fd, buf.as_ptr(), bs as u32)
-                            .offset(offset as i64)
-                            .user_data(slot as u64)
+                    let mut sqe = if write {
+                        opcode::Write::new(worker_fd, buf.as_mut_ptr(), bs as u32)
+                            .offset(offset)
                             .build()
                     } else {
-                        opcode::Read::new(worker_fd, buf.as_ptr(), bs as u32)
-                            .offset(offset as i64)
-                            .user_data(slot as u64)
+                        opcode::Read::new(worker_fd, buf.as_mut_ptr(), bs as u32)
+                            .offset(offset)
                             .build()
                     };
+                    sqe.user_data(slot as u64);
                     let pushed = unsafe {
                         let mut sq = ring.submission();
                         sq.push(&sqe).is_ok()
