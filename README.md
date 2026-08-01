@@ -104,6 +104,22 @@ go build -o bin/stratabench ./cmd/stratabench
 # VM guest benchmark (SSH into VM, run fio inside guest)
 ./bin/stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
 
+## Deployment
+
+```bash
+# Docker
+docker build -t stratabench .
+docker compose up api          # REST API on :8080
+
+# Kubernetes
+kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k8s/pvc.yaml
+kubectl apply -f deploy/k8s/api-deployment.yaml
+kubectl apply -f deploy/k8s/agent-daemonset.yaml
+```
+
+Docs site: enable GitHub Pages from the `docs/` folder (see `.github/workflows/pages.yml`).
+
 # Agentic loop (Phase 4)
 ./bin/stratabench agent "nvme oltp database workload" --target /tmp/test --mock
 ./bin/stratabench plan "s3 cluster read heavy" --ollama
@@ -119,7 +135,7 @@ go build -o bin/stratabench ./cmd/stratabench
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** Phase 4 — Ollama planner, agentic loop, analyst agent, regression baselines, REST API, cross-layer analysis.
+> **Status:** v0.4.0-rc1 — OSS release candidate with K8s manifests, Docker/GHCR CI, GitHub Pages docs, and full agentic platform.
 
 ---
 

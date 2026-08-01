@@ -108,8 +108,9 @@
 - [x] Regression tracking (baseline per profile + target)
 - [x] Hardware inventory database (NVMe model, firmware, SMART history)
 - [ ] Kubernetes operator for in-cluster benchmarking
-- [ ] Public documentation site
-- [ ] Contributor guide + CI/CD (GitHub Actions)
+- [x] Kubernetes deployment manifests (API, agent, CronJob)
+- [x] Public documentation site (GitHub Pages)
+- [x] Contributor guide + CI/CD (GitHub Actions)
 - [ ] **Public open-source release**
 - [x] SBK application profiles (Kafka, RocksDB, PostgreSQL)
 - [ ] SBK native driver integration (live workloads)
@@ -140,7 +141,8 @@ Semantic versioning from first public release:
 - [x] CONTRIBUTING.md with code style and PR process
 - [x] CI: build, test on Linux
 - [x] Security policy (SECURITY.md)
-- [ ] Code of conduct
-- [ ] Documentation site
+- [x] Code of conduct
+- [x] Documentation site (GitHub Pages workflow)
 - [x] Dockerfile
-- [ ] README badges (build status, license)
+- [x] README badges (build status, license)
+- [x] Docker CI workflow (GHCR publish on tag)

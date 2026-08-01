@@ -1,0 +1,10 @@
+.git
+.github
+.stratabench
+bin
+*.md
+!profiles/README.md
+docs
+deploy/grafana
+**/*_test.go
+**/*.test

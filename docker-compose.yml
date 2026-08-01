@@ -1,0 +1,26 @@
+services:
+  api:
+    build: .
+    command: ["/usr/local/bin/stratabench-api"]
+    ports:
+      - "8080:8080"
+    environment:
+      STRATABENCH_API_LISTEN: ":8080"
+      STRATABENCH_ROOT: /etc/stratabench
+    volumes:
+      - stratabench-data:/data
+
+  agent:
+    build: .
+    command: ["/usr/local/bin/stratabench-agent"]
+    ports:
+      - "7777:7777"
+    environment:
+      STRATABENCH_AGENT_LISTEN: ":7777"
+      STRATABENCH_ROOT: /etc/stratabench
+    privileged: true
+    volumes:
+      - /dev:/dev
+
+volumes:
+  stratabench-data:

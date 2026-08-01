@@ -25,6 +25,7 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/report"
 	"github.com/pratham-vishk/stratabench/internal/smarthistory"
 	"github.com/pratham-vishk/stratabench/internal/schema"
+	"github.com/pratham-vishk/stratabench/internal/version"
 )
 
 var (
@@ -65,6 +66,7 @@ func main() {
 		agentCmd(),
 		planCmd(),
 		profilesCmd(),
+		versionCmd(),
 	)
 
 	if err := root.Execute(); err != nil {
@@ -631,6 +633,16 @@ func profilesCmd() *cobra.Command {
 				fmt.Printf("%-22s %-10s %-12s %s\n", p.Name, p.Layer, p.Engine, p.Description)
 			}
 			return nil
+		},
+	}
+}
+
+func versionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print StrataBench version",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("%s %s\n", version.Name, version.Version)
 		},
 	}
 }

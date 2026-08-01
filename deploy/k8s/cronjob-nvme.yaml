@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: stratabench-nvme-oltp
+  namespace: stratabench
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: benchmark
+              image: ghcr.io/pratham-vishk/stratabench:latest
+              command:
+                - /usr/local/bin/stratabench
+              args:
+                - agent
+                - "nvme oltp database workload"
+                - --target
+                - /dev/nvme0n1
+                - --check-baseline
+              env:
+                - name: STRATABENCH_ROOT
+                  value: /etc/stratabench
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: nvme
+                  mountPath: /dev/nvme0n1
+              securityContext:
+                privileged: true
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: stratabench-data
+            - name: nvme
+              hostPath:
+                path: /dev/nvme0n1
+                type: CharDevice

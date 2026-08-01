@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: stratabench-agent
+  namespace: stratabench
+  labels:
+    app: stratabench-agent
+spec:
+  selector:
+    matchLabels:
+      app: stratabench-agent
+  template:
+    metadata:
+      labels:
+        app: stratabench-agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: agent
+          image: ghcr.io/pratham-vishk/stratabench:latest
+          command: ["/usr/local/bin/stratabench-agent"]
+          ports:
+            - containerPort: 7777
+              hostPort: 7777
+              name: agent
+          env:
+            - name: STRATABENCH_AGENT_LISTEN
+              value: ":7777"
+            - name: STRATABENCH_ROOT
+              value: /etc/stratabench
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: data
+          emptyDir: {}

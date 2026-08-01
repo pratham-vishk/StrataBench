@@ -117,6 +117,23 @@ For `vm-block` profiles, use SSH target format:
 
 Requires `ssh`/`scp` access to the guest with `fio` installed inside the VM.
 
+## Kubernetes
+
+```bash
+kubectl apply -f deploy/k8s/
+kubectl port-forward -n stratabench svc/stratabench-api 8080:8080
+curl http://localhost:8080/api/v1/health
+```
+
+See `deploy/k8s/` for API Deployment, agent DaemonSet, and scheduled CronJob example.
+
+## Docker Compose
+
+```bash
+docker compose up api    # :8080
+docker compose up agent  # :7777
+```
+
 ```bash
 # Full lifecycle from natural language
 ./bin/stratabench agent "nvme oltp database" --target /dev/nvme0n1 --mock

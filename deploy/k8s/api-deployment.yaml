@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stratabench-api
+  namespace: stratabench
+  labels:
+    app: stratabench-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stratabench-api
+  template:
+    metadata:
+      labels:
+        app: stratabench-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/pratham-vishk/stratabench:latest
+          command: ["/usr/local/bin/stratabench-api"]
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: STRATABENCH_API_LISTEN
+              value: ":8080"
+            - name: STRATABENCH_ROOT
+              value: /etc/stratabench
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: stratabench-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stratabench-api
+  namespace: stratabench
+spec:
+  selector:
+    app: stratabench-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
