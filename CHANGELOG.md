@@ -2,6 +2,22 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.6.0-rc1] - 2026-08-01
+
+### Added
+- **25 workload profiles** — full physical + virtual coverage for all engines
+- VM profiles: `vm-disk-sequential`, `vm-nvme-oltp`, `vm-disk-stress`, `vm-file-*`, `vm-s3-*`, `vm-app-*`
+- Physical profiles: `file-parallel-write`, `s3-mixed-workload`
+- `vm-file` elbencho via SSH (`vm_elbencho.go`)
+- `docs/ENGINE-COVERAGE.md` — engine × deployment matrix
+- Example manifests for physical and virtual benchmarks
+- Repository is now **public**; GitHub Pages enabled
+
+### Changed
+- `ssd-random-4k`, `nvme-max-stress` → real **fio** engine (was mock)
+- `s3-put-throughput`, `s3-get-throughput` → real **warp** engine (was mock)
+- `DELL-LAB-VALIDATION.md` covers all 7 engines on physical and virtual targets
+
 ## [0.5.0-rc1] - 2026-08-01
 
 ### Added

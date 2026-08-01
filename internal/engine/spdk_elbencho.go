@@ -17,6 +17,9 @@ type ElbenchoRunner struct{}
 func (e *ElbenchoRunner) Name() string { return "elbencho" }
 
 func (e *ElbenchoRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *schema.RawEngineOutput, error) {
+	if isVMSSH(in) {
+		return runVMElbencho(ctx, in)
+	}
 	if _, err := exec.LookPath("elbencho"); err != nil {
 		return nil, nil, fmt.Errorf("elbencho not found in PATH (use --mock)")
 	}

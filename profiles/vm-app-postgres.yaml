@@ -1,0 +1,23 @@
+name: vm-app-postgres
+version: "1.0"
+layer: vm-application
+engine: sbk
+description: "PostgreSQL TPC-C via pgbench on VM — run with agent on guest (--clients vm:7777)"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  driver: postgresql
+  connections: 32
+  duration_sec: 300
+  scale_factor: 100
+
+metrics:
+  - ops_per_sec
+  - latency_p50
+  - latency_p99

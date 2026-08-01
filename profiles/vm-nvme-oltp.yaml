@@ -1,9 +1,9 @@
-name: ssd-random-4k
+name: vm-nvme-oltp
 version: "1.0"
-layer: block
+layer: vm-block
 engine: fio
-description: "4K random read/write on SSD — standard random I/O test (physical)"
-load: medium
+description: "NVMe OLTP-style randrw inside VM guest — virtual block"
+load: heavy
 
 validation:
   require_direct_io: true
@@ -17,17 +17,17 @@ params:
   direct: 1
   rw: randrw
   rwmixread: 70
-  bs: 4k
-  iodepth: 32
-  numjobs: 4
-  size: 50g
+  bs: 16k
+  iodepth: 64
+  numjobs: 8
+  size: 100g
   ramp_time: 60
   runtime: 300
   percentile_list: "50:95:99:99.9"
+  guest_device: /dev/vdb
 
 metrics:
   - iops
   - throughput_mbps
-  - latency_p50
   - latency_p99
   - latency_p99_9

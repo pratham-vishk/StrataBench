@@ -1,61 +1,102 @@
 # Workload Profiles
 
-Declarative YAML definitions for benchmark tests. Profiles are validated by the StrataBench validator before execution.
+Declarative YAML definitions for benchmark tests. **25 profiles** across physical and virtual layers.
 
-## Profile structure
+See [ENGINE-COVERAGE.md](../docs/ENGINE-COVERAGE.md) for the full engine × deployment matrix.
 
-```yaml
-name: string          # unique profile identifier
-version: "1.0"
-layer: block | vm-block | file | object | application
-engine: stratabench | fio | spdk | vdbench | warp | gosbench | elbencho
-description: string
-load: light | medium | heavy | extreme
+## Layers
 
-validation:
-  require_direct_io: true
-  min_runtime_sec: 300
-  min_ramp_sec: 60
-  require_percentiles: [50, 95, 99, 99.9]
-  dataset_vs_cache: gt    # dataset must be greater than cache
+| Layer | Deployment | Engines |
+|-------|------------|---------|
+| `block` | Physical device | fio, vdbench, spdk |
+| `vm-block` | SSH into VM guest | fio |
+| `file` | Physical mount | elbencho |
+| `vm-file` | SSH into VM guest | elbencho |
+| `object` | S3 endpoint | warp |
+| `vm-object` | S3 on VM | warp |
+| `application` | Physical service | sbk |
+| `vm-application` | Agent on VM guest | sbk |
 
-params:
-  # engine-specific parameters
+## All profiles
 
-metrics:
-  - iops
-  - throughput_mbps
-  - latency_p50
-  - latency_p99
-```
+### Block (physical)
 
-## Built-in profiles (Phase 1)
+| Profile | Engine | Load |
+|---------|--------|------|
+| `hdd-sequential-read` | fio | light |
+| `ssd-random-4k` | fio | medium |
+| `nvme-random-oltp` | fio | heavy |
+| `nvme-max-stress` | fio | extreme |
+| `spdk-nvme-peak` | spdk | extreme |
+| `afa-multi-lun` | vdbench | heavy |
 
-| Profile | File | Layer | Engine | Load |
-|---------|------|-------|--------|------|
-| HDD sequential read | `hdd-sequential-read.yaml` | block | fio | light |
-| SSD random 4K | `ssd-random-4k.yaml` | block | stratabench | medium |
-| NVMe OLTP | `nvme-random-oltp.yaml` | block | fio | heavy |
-| S3 PUT throughput | `s3-put-throughput.yaml` | object | stratabench | medium |
-| S3 GET throughput | `s3-get-throughput.yaml` | object | stratabench | medium |
+### VM block (virtual)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `vm-disk-random` | fio | medium |
+| `vm-disk-sequential` | fio | light |
+| `vm-nvme-oltp` | fio | heavy |
+| `vm-disk-stress` | fio | extreme |
+
+### File (physical)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `file-parallel-read` | elbencho | heavy |
+| `file-parallel-write` | elbencho | heavy |
+
+### VM file (virtual)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `vm-file-parallel-read` | elbencho | heavy |
+| `vm-file-parallel-write` | elbencho | heavy |
+
+### Object (physical)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `s3-put-throughput` | warp | medium |
+| `s3-get-throughput` | warp | medium |
+| `s3-mixed-workload` | warp | heavy |
+| `s3-cluster-put-get` | warp | heavy |
+| `s3-cluster-rdma` | warp | heavy |
+
+### VM object (virtual)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `vm-s3-put-throughput` | warp | medium |
+
+### Application (physical)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `app-postgres-tpc-c` | sbk | heavy |
+| `app-kafka-producer` | sbk | heavy |
+| `app-rocksdb-read` | sbk | heavy |
+
+### VM application (virtual)
+
+| Profile | Engine | Load |
+|---------|--------|------|
+| `vm-app-postgres` | sbk | heavy |
+| `vm-app-kafka` | sbk | heavy |
 
 ## Usage
 
 ```bash
-# Validate before run
-stratabench validate --profile nvme-random-oltp --target /dev/nvme0n1
-
-# Run
+# Physical block
 stratabench run --profile nvme-random-oltp --target /dev/nvme0n1
 
-# Override params
-stratabench run --profile nvme-random-oltp --target /dev/nvme0n1 \
-  --override duration_sec=1200
+# Virtual block (SSH into guest)
+stratabench run --profile vm-disk-random --target root@10.0.1.20:/dev/vdb
+
+# Virtual app (agent on guest)
+stratabench run --profile vm-app-postgres \
+  --target "postgres://bench@localhost/db" --clients 10.0.1.20:7777
+
+# Mock (no tools required)
+stratabench run --profile nvme-random-oltp --target /dev/null --mock
 ```
-
-## Creating custom profiles
-
-1. Copy an existing profile from this directory
-2. Adjust `params` for your workload
-3. Run `stratabench validate --profile your-profile.yaml` to check rules
-4. Submit via PR to contribute to the built-in library

@@ -1,15 +1,15 @@
-name: nvme-max-stress
+name: vm-disk-stress
 version: "1.0"
-layer: block
+layer: vm-block
 engine: fio
-description: "Maximum stress — 64 jobs, QD 128, 4K random write (physical NVMe)"
+description: "High-stress random write inside VM guest — virtual block"
 load: extreme
 
 validation:
   require_direct_io: true
   min_runtime_sec: 600
   min_ramp_sec: 60
-  require_percentiles: [50, 95, 99, 99.9]
+  require_percentiles: [50, 95, 99]
   dataset_vs_cache: gt
 
 params:
@@ -17,15 +17,15 @@ params:
   direct: 1
   rw: randwrite
   bs: 4k
-  iodepth: 128
-  numjobs: 64
-  size: 500g
+  iodepth: 64
+  numjobs: 32
+  size: 200g
   ramp_time: 60
   runtime: 600
-  percentile_list: "50:95:99:99.9"
+  percentile_list: "50:95:99"
+  guest_device: /dev/vdb
 
 metrics:
   - iops
   - throughput_mbps
   - latency_p99
-  - cpu_percent

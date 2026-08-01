@@ -10,6 +10,7 @@ Agentic, honest storage benchmarking for every layer.
 | [Architecture](ARCHITECTURE.md) | System design |
 | [Roadmap](ROADMAP.md) | Implementation phases |
 | [Dell Lab Guide](DELL-LAB.md) | VM cluster deployment |
+| [Engine Coverage](ENGINE-COVERAGE.md) | Physical + virtual engine matrix |
 | [Dell Lab Validation](DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware checklist |
 | [Vision](VISION.md) | Project goals |
 | [Contributing on GitHub](https://github.com/pratham-vishk/StrataBench/blob/master/CONTRIBUTING.md) | How to contribute |

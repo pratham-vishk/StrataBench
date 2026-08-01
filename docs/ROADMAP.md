@@ -110,7 +110,7 @@
 - [x] Kubernetes deployment manifests (API, agent, CronJob, CRD, operator)
 - [x] Public documentation site (GitHub Pages)
 - [x] Contributor guide + CI/CD (GitHub Actions)
-- [ ] **Public open-source release**
+- [x] **Public open-source release**
 - [x] SBK native driver integration (pgbench, db_bench, kafka-producer-perf-test)
 - [ ] SBK full Storage Benchmark Kit bridge
 

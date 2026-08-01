@@ -1,0 +1,24 @@
+name: s3-mixed-workload
+version: "1.0"
+layer: object
+engine: warp
+description: "Mixed S3 PUT+GET workload via Warp — physical cluster or single node"
+load: heavy
+
+validation:
+  require_direct_io: false
+  min_runtime_sec: 300
+  min_ramp_sec: 0
+  require_percentiles: [50, 99]
+
+params:
+  operation: mixed
+  duration_sec: 300
+  concurrent: 64
+  object_size: 4MiB
+  bucket: stratabench-mixed
+
+metrics:
+  - ops_per_sec
+  - throughput_mbps
+  - latency_p99

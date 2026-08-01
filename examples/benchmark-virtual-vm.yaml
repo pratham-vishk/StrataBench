@@ -1,0 +1,11 @@
+apiVersion: stratabench.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: virtual-vm-disk
+  namespace: stratabench
+spec:
+  profile: vm-disk-random
+  target: root@10.0.1.20:/dev/vdb
+  mock: false
+  skipValidate: true
+  checkBaseline: false

@@ -44,8 +44,8 @@ When ready for external contributors:
 
 ### v1.0.0 criteria
 
-- [ ] Public repository
-- [ ] Published container image
+- [x] Public repository
+- [x] Published container image
 - [ ] Docs site live
 - [ ] Dell lab validation on real hardware
 - [ ] Native SBK drivers validated on Linux (pgbench, db_bench)

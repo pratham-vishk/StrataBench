@@ -1,25 +1,24 @@
-name: s3-put-throughput
+name: vm-s3-put-throughput
 version: "1.0"
-layer: object
+layer: vm-object
 engine: warp
-description: "S3 PUT throughput — single endpoint via MinIO Warp (physical or VM-hosted S3)"
+description: "S3 PUT to MinIO running inside a VM — virtual object (target = VM IP:9000)"
 load: medium
 
 validation:
   require_direct_io: false
   min_runtime_sec: 300
   min_ramp_sec: 30
-  require_percentiles: [50, 95, 99]
+  require_percentiles: [50, 99]
 
 params:
   operation: put
   object_size: 4MiB
   concurrent: 32
   duration_sec: 300
-  bucket: stratabench-test
+  bucket: stratabench-vm
 
 metrics:
   - ops_per_sec
   - throughput_mbps
-  - latency_p50
   - latency_p99

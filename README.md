@@ -134,7 +134,9 @@ Docs site: enable GitHub Pages from the `docs/` folder (see `.github/workflows/p
 
 See [docs/DEV.md](docs/DEV.md) for full development guide.
 
-> **Status:** v0.5.0-rc1 — K8s operator, agentic platform, Docker/GHCR CI, GitHub Pages docs.
+> **Status:** v0.6.0-rc1 — public OSS, 25 profiles, all engines on physical + virtual targets.
+
+Docs: https://pratham-vishk.github.io/StrataBench/
 
 ---
 
@@ -149,6 +151,7 @@ See [docs/DEV.md](docs/DEV.md) for full development guide.
 | [RESULT_SCHEMA.md](docs/RESULT_SCHEMA.md) | Normalized benchmark result format |
 | [DEV.md](docs/DEV.md) | Full development guide |
 | [DELL-LAB.md](docs/DELL-LAB.md) | Dell lab VM deployment |
+| [ENGINE-COVERAGE.md](docs/ENGINE-COVERAGE.md) | Engine × physical/virtual matrix |
 | [DELL-LAB-VALIDATION.md](docs/DELL-LAB-VALIDATION.md) | Pre-v1.0 hardware validation checklist |
 | [profiles/](profiles/) | Example workload profile definitions |
 

@@ -11,10 +11,6 @@ import (
 	"github.com/pratham-vishk/stratabench/internal/schema"
 )
 
-func isVMSSH(in RunInput) bool {
-	return in.Profile.Layer == "vm-block" && strings.Contains(in.Target, "@")
-}
-
 func parseVMTarget(target string, profileDevice string) (sshHost, device string) {
 	if idx := strings.LastIndex(target, ":"); idx > 0 && strings.Contains(target[:idx], "@") {
 		return target[:idx], target[idx+1:]

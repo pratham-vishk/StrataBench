@@ -1,8 +1,8 @@
 name: s3-get-throughput
 version: "1.0"
 layer: object
-engine: stratabench
-description: "S3 GET throughput test — requires pre-populated objects"
+engine: warp
+description: "S3 GET throughput — requires pre-populated objects via Warp"
 load: medium
 
 validation:
@@ -17,8 +17,6 @@ params:
   concurrent: 64
   duration_sec: 300
   bucket: stratabench-test
-  prefix: put-bench/
-  pre_populate: true
 
 metrics:
   - ops_per_sec
