@@ -8,10 +8,11 @@ import (
 )
 
 type RunInput struct {
-	Profile *profile.Profile
-	Target  string
-	Mock    bool
-	WorkDir string
+	Profile    *profile.Profile
+	Target     string
+	Mock       bool
+	WorkDir    string
+	OnInterval func(schema.IntervalSample) // optional live sample callback
 }
 
 type Runner interface {

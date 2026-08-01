@@ -37,6 +37,9 @@ Start the API (`stratabench-api` or `docker compose up api`) and scrape `http://
 |--------|-------------|
 | `stratabench_run_assignment_progress` | 0–1 fraction of topology assignments done |
 | `stratabench_run_assignments_total` | Total assignments for active runs |
+| `stratabench_live_iops` | Latest interval IOPS for in-flight runs |
+| `stratabench_live_throughput_mbps` | Latest interval throughput for in-flight runs |
+| `stratabench_live_avg_latency_us` | Latest interval avg latency for in-flight runs |
 | `stratabench_iops` | IOPS from completed runs |
 | `stratabench_runs_total` | Completed run counter |
 
@@ -55,10 +58,11 @@ For dashboards or scripts that want push updates:
 curl -N http://localhost:8080/api/v1/runs/<uuid>/stream
 ```
 
-Events: `progress` while running, `done` when completed/failed.
+Events: `progress` while running, `interval` for each time bucket (mock runs), `done` when completed/failed.
 
 ## Limitations
 
-- Progress tracks **topology assignments** (client×target jobs), not per-second fio/Warp interval samples.
-- Interval time-series appear in HTML reports **after** the run completes.
+- Live interval streaming is implemented for **mock** runs and engines that invoke `OnInterval` (fio/Warp parsing deferred).
+- Progress still tracks **topology assignments** alongside interval samples.
+- Full interval time-series for real fio/Warp runs appear in HTML reports **after** completion.
 - For thermal/SMART live monitoring, use host tools alongside StrataBench (`smartctl`, `nvme`, etc.).

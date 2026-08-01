@@ -2,6 +2,17 @@
 
 All notable changes to StrataBench are documented in this file.
 
+## [0.8.0-rc10] - 2026-08-01
+
+### Added
+- **Live interval streaming** — mock runs emit per-bucket IOPS/throughput/latency during execution
+- **Prometheus live gauges** — `stratabench_live_iops`, `stratabench_live_throughput_mbps`, `stratabench_live_avg_latency_us`
+- **SSE `interval` events** — `GET /api/v1/runs/{id}/stream` pushes time-bucket samples while running
+- **`stratabench watch`** — shows live IOPS/MBps/latency when intervals are available
+
+### Changed
+- Progress API and MCP `stratabench_run_progress` include `latest_interval` and `interval_buckets`
+
 ## [0.8.0-rc9] - 2026-08-01
 
 ### Added

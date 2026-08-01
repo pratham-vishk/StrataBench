@@ -138,7 +138,7 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 		wg.Add(1)
 		go func(assign topology.Assignment) {
 			defer wg.Done()
-			res, raw, err := s.runAssignment(ctx, opts, assign)
+			res, raw, err := s.runAssignment(ctx, opts, assign, runID)
 			ch <- item{assignment: assign, results: res, raw: raw, err: err}
 		}(a)
 	}
@@ -235,14 +235,19 @@ func (s *Service) Run(ctx context.Context, opts RunOptions) (*schema.RunResult, 
 	return run, nil
 }
 
-func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology.Assignment) (schema.Results, *schema.RawEngineOutput, error) {
+func (s *Service) runAssignment(ctx context.Context, opts RunOptions, a topology.Assignment, runID string) (schema.Results, *schema.RawEngineOutput, error) {
+	onInterval := func(iv schema.IntervalSample) {
+		runstate.RecordInterval(runID, iv)
+		metrics.RecordLiveInterval(runID, opts.Profile.Name, iv)
+	}
 	if a.Client == "" {
 		runner := engine.ForProfile(opts.Profile, opts.Mock)
 		results, raw, err := runner.Run(ctx, engine.RunInput{
-			Profile: opts.Profile,
-			Target:  a.Target,
-			Mock:    opts.Mock,
-			WorkDir: filepath.Join(opts.WorkDir, sanitizePath(a.Target)),
+			Profile:    opts.Profile,
+			Target:     a.Target,
+			Mock:       opts.Mock,
+			WorkDir:    filepath.Join(opts.WorkDir, sanitizePath(a.Target)),
+			OnInterval: onInterval,
 		})
 		if err != nil {
 			return schema.Results{}, nil, err

@@ -44,6 +44,9 @@ func TestHandleRunStream(t *testing.T) {
 		if !strings.Contains(body, "event:") {
 			t.Fatalf("expected SSE events, got %q", body)
 		}
+		if !strings.Contains(body, "event: interval") {
+			t.Fatalf("expected interval SSE events, got %q", body)
+		}
 	case <-time.After(45 * time.Second):
 		t.Fatal("stream did not complete")
 	}

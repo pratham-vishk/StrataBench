@@ -66,7 +66,29 @@
         { "expr": "sum(stratabench_run_assignments_total)" }
       ]
     }
+    {
+      "type": "timeseries",
+      "title": "Live interval IOPS",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "stratabench_live_iops",
+          "legendFormat": "{{profile}} {{run_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Live interval throughput (MB/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        {
+          "expr": "stratabench_live_throughput_mbps",
+          "legendFormat": "{{profile}}"
+        }
+      ]
+    }
   ],
   "schemaVersion": 39,
-  "version": 2
+  "version": 3
 }

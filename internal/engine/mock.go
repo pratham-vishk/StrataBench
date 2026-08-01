@@ -26,11 +26,6 @@ func (m *MockRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 	if simDuration > 3*time.Second {
 		simDuration = 3 * time.Second
 	}
-	select {
-	case <-ctx.Done():
-		return nil, nil, ctx.Err()
-	case <-time.After(simDuration):
-	}
 
 	bsBytes := float64(parseBlockSizeBytes(blockSize))
 	baseIOPS := 50000.0 * float64(threads) * math.Sqrt(float64(qd))
@@ -67,6 +62,9 @@ func (m *MockRunner) Run(ctx context.Context, in RunInput) (*schema.Results, *sc
 	percentiles := mockPercentiles(p50)
 	counts := mockPercentileCounts(int64(iops * float64(durationSec)))
 	intervals := mockIntervals(durationSec, baseIOPS, throughput, p50)
+	if err := streamMockIntervals(ctx, in, intervals, simDuration); err != nil {
+		return nil, nil, err
+	}
 
 	res := &schema.Results{
 		IOPS:             iops,
@@ -158,6 +156,34 @@ func mockIntervals(durationSec int, baseIOPS, throughput, p50 float64) []schema.
 		})
 	}
 	return out
+}
+
+func streamMockIntervals(ctx context.Context, in RunInput, intervals []schema.IntervalSample, simDuration time.Duration) error {
+	if len(intervals) == 0 {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(simDuration):
+			return nil
+		}
+	}
+	tick := simDuration / time.Duration(len(intervals))
+	if tick < 100*time.Millisecond {
+		tick = 100 * time.Millisecond
+	}
+	for _, iv := range intervals {
+		live := iv
+		live.Timestamp = time.Now().UTC()
+		if in.OnInterval != nil {
+			in.OnInterval(live)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(tick):
+		}
+	}
+	return nil
 }
 
 func parseBlockSizeBytes(bs string) int64 {

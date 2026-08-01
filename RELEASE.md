@@ -1,6 +1,25 @@
 # Release Guide
 
-## v0.8.0-rc9 (current)
+## v0.8.0-rc10 (current)
+
+Live interval streaming for mock runs: Prometheus live gauges, SSE `interval` events, watch CLI shows IOPS/MBps/latency mid-run.
+
+### Tag and publish
+
+```bash
+git tag v0.8.0-rc10
+git push origin v0.8.0-rc10
+```
+
+### Smoke test
+
+```bash
+make build
+./bin/stratabench run --profile nvme-random-oltp --target /dev/null --mock --async --watch
+curl -N http://localhost:8080/api/v1/runs/<run_id>/stream   # expect event: interval lines
+```
+
+## v0.8.0-rc9
 
 Platform hardening release: multi-node reports, Postgres, GOSBench, mTLS, async runs, native engine stubs, 14 MCP tools, live monitoring.
 

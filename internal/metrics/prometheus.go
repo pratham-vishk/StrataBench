@@ -39,10 +39,26 @@ var (
 		Name: "stratabench_run_assignments_total",
 		Help: "Total topology assignments for in-flight runs",
 	}, []string{"run_id", "profile"})
+
+	liveIOPS = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "stratabench_live_iops",
+		Help: "Latest interval IOPS for in-flight runs",
+	}, []string{"run_id", "profile"})
+
+	liveThroughput = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "stratabench_live_throughput_mbps",
+		Help: "Latest interval throughput MB/s for in-flight runs",
+	}, []string{"run_id", "profile"})
+
+	liveAvgLatency = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "stratabench_live_avg_latency_us",
+		Help: "Latest interval average latency microseconds for in-flight runs",
+	}, []string{"run_id", "profile"})
 )
 
 func init() {
-	prometheus.MustRegister(runsTotal, iopsGauge, throughputGauge, latencyP99, runAssignmentProgress, runAssignmentTotal)
+	prometheus.MustRegister(runsTotal, iopsGauge, throughputGauge, latencyP99,
+		runAssignmentProgress, runAssignmentTotal, liveIOPS, liveThroughput, liveAvgLatency)
 }
 
 func RecordRun(run *schema.RunResult) {
@@ -68,10 +84,22 @@ func RecordProgress(runID, profile, phase string, completed, total int) {
 	runAssignmentTotal.WithLabelValues(runID, profile).Set(float64(total))
 }
 
+// RecordLiveInterval updates Prometheus gauges from a mid-run time bucket.
+func RecordLiveInterval(runID, profile string, s schema.IntervalSample) {
+	liveIOPS.WithLabelValues(runID, profile).Set(s.IOPS)
+	liveThroughput.WithLabelValues(runID, profile).Set(s.ThroughputMBps)
+	if s.AvgLatencyUS > 0 {
+		liveAvgLatency.WithLabelValues(runID, profile).Set(s.AvgLatencyUS)
+	}
+}
+
 // ClearProgress removes live gauges when a run finishes.
 func ClearProgress(runID string) {
 	runAssignmentProgress.DeletePartialMatch(prometheus.Labels{"run_id": runID})
 	runAssignmentTotal.DeletePartialMatch(prometheus.Labels{"run_id": runID})
+	liveIOPS.DeletePartialMatch(prometheus.Labels{"run_id": runID})
+	liveThroughput.DeletePartialMatch(prometheus.Labels{"run_id": runID})
+	liveAvgLatency.DeletePartialMatch(prometheus.Labels{"run_id": runID})
 }
 
 func Handler() http.Handler {

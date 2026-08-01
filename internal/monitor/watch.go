@@ -60,7 +60,12 @@ func formatStatus(svc *orchestrator.Service, runID string) string {
 			total = 1
 		}
 		pct := float64(p.CompletedAssignments) / float64(total) * 100
-		return fmt.Sprintf("[%s] %s %d/%d (%.0f%%)", shortID(runID), p.Phase, p.CompletedAssignments, total, pct)
+		line := fmt.Sprintf("[%s] %s %d/%d (%.0f%%)", shortID(runID), p.Phase, p.CompletedAssignments, total, pct)
+		if p.LatestInterval != nil {
+			line += fmt.Sprintf(" iops=%.0f mbps=%.0f lat=%.0fµs",
+				p.LatestInterval.IOPS, p.LatestInterval.ThroughputMBps, p.LatestInterval.AvgLatencyUS)
+		}
+		return line
 	}
 	run, err := svc.Store.Get(runID)
 	if err != nil {
